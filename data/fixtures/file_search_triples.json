@@ -1,0 +1,122 @@
+[
+  {
+    "tool_name": "file_search",
+    "input_data": {"query": "auth", "path": "src/"},
+    "output_data": "src/auth/login.py\nsrc/auth/middleware.py\nsrc/auth/tokens.py\nsrc/tests/test_auth.py\nsrc/docs/auth.md\ndist/auth.min.js\nnode_modules/@auth/core/index.js\nREADME.md\npackage.json",
+    "filtered_output": "src/auth/login.py\nsrc/auth/middleware.py\nsrc/auth/tokens.py"
+  },
+  {
+    "tool_name": "file_search",
+    "input_data": {"query": "database", "path": "src/"},
+    "output_data": "src/db/engine.py\nsrc/db/models.py\nsrc/db/migrations.py\nsrc/tests/test_db.py\ndocs/database.md\nnode_modules/pg/lib/index.js\npackage-lock.json",
+    "filtered_output": "src/db/engine.py\nsrc/db/models.py\nsrc/db/migrations.py"
+  },
+  {
+    "tool_name": "file_search",
+    "input_data": {"query": "config", "path": "."},
+    "output_data": "src/config.py\nsrc/config/defaults.py\nsrc/config/schema.py\ntests/test_config.py\nconfig.example.yaml\n.env.example\npackage.json\nnode_modules/dotenv/config.js",
+    "filtered_output": "src/config.py\nsrc/config/defaults.py\nsrc/config/schema.py"
+  },
+  {
+    "tool_name": "file_search",
+    "input_data": {"query": "test", "path": "src/"},
+    "output_data": "src/tests/test_auth.py\nsrc/tests/test_db.py\nsrc/tests/test_api.py\nsrc/tests/test_config.py\nsrc/tests/conftest.py\nsrc/tests/__init__.py\nsrc/auth/tokens.py\nsrc/api/handlers.py",
+    "filtered_output": "src/tests/test_auth.py\nsrc/tests/test_db.py\nsrc/tests/test_api.py\nsrc/tests/test_config.py"
+  },
+  {
+    "tool_name": "file_search",
+    "input_data": {"query": "handler", "path": "src/"},
+    "output_data": "src/api/handlers.py\nsrc/api/handlers/users.py\nsrc/api/handlers/auth.py\nsrc/api/handlers/billing.py\nsrc/tests/test_handlers.py\nnode_modules/express/lib/router/route.js",
+    "filtered_output": "src/api/handlers.py\nsrc/api/handlers/users.py\nsrc/api/handlers/auth.py\nsrc/api/handlers/billing.py"
+  },
+  {
+    "tool_name": "file_search",
+    "input_data": {"query": "user", "path": "src/"},
+    "output_data": "src/models/user.py\nsrc/api/handlers/users.py\nsrc/services/user_service.py\nsrc/tests/test_users.py\nsrc/db/schema/user.sql\nnode_modules/@types/user/index.d.ts",
+    "filtered_output": "src/models/user.py\nsrc/api/handlers/users.py\nsrc/services/user_service.py"
+  },
+  {
+    "tool_name": "file_search",
+    "input_data": {"query": "billing", "path": "src/"},
+    "output_data": "src/services/billing.py\nsrc/api/handlers/billing.py\nsrc/models/invoice.py\nsrc/tests/test_billing.py\ndist/billing.min.js\nnode_modules/stripe/lib/index.js",
+    "filtered_output": "src/services/billing.py\nsrc/api/handlers/billing.py\nsrc/models/invoice.py"
+  },
+  {
+    "tool_name": "file_search",
+    "input_data": {"query": "middleware", "path": "src/"},
+    "output_data": "src/auth/middleware.py\nsrc/api/middleware/cors.py\nsrc/api/middleware/rate_limit.py\nsrc/tests/test_middleware.py\nnode_modules/express/lib/middleware/init.js\nnode_modules/cors/lib/index.js",
+    "filtered_output": "src/auth/middleware.py\nsrc/api/middleware/cors.py\nsrc/api/middleware/rate_limit.py"
+  },
+  {
+    "tool_name": "file_search",
+    "input_data": {"query": "token", "path": "src/"},
+    "output_data": "src/auth/tokens.py\nsrc/services/token_service.py\nsrc/tests/test_tokens.py\nsrc/db/schema/token.sql\nnode_modules/jsonwebtoken/index.js\nnode_modules/@types/jsonwebtoken/index.d.ts",
+    "filtered_output": "src/auth/tokens.py\nsrc/services/token_service.py\nsrc/db/schema/token.sql"
+  },
+  {
+    "tool_name": "file_search",
+    "input_data": {"query": "schema", "path": "src/"},
+    "output_data": "src/db/schema/user.sql\nsrc/db/schema/token.sql\nsrc/db/schema/invoice.sql\nsrc/config/schema.py\nsrc/api/schemas.py\nnode_modules/joi/lib/schemas/index.js",
+    "filtered_output": "src/db/schema/user.sql\nsrc/db/schema/token.sql\nsrc/db/schema/invoice.sql\nsrc/config/schema.py\nsrc/api/schemas.py"
+  },
+  {
+    "tool_name": "file_search",
+    "input_data": {"query": "error", "path": "src/"},
+    "output_data": "src/errors.py\nsrc/api/error_handlers.py\nsrc/tests/test_errors.py\nsrc/utils/error_codes.py\nnode_modules/http-errors/index.js\ndist/error_reporter.min.js",
+    "filtered_output": "src/errors.py\nsrc/api/error_handlers.py\nsrc/utils/error_codes.py"
+  },
+  {
+    "tool_name": "file_search",
+    "input_data": {"query": "log", "path": "src/"},
+    "output_data": "src/logging.py\nsrc/utils/log_formatter.py\nsrc/tests/test_logging.py\nsrc/api/middleware/request_log.py\nnode_modules/winston/lib/winston.js\ndist/log_shipper.min.js",
+    "filtered_output": "src/logging.py\nsrc/utils/log_formatter.py\nsrc/api/middleware/request_log.py"
+  },
+  {
+    "tool_name": "file_search",
+    "input_data": {"query": "cache", "path": "src/"},
+    "output_data": "src/cache.py\nsrc/services/cache_service.py\nsrc/tests/test_cache.py\nsrc/api/middleware/cache_control.py\nnode_modules/node-cache/lib/node_cache.js\nnode_modules/redis/lib/cache.js",
+    "filtered_output": "src/cache.py\nsrc/services/cache_service.py\nsrc/api/middleware/cache_control.py"
+  },
+  {
+    "tool_name": "file_search",
+    "input_data": {"query": "queue", "path": "src/"},
+    "output_data": "src/services/queue_service.py\nsrc/workers/queue_worker.py\nsrc/tests/test_queue.py\nsrc/api/handlers/queue_admin.py\nnode_modules/bull/lib/queue.js\nnode_modules/bullmq/dist/index.js",
+    "filtered_output": "src/services/queue_service.py\nsrc/workers/queue_worker.py\nsrc/api/handlers/queue_admin.py"
+  },
+  {
+    "tool_name": "file_search",
+    "input_data": {"query": "email", "path": "src/"},
+    "output_data": "src/services/email_service.py\nsrc/templates/email/welcome.html\nsrc/templates/email/reset.html\nsrc/tests/test_email.py\nnode_modules/nodemailer/lib/nodemailer.js\ndist/email_client.min.js",
+    "filtered_output": "src/services/email_service.py\nsrc/templates/email/welcome.html\nsrc/templates/email/reset.html"
+  },
+  {
+    "tool_name": "file_search",
+    "input_data": {"query": "webhook", "path": "src/"},
+    "output_data": "src/api/handlers/webhooks.py\nsrc/services/webhook_service.py\nsrc/tests/test_webhooks.py\nsrc/workers/webhook_processor.py\nnode_modules/svix/dist/index.js\ndist/webhook_dispatcher.min.js",
+    "filtered_output": "src/api/handlers/webhooks.py\nsrc/services/webhook_service.py\nsrc/workers/webhook_processor.py"
+  },
+  {
+    "tool_name": "file_search",
+    "input_data": {"query": "migrate", "path": "src/"},
+    "output_data": "src/db/migrations.py\nsrc/db/migrations/001_init.sql\nsrc/db/migrations/002_add_users.sql\nsrc/tests/test_migrations.py\nsrc/cli/migrate.py\nnode_modules/knex/lib/migrate/index.js",
+    "filtered_output": "src/db/migrations.py\nsrc/db/migrations/001_init.sql\nsrc/db/migrations/002_add_users.sql\nsrc/cli/migrate.py"
+  },
+  {
+    "tool_name": "file_search",
+    "input_data": {"query": "session", "path": "src/"},
+    "output_data": "src/auth/session.py\nsrc/services/session_service.py\nsrc/tests/test_session.py\nsrc/api/middleware/session.py\nnode_modules/express-session/index.js\nnode_modules/@types/express-session/index.d.ts",
+    "filtered_output": "src/auth/session.py\nsrc/services/session_service.py\nsrc/api/middleware/session.py"
+  },
+  {
+    "tool_name": "file_search",
+    "input_data": {"query": "rate", "path": "src/"},
+    "output_data": "src/api/middleware/rate_limit.py\nsrc/utils/rate_limiter.py\nsrc/tests/test_rate_limit.py\nsrc/config/rate_limits.yaml\nnode_modules/express-rate-limit/lib/index.js\ndist/rate_shaper.min.js",
+    "filtered_output": "src/api/middleware/rate_limit.py\nsrc/utils/rate_limiter.py\nsrc/config/rate_limits.yaml"
+  },
+  {
+    "tool_name": "file_search",
+    "input_data": {"query": "storage", "path": "src/"},
+    "output_data": "src/services/storage_service.py\nsrc/adapters/s3_storage.py\nsrc/adapters/local_storage.py\nsrc/tests/test_storage.py\nnode_modules/multer/lib/make-middleware.js\nnode_modules/aws-sdk/lib/s3.js",
+    "filtered_output": "src/services/storage_service.py\nsrc/adapters/s3_storage.py\nsrc/adapters/local_storage.py"
+  }
+]

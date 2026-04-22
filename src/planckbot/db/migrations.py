@@ -1,0 +1,224 @@
+"""Schema creation and migrations.
+
+Schema versions
+---------------
+v1 — initial schema (experiments, triples, model_checkpoints, paper_log,
+     metrics_history, agent_events).
+v2 — adds `tool_versions` table + nullable `tool_version_id` columns on
+     `triples` and `model_checkpoints`. This supports the co-evolution model
+     described in docs/PLANCKBOT_CONCEPT.md §7: every tool call is tagged
+     with the hash of the tool source it ran against, so adapters never get
+     applied to a tool they weren't trained on.
+"""
+
+import sqlite3
+
+SCHEMA_VERSION = 2
+
+TABLES = """
+CREATE TABLE IF NOT EXISTS schema_version (
+    version INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS experiments (
+    id              TEXT PRIMARY KEY,
+    name            TEXT NOT NULL,
+    description     TEXT,
+    hypothesis      TEXT,
+    experiment_type TEXT NOT NULL,
+    status          TEXT NOT NULL DEFAULT 'planned',
+    config          TEXT NOT NULL DEFAULT '{}',
+    random_seed     INTEGER,
+    data_snapshot   TEXT,
+    checkpoint_id   TEXT,
+    created_at      TEXT NOT NULL,
+    started_at      TEXT,
+    completed_at    TEXT,
+    metrics         TEXT,
+    observations    TEXT,
+    FOREIGN KEY (checkpoint_id) REFERENCES model_checkpoints(id)
+);
+
+CREATE TABLE IF NOT EXISTS triples (
+    id              TEXT PRIMARY KEY,
+    tool_name       TEXT NOT NULL,
+    session_id      TEXT,
+    input_data      TEXT NOT NULL,
+    context_data    TEXT,
+    output_data     TEXT NOT NULL,
+    input_tokens    INTEGER,
+    output_tokens   INTEGER,
+    filtered_output TEXT,
+    filtered_tokens INTEGER,
+    source          TEXT DEFAULT 'manual',
+    created_at      TEXT NOT NULL,
+    experiment_id   TEXT,
+    tool_version_id TEXT,                 -- v2: which tool revision this was observed on
+    FOREIGN KEY (experiment_id) REFERENCES experiments(id),
+    FOREIGN KEY (tool_version_id) REFERENCES tool_versions(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_triples_tool ON triples(tool_name);
+CREATE INDEX IF NOT EXISTS idx_triples_experiment ON triples(experiment_id);
+
+-- v2: tool_versions + tool_version_id columns.
+-- See docs/PLANCKBOT_CONCEPT.md §7 (Mutable Tools & Co-evolution).
+--
+-- Every callable PlanckBot observes is content-hashed. A new hash = a new
+-- version row. Triples and checkpoints carry the version they were
+-- recorded/trained against so an adapter never gets applied to a tool
+-- revision it wasn't trained on.
+CREATE TABLE IF NOT EXISTS tool_versions (
+    id                TEXT PRIMARY KEY,
+    tool_name         TEXT NOT NULL,
+    code_hash         TEXT NOT NULL,      -- sha256 of the tool source
+    source            TEXT,               -- optional: the actual code
+    created_at        TEXT NOT NULL,
+    created_by        TEXT,               -- 'human' | 'prompt:<id>' | 'agent:<name>'
+    parent_version_id TEXT,
+    diff_from_parent  TEXT,               -- unified diff, for audit + rollback
+    FOREIGN KEY (parent_version_id) REFERENCES tool_versions(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_tool_versions_name ON tool_versions(tool_name);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_tool_versions_hash
+    ON tool_versions(tool_name, code_hash);
+
+CREATE TABLE IF NOT EXISTS model_checkpoints (
+    id              TEXT PRIMARY KEY,
+    name            TEXT NOT NULL,
+    base_model      TEXT NOT NULL,
+    model_size_mb   REAL,
+    adapter_path    TEXT,
+    adapter_size_mb REAL,
+    experiment_id   TEXT,
+    strategy        TEXT,
+    tool_name       TEXT,
+    tool_version_id TEXT,                 -- v2: which tool revision this was trained on
+    lora_config     TEXT,
+    training_args   TEXT,
+    num_triples     INTEGER,
+    eval_metrics    TEXT,
+    is_active       INTEGER DEFAULT 0,
+    created_at      TEXT NOT NULL,
+    FOREIGN KEY (experiment_id) REFERENCES experiments(id),
+    FOREIGN KEY (tool_version_id) REFERENCES tool_versions(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_checkpoints_tool_version
+    ON model_checkpoints(tool_name, tool_version_id);
+
+CREATE TABLE IF NOT EXISTS paper_log (
+    id              TEXT PRIMARY KEY,
+    experiment_id   TEXT,
+    entry_type      TEXT NOT NULL,
+    title           TEXT NOT NULL,
+    content         TEXT NOT NULL,
+    tags            TEXT,
+    created_at      TEXT NOT NULL,
+    updated_at      TEXT,
+    FOREIGN KEY (experiment_id) REFERENCES experiments(id)
+);
+
+CREATE TABLE IF NOT EXISTS metrics_history (
+    id              TEXT PRIMARY KEY,
+    experiment_id   TEXT NOT NULL,
+    recorded_at     TEXT NOT NULL,
+    metric_name     TEXT NOT NULL,
+    metric_value    REAL NOT NULL,
+    step            INTEGER,
+    metadata        TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_metrics_experiment ON metrics_history(experiment_id, metric_name);
+
+CREATE TABLE IF NOT EXISTS agent_events (
+    id              TEXT PRIMARY KEY,
+    tool_name       TEXT NOT NULL,
+    event_type      TEXT NOT NULL,
+    timestamp       TEXT NOT NULL,
+    details         TEXT,
+    session_id      TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_agent_events_tool ON agent_events(tool_name);
+CREATE INDEX IF NOT EXISTS idx_agent_events_time ON agent_events(timestamp);
+"""
+
+
+V2_UPGRADE_STATEMENTS = [
+    # Table creation is idempotent via IF NOT EXISTS.
+    """
+    CREATE TABLE IF NOT EXISTS tool_versions (
+        id                TEXT PRIMARY KEY,
+        tool_name         TEXT NOT NULL,
+        code_hash         TEXT NOT NULL,
+        source            TEXT,
+        created_at        TEXT NOT NULL,
+        created_by        TEXT,
+        parent_version_id TEXT,
+        diff_from_parent  TEXT,
+        FOREIGN KEY (parent_version_id) REFERENCES tool_versions(id)
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_tool_versions_name ON tool_versions(tool_name)",
+    "CREATE UNIQUE INDEX IF NOT EXISTS idx_tool_versions_hash ON tool_versions(tool_name, code_hash)",
+    # Column adds on existing tables — guarded below since SQLite has no
+    # "IF NOT EXISTS" form for ALTER TABLE ADD COLUMN.
+]
+
+
+def _column_exists(conn: sqlite3.Connection, table: str, column: str) -> bool:
+    cur = conn.execute(f"PRAGMA table_info({table})")
+    return any(row[1] == column for row in cur.fetchall())
+
+
+def _get_current_version(conn: sqlite3.Connection) -> int:
+    row = conn.execute("SELECT MAX(version) FROM schema_version").fetchone()
+    return int(row[0]) if row and row[0] is not None else 0
+
+
+def _upgrade_to_v2(conn: sqlite3.Connection) -> None:
+    """Add v2 artifacts to an existing v1 database.
+
+    v2 adds `tool_versions` table + nullable `tool_version_id` columns on
+    `triples` and `model_checkpoints`. All additions are backward-compatible —
+    existing rows keep working; `tool_version_id` is NULL until the proxy
+    starts tagging new calls with a version.
+    """
+    for stmt in V2_UPGRADE_STATEMENTS:
+        conn.execute(stmt)
+    if not _column_exists(conn, "triples", "tool_version_id"):
+        conn.execute("ALTER TABLE triples ADD COLUMN tool_version_id TEXT")
+    if not _column_exists(conn, "model_checkpoints", "tool_version_id"):
+        conn.execute(
+            "ALTER TABLE model_checkpoints ADD COLUMN tool_version_id TEXT"
+        )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_checkpoints_tool_version "
+        "ON model_checkpoints(tool_name, tool_version_id)"
+    )
+
+
+def migrate(conn: sqlite3.Connection):
+    """Apply pending migrations. Safe to call repeatedly."""
+    cur = conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='schema_version'"
+    )
+    if cur.fetchone() is None:
+        # Fresh DB — create everything at the latest version.
+        conn.executescript(TABLES)
+        conn.execute("INSERT INTO schema_version (version) VALUES (?)", (SCHEMA_VERSION,))
+        conn.commit()
+        return
+
+    # Existing DB — apply incremental upgrades.
+    current = _get_current_version(conn)
+    if current >= SCHEMA_VERSION:
+        return
+
+    if current < 2:
+        _upgrade_to_v2(conn)
+
+    conn.execute("INSERT INTO schema_version (version) VALUES (?)", (SCHEMA_VERSION,))
+    conn.commit()

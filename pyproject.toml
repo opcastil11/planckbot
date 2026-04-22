@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "planckbot"
+version = "0.1.0"
+description = "Adaptive tiny model layer for LLM token optimization"
+requires-python = ">=3.10"
+dependencies = [
+    "nicegui>=2.0",
+    "torch>=2.1",
+    "transformers>=4.40",
+    "peft>=0.12",
+    "datasets>=2.19",
+    "plotly>=5.18",
+    "rich>=13.0",
+    "tiktoken>=0.5",
+    "mcp>=1.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-asyncio", "ruff"]
+
+[project.scripts]
+planckbot = "planckbot.__main__:main"
+planckbot-mcp = "planckbot.proxy.mcp_server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/planckbot"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100

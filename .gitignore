@@ -1,0 +1,34 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.env
+.venv/
+venv/
+*.onnx
+*.gguf
+*.bin
+*.safetensors
+.planckbot/
+*.db
+*.sqlite
+*.sqlite-journal
+*.db-journal
+*.db-wal
+*.db-shm
+
+# PlanckBot runtime artifacts
+data/planckbot.db*
+data/checkpoints/
+data/exports/
+!data/fixtures/
+
+# IDE
+.idea/
+.vscode/
+.DS_Store
+
