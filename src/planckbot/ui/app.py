@@ -48,6 +48,7 @@ def _header():
                     ("Training", "/training"),
                     ("Models", "/models"),
                     ("Cron", "/cron"),
+                    ("Synth", "/synth"),
                     ("Mascots", "/mascots"),
                     ("Paper Log", "/paper-log"),
                 ]:
@@ -133,6 +134,12 @@ def mascots():
 def cron():
     from planckbot.ui.pages.cron import cron_page
     _page_wrapper(cron_page)
+
+
+@ui.page("/synth")
+def synth():
+    from planckbot.ui.pages.synth import synth_page
+    _page_wrapper(synth_page, live_seconds=3.0)
 
 
 @ui.page("/paper-log")

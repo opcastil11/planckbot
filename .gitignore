@@ -32,3 +32,4 @@ data/exports/
 .vscode/
 .DS_Store
 
+data/synthesized_tools/

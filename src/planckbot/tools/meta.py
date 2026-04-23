@@ -250,23 +250,31 @@ def _make_diff_text(original: str, new_src: str, filename: str) -> str:
 # --- AST whitelist ----------------------------------------------------------
 
 
-def _validate(original: str, new_src: str) -> None:
+def _validate(original: str, new_src: str, *, forbid_new_imports: bool = True) -> None:
+    """AST-whitelist the proposed source.
+
+    - Rejects forbidden modules (subprocess, pickle, …) and forbidden calls
+      (eval, os.system, …) unconditionally.
+    - When `forbid_new_imports=True` (the default, used by Layer-C edits),
+      also rejects imports that weren't in the original file — we don't want
+      a patch to silently expand a tool's dependency surface. Layer-D
+      synthesis passes `forbid_new_imports=False` because a brand-new tool
+      has no "original" surface to compare against.
+    """
     try:
         new_tree = ast.parse(new_src)
     except SyntaxError as e:
         raise ValueError(f"new source has syntax error: {e}") from e
 
-    orig_imports = _collect_imports(ast.parse(original))
+    orig_imports = _collect_imports(ast.parse(original)) if original else set()
     new_imports = _collect_imports(new_tree)
     added = new_imports - orig_imports
-    forbidden_added = added & FORBIDDEN_IMPORTS
+    forbidden_added = (added | new_imports) & FORBIDDEN_IMPORTS
     if forbidden_added:
         raise ValueError(
             f"patch imports forbidden modules: {sorted(forbidden_added)}"
         )
-    # Non-forbidden new imports are still rejected — tools must not silently
-    # expand their dependency surface.
-    if added:
+    if forbid_new_imports and added:
         raise ValueError(f"patch adds new imports: {sorted(added)}")
 
     for node in ast.walk(new_tree):

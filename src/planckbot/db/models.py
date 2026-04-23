@@ -207,6 +207,71 @@ class CronJob:
 
 
 @dataclass
+class GapReport:
+    """Output of the Layer D pattern detector.
+
+    A gap report says "the sequence of tools X → Y → Z repeats often enough
+    that a single tool merging them would save tokens". It holds pointers
+    into the `triples` table so the synthesizer can inspect concrete
+    examples when deciding what code to produce.
+    """
+    id: str = field(default_factory=_new_id)
+    tool_sequence: list[str] = field(default_factory=list)
+    occurrences: int = 0
+    example_triple_ids: list[str] = field(default_factory=list)
+    proposed_name: str | None = None
+    proposed_description: str | None = None
+    status: str = "open"          # open | accepted | rejected
+    created_at: str = field(default_factory=_now)
+
+    def to_row(self) -> dict:
+        d = asdict(self)
+        d["tool_sequence"] = json.dumps(d["tool_sequence"])
+        d["example_triple_ids"] = json.dumps(d["example_triple_ids"])
+        return d
+
+    @classmethod
+    def from_row(cls, row) -> "GapReport":
+        d = dict(row)
+        d["tool_sequence"] = json.loads(d["tool_sequence"]) if d["tool_sequence"] else []
+        d["example_triple_ids"] = (
+            json.loads(d["example_triple_ids"]) if d["example_triple_ids"] else []
+        )
+        return cls(**d)
+
+
+@dataclass
+class SynthesizedTool:
+    """A tool whose code was generated from usage patterns, not hand-written.
+
+    Exposed to Claude Code through the `planckbot-synth` MCP server. Starts
+    as `status='draft'` (in the DB but not served); `activate(name)` flips
+    it to `active` and signals the MCP server to reload.
+    """
+    id: str = field(default_factory=_new_id)
+    name: str = ""
+    description: str = ""
+    input_schema: dict = field(default_factory=dict)
+    code: str = ""
+    source_file_path: str | None = None
+    status: str = "draft"          # draft | active | retired
+    created_at: str = field(default_factory=_now)
+    created_by: str | None = None
+    gap_report_id: str | None = None
+
+    def to_row(self) -> dict:
+        d = asdict(self)
+        d["input_schema"] = json.dumps(d["input_schema"] or {})
+        return d
+
+    @classmethod
+    def from_row(cls, row) -> "SynthesizedTool":
+        d = dict(row)
+        d["input_schema"] = json.loads(d["input_schema"]) if d["input_schema"] else {}
+        return cls(**d)
+
+
+@dataclass
 class AgentEvent:
     """Tracks Planck agent lifecycle events for the real-time tree."""
     id: str = field(default_factory=_new_id)

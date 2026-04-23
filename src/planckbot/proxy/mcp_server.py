@@ -125,6 +125,22 @@ def _text_to_content(text: str):
     return [TextContent(type="text", text=text)]
 
 
+def _strip_output_schema(tool):
+    """Drop `outputSchema` from a Tool before we re-advertise it.
+
+    Upstream servers (notably @modelcontextprotocol/server-filesystem) declare
+    outputSchema but return unstructured content, which triggers
+    "Output validation error" in strict clients like Claude Code. We don't
+    need outputSchema for the proxy's purpose, so strip it.
+    """
+    try:
+        return tool.model_copy(update={"outputSchema": None})
+    except AttributeError:
+        # Fallback for dataclass-style Tool objects.
+        tool.outputSchema = None
+        return tool
+
+
 async def run_proxy(
     upstream_command: str,
     upstream_args: list[str],
@@ -165,7 +181,9 @@ async def run_proxy(
 
         # Cache the upstream tool list (we'll re-list on demand too).
         upstream_tools = await upstream.list_tools()
-        tool_schemas: dict[str, Tool] = {t.name: t for t in upstream_tools.tools}
+        tool_schemas: dict[str, Tool] = {
+            t.name: _strip_output_schema(t) for t in upstream_tools.tools
+        }
 
         # 2) Build our own MCP server that proxies.
         server = Server(server_name)
@@ -173,9 +191,10 @@ async def run_proxy(
         @server.list_tools()
         async def _list_tools() -> list[Tool]:
             refreshed = await upstream.list_tools()
-            for t in refreshed.tools:
+            tools = [_strip_output_schema(t) for t in refreshed.tools]
+            for t in tools:
                 tool_schemas[t.name] = t
-            return refreshed.tools
+            return tools
 
         @server.call_tool()
         async def _call_tool(name: str, arguments: dict):

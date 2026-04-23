@@ -110,6 +110,7 @@ def test_default_registry_has_expected_types():
     reg = default_registry()
     assert set(reg.types()) == {
         "noop", "autolabel", "retrain", "conversation_scanner",
+        "detect_tool_gaps",
     }
 
 

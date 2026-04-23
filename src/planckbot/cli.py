@@ -281,6 +281,117 @@ def cmd_cron_run(args) -> int:
     return 0 if status == "ok" else 1
 
 
+def cmd_synth_list(_args) -> int:
+    s = _load_stores()
+    from planckbot.synth.meta import SynthesizedToolStore
+    store = SynthesizedToolStore(s["conn"])
+    tools = store.list_all()
+    if not tools:
+        print("no synthesized tools")
+        return 0
+    print(f"{'ID':<10} {'NAME':<28} {'STATUS':<8} {'CREATED':<20}")
+    for t in tools:
+        print(f"{t.id[:8]:<10} {t.name[:28]:<28} {t.status:<8} {_fmt_ts(t.created_at)}")
+    return 0
+
+
+def cmd_synth_show(args) -> int:
+    s = _load_stores()
+    from planckbot.synth.meta import SynthesizedToolStore
+    store = SynthesizedToolStore(s["conn"])
+    tool = store.by_name(args.name)
+    if tool is None:
+        print(f"no such tool: {args.name}", file=sys.stderr)
+        return 1
+    print(f"name:        {tool.name}")
+    print(f"status:      {tool.status}")
+    print(f"description: {tool.description}")
+    print(f"input_schema: {json.dumps(tool.input_schema, indent=2)}")
+    print(f"source_file: {tool.source_file_path}")
+    print(f"created_by:  {tool.created_by}")
+    print(f"gap_report:  {tool.gap_report_id or '-'}")
+    print("--- code ---")
+    print(tool.code)
+    return 0
+
+
+def cmd_synth_activate(args) -> int:
+    s = _load_stores()
+    from planckbot.synth.meta import activate_tool
+    try:
+        tool = activate_tool(args.name, conn=s["conn"])
+        print(f"activated {tool.name} ({tool.id[:8]})")
+        return 0
+    except ValueError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+
+
+def cmd_synth_deactivate(args) -> int:
+    s = _load_stores()
+    from planckbot.synth.meta import deactivate_tool
+    try:
+        tool = deactivate_tool(args.name, conn=s["conn"])
+        print(f"deactivated {tool.name}")
+        return 0
+    except ValueError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+
+
+def cmd_synth_create(args) -> int:
+    """Register a synthesized tool from a JSON spec file. Spec shape:
+
+        {
+          "name": "smart_grep",
+          "description": "…",
+          "input_schema": {"pattern": "string", "path": "string"},
+          "code": "def smart_grep(pattern, path='.'):\n    …"
+        }
+
+    Reading code from a file keeps shells from mangling indentation.
+    """
+    from planckbot.synth.meta import synthesize_tool
+
+    spec_path = Path(args.spec)
+    if not spec_path.exists():
+        print(f"spec file not found: {args.spec}", file=sys.stderr)
+        return 1
+    spec = json.loads(spec_path.read_text())
+    s = _load_stores()
+    try:
+        result = synthesize_tool(
+            name=spec["name"],
+            description=spec.get("description", ""),
+            input_schema=spec.get("input_schema", {}),
+            code=spec["code"],
+            conn=s["conn"],
+            gap_report_id=spec.get("gap_report_id"),
+            created_by=spec.get("created_by", "cli"),
+        )
+        print(f"created {result.tool.name} (id={result.tool.id[:8]}, status=draft)")
+        print(f"code at {result.source_path}")
+        return 0
+    except ValueError as e:
+        print(f"synthesize failed: {e}", file=sys.stderr)
+        return 2
+
+
+def cmd_synth_gaps(_args) -> int:
+    s = _load_stores()
+    from planckbot.synth.detector import GapReportStore
+    store = GapReportStore(s["conn"])
+    reports = store.list_all(limit=20)
+    if not reports:
+        print("no gap reports yet")
+        return 0
+    print(f"{'ID':<10} {'OCC':>4} {'STATUS':<10} SEQUENCE")
+    for r in reports:
+        seq = " → ".join(r.tool_sequence)
+        print(f"{r.id[:8]:<10} {r.occurrences:>4} {r.status:<10} {seq}")
+    return 0
+
+
 def cmd_cron_daemon(args) -> int:
     s = _load_stores()
     from planckbot.cron.daemon import Daemon
@@ -400,6 +511,38 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     cp.set_defaults(func=cmd_cron_daemon)
 
+    # synth <subsub>
+    synth_p = sub.add_parser("synth", help="Manage Layer-D synthesized tools.")
+    synth_sub = synth_p.add_subparsers(dest="synth_command")
+
+    sp2 = synth_sub.add_parser("list", help="List all synthesized tools.")
+    sp2.set_defaults(func=cmd_synth_list)
+
+    sp2 = synth_sub.add_parser("show", help="Show one tool's code + metadata.")
+    sp2.add_argument("name")
+    sp2.set_defaults(func=cmd_synth_show)
+
+    sp2 = synth_sub.add_parser(
+        "activate", help="Mark a tool active; SIGHUP the synth MCP server.",
+    )
+    sp2.add_argument("name")
+    sp2.set_defaults(func=cmd_synth_activate)
+
+    sp2 = synth_sub.add_parser(
+        "deactivate", help="Retire a tool; SIGHUP the synth MCP server.",
+    )
+    sp2.add_argument("name")
+    sp2.set_defaults(func=cmd_synth_deactivate)
+
+    sp2 = synth_sub.add_parser(
+        "create", help="Register a new synthesized tool from a JSON spec.",
+    )
+    sp2.add_argument("spec", help="Path to JSON spec file.")
+    sp2.set_defaults(func=cmd_synth_create)
+
+    sp2 = synth_sub.add_parser("gaps", help="List detected tool-gap reports.")
+    sp2.set_defaults(func=cmd_synth_gaps)
+
     return p
 
 
@@ -418,6 +561,10 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.command == "cron" and getattr(args, "cron_command", None) is None:
         parser.parse_args(["cron", "--help"])
+        return 2
+
+    if args.command == "synth" and getattr(args, "synth_command", None) is None:
+        parser.parse_args(["synth", "--help"])
         return 2
 
     return args.func(args)

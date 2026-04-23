@@ -25,6 +25,7 @@ dev = ["pytest", "pytest-asyncio", "ruff"]
 [project.scripts]
 planckbot = "planckbot.__main__:main"
 planckbot-mcp = "planckbot.proxy.mcp_server:main"
+planckbot-synth = "planckbot.synth.mcp_server:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/planckbot"]

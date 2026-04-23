@@ -15,9 +15,10 @@ src/planckbot/
   training/    — LoRA trainer (HF Trainer + PEFT)
   models/      — loader, inference (`predict()` with confidence), checkpoints
   proxy/       — intercept layer + MCP stdio server (`planckbot-mcp`)
-  cron/        — background scheduler (CronStore, JobRegistry, Daemon)
-  cli.py       — `planckbot` entry point with subcommands (ui, status, train, label, cron …)
-  ui/          — NiceGUI workbench (8 pages: dashboard, tools, experiments, training, models, cron, mascots, paper-log)
+  cron/        — background scheduler (CronStore, JobRegistry, Daemon, scanner)
+  synth/       — Layer D: pattern detector, synthesize_tool, `planckbot-synth` MCP server
+  cli.py       — `planckbot` entry point with subcommands (ui, status, train, label, cron, synth …)
+  ui/          — NiceGUI workbench (9 pages: dashboard, tools, experiments, training, models, cron, synth, mascots, paper-log)
   paper/       — research log + markdown export
 scripts/       — train_smoke.py, train_tool.py, proxy_demo.py, mcp_preflight.py, md_to_pdf.py, auto_label.py
 static/branding/ — PlanckBots logo + favicon (used by UI + empty states)
@@ -43,6 +44,8 @@ data/          — SQLite DB + LoRA checkpoints (gitignored except data/fixtures
 | `.venv/bin/planckbot status` | One-shot summary of triples / savings / checkpoints / cron |
 | `.venv/bin/planckbot cron list|add|rm|enable|disable|run|daemon` | Manage scheduled jobs |
 | `.venv/bin/planckbot cron daemon` | Start the blocking scheduler loop (file-locked) |
+| `.venv/bin/planckbot synth list|show|activate|deactivate|create|gaps` | Manage Layer D synthesized tools |
+| `.venv/bin/planckbot-synth` | Run the Layer D MCP server (exposes active synthesized tools to Claude Code) |
 | `.venv/bin/python scripts/train_smoke.py` | Real LoRA training on file_search fixture (~10 min CPU) |
 | `.venv/bin/python scripts/train_tool.py --tool X --fixture Y.json [--activate]` | Train a LoRA on any tool/fixture combo |
 | `.venv/bin/python scripts/proxy_demo.py` | Exercise intercept path with trained adapter |
@@ -113,6 +116,16 @@ Repo: **https://github.com/opcastil11/planckbot** (private). Auth via the `store
 - `src/planckbot/tools/versions.py :: ToolVersionStore` — CRUD over the `tool_versions` table (insert, get, latest, by_hash, list_for_tool, count).
 - Tests live in `tests/test_meta.py` (15 tests).
 - **Still pending:** invoking `edit_tool` from the meta-tool interface (it's currently a python API, not a registered tool that the proxy can dispatch). Also pending: cold-start window forcing observe mode until N new-version triples accumulate.
+
+## Layer D — tool synthesis from usage (now wired)
+
+End-to-end: triples → pattern detector → gap report → human (or LLM) approves → synthesize_tool writes code + row → activate → `planckbot-synth` MCP server serves it to Claude Code.
+
+- `src/planckbot/synth/detector.py` — `find_tool_sequences(triples, window_seconds, min_occurrences)` returns N-grams of tool names that repeat inside a time window. `build_gap_reports(conn, matches)` upserts them into the `gap_reports` table (dedups by sequence). The cron job type `detect_tool_gaps` wraps this.
+- `src/planckbot/synth/meta.py` — `synthesize_tool(name, description, input_schema, code, conn, ...)` AST-whitelists the code (same forbidden imports/names/attrs as `edit_tool` but *allows* new imports because a new tool has no prior surface), writes it to `data/synthesized_tools/<name>.py`, inserts `synthesized_tools` row with `status='draft'`. `activate_tool(name)` flips to `status='active'` and SIGHUPs the running MCP server (pid at `/tmp/planckbot-synth.pid`) so the new catalog is picked up without restart.
+- `src/planckbot/synth/mcp_server.py` — stdio MCP server. On startup loads every `status='active'` row; on SIGHUP re-reads the table. Advertised tools wrap the stored `input_schema` into a JSON Schema object; dispatches by exec-ing the stored code in a fresh namespace and calling the top-level function.
+- Register it in `~/.claude.json` as `"planckbot-synth": {"command": "/abs/path/.venv/bin/planckbot-synth"}` alongside `planckbot-fs`.
+- Schema v4 added `synthesized_tools` + `gap_reports` tables. Purely additive.
 
 ## Cron / job scheduler — now wired
 

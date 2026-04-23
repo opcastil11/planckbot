@@ -151,6 +151,39 @@ def _retrain_job(ctx: JobContext) -> str:
     )
 
 
+def _detect_tool_gaps_job(ctx: JobContext) -> str:
+    """Run the Layer-D pattern detector over recent triples and upsert
+    gap_reports rows. Params:
+
+        window_seconds (float)  — max span for an N-gram (default 30)
+        min_occurrences (int)   — floor to consider a sequence a gap (default 2)
+        limit_triples (int)     — look back over at most this many triples
+                                  (default 500)
+    """
+    from planckbot.synth.detector import build_gap_reports, find_tool_sequences
+    from planckbot.tools.triples import TriplesStore
+
+    params = ctx.params
+    window = float(params.get("window_seconds", 30.0))
+    min_occ = int(params.get("min_occurrences", 2))
+    limit = int(params.get("limit_triples", 500))
+
+    triples = TriplesStore(ctx.conn).list_all(limit=limit)
+    matches = find_tool_sequences(
+        triples,
+        window_seconds=window,
+        min_occurrences=min_occ,
+    )
+    if not matches:
+        return f"no repeated sequences (window={window}s min={min_occ})"
+    created, updated = build_gap_reports(ctx.conn, matches)
+    top = matches[0]
+    return (
+        f"matches={len(matches)} created={created} updated={updated} "
+        f"top={' → '.join(top.sequence)} ({top.occurrences}x)"
+    )
+
+
 def default_registry() -> JobRegistry:
     from planckbot.cron.scanner import scan_job as _scan_job
     reg = JobRegistry()
@@ -158,4 +191,5 @@ def default_registry() -> JobRegistry:
     reg.register("autolabel", _autolabel_job)
     reg.register("retrain", _retrain_job)
     reg.register("conversation_scanner", _scan_job)
+    reg.register("detect_tool_gaps", _detect_tool_gaps_job)
     return reg

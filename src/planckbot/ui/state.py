@@ -10,6 +10,7 @@ from planckbot.tools.registry import ToolRegistry
 from planckbot.tools.triples import TriplesStore
 from planckbot.tools.builtin import register_builtins
 from planckbot.cron import CronStore, default_registry as default_cron_registry
+from planckbot.synth import GapReportStore, SynthesizedToolStore
 
 
 class AppState:
@@ -44,6 +45,10 @@ class AppState:
         # Cron
         self.cron = CronStore(self.conn)
         self.cron_registry = default_cron_registry()
+
+        # Layer D
+        self.gaps = GapReportStore(self.conn)
+        self.synth = SynthesizedToolStore(self.conn)
 
     @classmethod
     def reset(cls):
