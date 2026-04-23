@@ -47,6 +47,7 @@ def _header():
                     ("Tools", "/tools"),
                     ("Training", "/training"),
                     ("Models", "/models"),
+                    ("Cron", "/cron"),
                     ("Mascots", "/mascots"),
                     ("Paper Log", "/paper-log"),
                 ]:
@@ -126,6 +127,12 @@ def models():
 def mascots():
     from planckbot.ui.pages.mascots import mascots_page
     _page_wrapper(mascots_page)
+
+
+@ui.page("/cron")
+def cron():
+    from planckbot.ui.pages.cron import cron_page
+    _page_wrapper(cron_page)
 
 
 @ui.page("/paper-log")

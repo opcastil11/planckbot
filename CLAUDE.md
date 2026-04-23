@@ -15,7 +15,9 @@ src/planckbot/
   training/    — LoRA trainer (HF Trainer + PEFT)
   models/      — loader, inference (`predict()` with confidence), checkpoints
   proxy/       — intercept layer + MCP stdio server (`planckbot-mcp`)
-  ui/          — NiceGUI workbench (7 pages: dashboard, tools, experiments, training, models, mascots, paper-log)
+  cron/        — background scheduler (CronStore, JobRegistry, Daemon)
+  cli.py       — `planckbot` entry point with subcommands (ui, status, train, label, cron …)
+  ui/          — NiceGUI workbench (8 pages: dashboard, tools, experiments, training, models, cron, mascots, paper-log)
   paper/       — research log + markdown export
 scripts/       — train_smoke.py, train_tool.py, proxy_demo.py, mcp_preflight.py, md_to_pdf.py, auto_label.py
 static/branding/ — PlanckBots logo + favicon (used by UI + empty states)
@@ -36,8 +38,11 @@ data/          — SQLite DB + LoRA checkpoints (gitignored except data/fixtures
 
 | Command | What it does |
 |---|---|
-| `.venv/bin/python -m pytest` | Full test suite (94 tests, ~5s) |
-| `.venv/bin/python -m planckbot` | Launch workbench UI on port 8080 |
+| `.venv/bin/python -m pytest` | Full test suite (149 tests, ~6s) |
+| `.venv/bin/planckbot` | Launch workbench UI on port 8080 (bare command, back-compat) |
+| `.venv/bin/planckbot status` | One-shot summary of triples / savings / checkpoints / cron |
+| `.venv/bin/planckbot cron list|add|rm|enable|disable|run|daemon` | Manage scheduled jobs |
+| `.venv/bin/planckbot cron daemon` | Start the blocking scheduler loop (file-locked) |
 | `.venv/bin/python scripts/train_smoke.py` | Real LoRA training on file_search fixture (~10 min CPU) |
 | `.venv/bin/python scripts/train_tool.py --tool X --fixture Y.json [--activate]` | Train a LoRA on any tool/fixture combo |
 | `.venv/bin/python scripts/proxy_demo.py` | Exercise intercept path with trained adapter |
@@ -108,6 +113,13 @@ Repo: **https://github.com/opcastil11/planckbot** (private). Auth via the `store
 - `src/planckbot/tools/versions.py :: ToolVersionStore` — CRUD over the `tool_versions` table (insert, get, latest, by_hash, list_for_tool, count).
 - Tests live in `tests/test_meta.py` (15 tests).
 - **Still pending:** invoking `edit_tool` from the meta-tool interface (it's currently a python API, not a registered tool that the proxy can dispatch). Also pending: cold-start window forcing observe mode until N new-version triples accumulate.
+
+## Cron / job scheduler — now wired
+
+- `src/planckbot/cron/` has `CronStore` (CRUD on `cron_jobs`, schema v3), a `JobRegistry` with built-in types `noop` / `autolabel` / `retrain`, and `Daemon` (blocking polling loop, file-locked at `/tmp/planckbot-cron.lock` so only one instance runs).
+- Dashboard → `/cron` lists all jobs, lets you toggle/run/delete them, and ships a "create job" form. Live-refreshes every 3s.
+- Run the scheduler with `.venv/bin/planckbot cron daemon` (systemd user unit is a good next step; not included yet).
+- `retrain` job is a "ready to retrain" signal, not a trigger — it prints the command to run. Firing a full LoRA retrain inside the daemon would block the scheduler for ~10 min and isn't worth the complexity right now. Wire it to a worker if/when that changes.
 
 ## Reference-tracking signal — partially wired
 

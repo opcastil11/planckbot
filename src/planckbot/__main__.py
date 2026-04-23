@@ -1,17 +1,11 @@
-"""Entry point: python -m planckbot"""
+"""Entry point for `python -m planckbot` and the `planckbot` console script.
 
-import sys
+The real dispatch lives in `planckbot.cli`; this file is a thin shim so the
+console_script in pyproject.toml keeps pointing at a stable path.
+"""
 
-
-def main():
-    if "--version" in sys.argv:
-        from planckbot import __version__
-        print(f"planckbot {__version__}")
-        return
-
-    from planckbot.ui.app import start_app
-    start_app()
+from planckbot.cli import main
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

@@ -9,11 +9,13 @@ v2 — adds `tool_versions` table + nullable `tool_version_id` columns on
      described in docs/PLANCKBOT_CONCEPT.md §7: every tool call is tagged
      with the hash of the tool source it ran against, so adapters never get
      applied to a tool they weren't trained on.
+v3 — adds `cron_jobs` table for the background job scheduler (auto-label,
+     retrain, …). Purely additive.
 """
 
 import sqlite3
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 TABLES = """
 CREATE TABLE IF NOT EXISTS schema_version (
@@ -143,6 +145,23 @@ CREATE TABLE IF NOT EXISTS agent_events (
 
 CREATE INDEX IF NOT EXISTS idx_agent_events_tool ON agent_events(tool_name);
 CREATE INDEX IF NOT EXISTS idx_agent_events_time ON agent_events(timestamp);
+
+-- v3: scheduled jobs (auto-label, retrain, …).
+CREATE TABLE IF NOT EXISTS cron_jobs (
+    id               TEXT PRIMARY KEY,
+    name             TEXT NOT NULL UNIQUE,
+    job_type         TEXT NOT NULL,          -- 'autolabel' | 'retrain' | 'noop'
+    params           TEXT NOT NULL DEFAULT '{}',
+    interval_seconds INTEGER NOT NULL,
+    enabled          INTEGER NOT NULL DEFAULT 1,
+    last_run_at      TEXT,
+    next_run_at      TEXT,
+    last_status      TEXT,                   -- 'ok' | 'error' | NULL
+    last_output      TEXT,
+    created_at       TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_cron_due ON cron_jobs(enabled, next_run_at);
 """
 
 
@@ -200,6 +219,32 @@ def _upgrade_to_v2(conn: sqlite3.Connection) -> None:
     )
 
 
+V3_UPGRADE_STATEMENTS = [
+    """
+    CREATE TABLE IF NOT EXISTS cron_jobs (
+        id               TEXT PRIMARY KEY,
+        name             TEXT NOT NULL UNIQUE,
+        job_type         TEXT NOT NULL,
+        params           TEXT NOT NULL DEFAULT '{}',
+        interval_seconds INTEGER NOT NULL,
+        enabled          INTEGER NOT NULL DEFAULT 1,
+        last_run_at      TEXT,
+        next_run_at      TEXT,
+        last_status      TEXT,
+        last_output      TEXT,
+        created_at       TEXT NOT NULL
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_cron_due ON cron_jobs(enabled, next_run_at)",
+]
+
+
+def _upgrade_to_v3(conn: sqlite3.Connection) -> None:
+    """Add v3 artifacts to an existing v2 database."""
+    for stmt in V3_UPGRADE_STATEMENTS:
+        conn.execute(stmt)
+
+
 def migrate(conn: sqlite3.Connection):
     """Apply pending migrations. Safe to call repeatedly."""
     cur = conn.execute(
@@ -219,6 +264,8 @@ def migrate(conn: sqlite3.Connection):
 
     if current < 2:
         _upgrade_to_v2(conn)
+    if current < 3:
+        _upgrade_to_v3(conn)
 
     conn.execute("INSERT INTO schema_version (version) VALUES (?)", (SCHEMA_VERSION,))
     conn.commit()

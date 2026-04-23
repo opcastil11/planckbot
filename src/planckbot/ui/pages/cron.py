@@ -1,0 +1,228 @@
+"""Cron jobs page: list, create, toggle, run-now, delete."""
+
+from __future__ import annotations
+
+import json
+
+from nicegui import ui
+
+from planckbot.cron.daemon import Daemon
+from planckbot.db.models import CronJob
+from planckbot.ui.components.empty_state import empty_state
+from planckbot.ui.components.page_header import page_header
+from planckbot.ui.state import get_state
+from planckbot.ui.theme import (
+    CARD_STYLE,
+    COLORS,
+    RADIUS_LG,
+    SPACE_LG,
+    SPACE_MD,
+    TEXT_MD,
+    TEXT_SM,
+    heading_style,
+    label_style,
+    relative_time,
+)
+
+
+def _status_color(status: str | None) -> str:
+    if status == "ok":
+        return COLORS["success"]
+    if status == "error":
+        return COLORS["error"]
+    return COLORS["text_muted"]
+
+
+def _job_row(state, job: CronJob) -> None:
+    with ui.row().classes(
+        "w-full items-center no-wrap gap-3"
+    ).style(
+        f"padding: {SPACE_MD}px {SPACE_LG}px; "
+        f"border-top: 1px solid {COLORS['border']};"
+    ):
+        # Name + type
+        with ui.column().classes("gap-0").style("flex: 2; min-width: 0;"):
+            ui.label(job.name).style(
+                f"color: {COLORS['text']}; font-weight: 600; "
+                f"font-size: {TEXT_MD}px; "
+                "overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+            )
+            ui.label(job.job_type).style(
+                f"color: {COLORS['text_muted']}; font-size: {TEXT_SM}px; "
+                "font-family: monospace;"
+            )
+
+        # Interval
+        ui.label(f"{job.interval_seconds}s").style(
+            f"color: {COLORS['text_muted']}; font-size: {TEXT_SM}px; "
+            "flex: 0 0 70px; font-variant-numeric: tabular-nums;"
+        )
+
+        # Last run
+        last_run_text = relative_time(job.last_run_at) if job.last_run_at else "never"
+        ui.label(last_run_text).style(
+            f"color: {COLORS['text_muted']}; font-size: {TEXT_SM}px; "
+            "flex: 0 0 120px;"
+        )
+
+        # Status badge
+        status = job.last_status or "—"
+        ui.label(status).style(
+            f"color: {_status_color(job.last_status)}; "
+            f"font-size: {TEXT_SM}px; font-weight: 600; "
+            "flex: 0 0 64px; text-transform: uppercase;"
+        )
+
+        # Next run
+        nxt = relative_time(job.next_run_at) if job.next_run_at else "—"
+        ui.label(nxt).style(
+            f"color: {COLORS['text_muted']}; font-size: {TEXT_SM}px; "
+            "flex: 0 0 120px;"
+        )
+
+        # Actions
+        with ui.row().classes("items-center gap-1").style("flex: 0 0 auto;"):
+            ui.switch(
+                value=bool(job.enabled),
+                on_change=lambda e, jid=job.id: (
+                    state.cron.set_enabled(jid, e.value)
+                ),
+            ).tooltip("enabled")
+
+            def _run_now(jid=job.id):
+                daemon = Daemon(state.conn, registry=state.cron_registry)
+                status, output = daemon.run_job(jid)
+                ui.notify(
+                    f"{status}: {output[:160]}",
+                    type="positive" if status == "ok" else "negative",
+                    multi_line=True,
+                )
+
+            ui.button(icon="play_arrow", on_click=_run_now).props(
+                "flat dense round size=sm"
+            ).tooltip("run now")
+
+            def _delete(jid=job.id, name=job.name):
+                state.cron.delete(jid)
+                ui.notify(f"deleted {name}", type="warning")
+
+            ui.button(icon="delete_outline", on_click=_delete).props(
+                "flat dense round size=sm color=negative"
+            ).tooltip("delete")
+
+    # Show last output (collapsible) underneath if there is one
+    if job.last_output:
+        out = job.last_output
+        preview = out if len(out) <= 160 else out[:160] + "…"
+        ui.label(preview).style(
+            f"color: {_status_color(job.last_status)}; "
+            f"font-size: {TEXT_SM}px; "
+            f"padding: 0 {SPACE_LG}px {SPACE_MD}px; "
+            "font-family: monospace; white-space: pre-wrap;"
+        ).tooltip(out)
+
+
+def _create_form(state, on_created) -> None:
+    with ui.card().style(CARD_STYLE + " width: 100%; margin-top: 16px;"):
+        ui.label("Create job").style(heading_style(size=TEXT_MD))
+        name = ui.input("Name").style("width: 280px;")
+        job_type = ui.select(
+            state.cron_registry.types(),
+            value=state.cron_registry.types()[0],
+            label="Type",
+        ).style("width: 200px;")
+        interval = ui.number(
+            "Interval (seconds)", value=300, min=10, step=10,
+        ).style("width: 200px;")
+        params_area = ui.textarea(
+            "Params (JSON)", value="{}",
+        ).style(
+            "width: 100%; font-family: monospace; min-height: 90px;"
+        )
+        ui.label(
+            "autolabel needs: tool, reference_path, recent. "
+            "retrain needs: tool, fixture_path, min_new_labeled. "
+            "noop takes: message."
+        ).style(
+            f"color: {COLORS['text_muted']}; font-size: {TEXT_SM}px;"
+        )
+
+        def submit():
+            if not name.value or not name.value.strip():
+                ui.notify("name required", type="negative")
+                return
+            if state.cron.by_name(name.value.strip()):
+                ui.notify("a job with that name already exists",
+                          type="negative")
+                return
+            try:
+                params = json.loads(params_area.value or "{}")
+            except json.JSONDecodeError as e:
+                ui.notify(f"invalid JSON: {e}", type="negative")
+                return
+            job = CronJob(
+                name=name.value.strip(),
+                job_type=job_type.value,
+                params=params,
+                interval_seconds=int(interval.value),
+            )
+            state.cron.add(job)
+            ui.notify(f"created {job.name}", type="positive")
+            on_created()
+
+        ui.button("Create", on_click=submit, icon="add").props("color=primary")
+
+
+def cron_page():
+    state = get_state()
+
+    page_header(
+        title="Cron",
+        subtitle=(
+            "Scheduled background jobs — auto-label unlabeled triples, "
+            "retrain adapters when new supervision accumulates. Run the "
+            "daemon with `.venv/bin/planckbot cron daemon`."
+        ),
+    )
+
+    jobs_container = ui.column().classes("w-full gap-0").style(
+        f"background: {COLORS['surface']}; "
+        f"border: 1px solid {COLORS['border']}; "
+        f"border-radius: {RADIUS_LG}px; overflow: hidden; margin-top: 12px;"
+    )
+
+    def refresh():
+        jobs_container.clear()
+        jobs = state.cron.list_all()
+        with jobs_container:
+            if not jobs:
+                empty_state(
+                    title="No jobs yet",
+                    hint="Use the form below to schedule your first job.",
+                    icon="schedule",
+                )
+                return
+
+            # Header row
+            with ui.row().classes(
+                "w-full items-center no-wrap gap-3"
+            ).style(
+                f"padding: {SPACE_MD}px {SPACE_LG}px; "
+                f"background: {COLORS['surface2']};"
+            ):
+                for label, flex in [
+                    ("Job", "flex: 2;"),
+                    ("Interval", "flex: 0 0 70px;"),
+                    ("Last run", "flex: 0 0 120px;"),
+                    ("Status", "flex: 0 0 64px;"),
+                    ("Next run", "flex: 0 0 120px;"),
+                    ("Actions", "flex: 0 0 auto;"),
+                ]:
+                    ui.label(label).style(label_style() + " " + flex)
+
+            for j in jobs:
+                _job_row(state, j)
+
+    refresh()
+    _create_form(state, on_created=refresh)
+    ui.timer(3.0, refresh)

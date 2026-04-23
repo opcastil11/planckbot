@@ -9,6 +9,7 @@ from planckbot.paper.log import PaperLog
 from planckbot.tools.registry import ToolRegistry
 from planckbot.tools.triples import TriplesStore
 from planckbot.tools.builtin import register_builtins
+from planckbot.cron import CronStore, default_registry as default_cron_registry
 
 
 class AppState:
@@ -39,6 +40,10 @@ class AppState:
         # Tool registry
         self.registry = ToolRegistry()
         register_builtins(self.registry)
+
+        # Cron
+        self.cron = CronStore(self.conn)
+        self.cron_registry = default_cron_registry()
 
     @classmethod
     def reset(cls):

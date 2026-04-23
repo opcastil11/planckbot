@@ -174,6 +174,39 @@ class ToolVersion:
 
 
 @dataclass
+class CronJob:
+    """A scheduled background job (auto-label, retrain, …).
+
+    Rows live in `cron_jobs`. The daemon polls for rows where `enabled = 1`
+    and `next_run_at <= now`, dispatches by `job_type`, and updates
+    `last_run_at` / `next_run_at` / `last_status` / `last_output` based on
+    the outcome. See docs/PLANCKBOT_CONCEPT.md §"Automated loop".
+    """
+    id: str = field(default_factory=_new_id)
+    name: str = ""
+    job_type: str = ""            # 'autolabel' | 'retrain' | 'noop'
+    params: dict = field(default_factory=dict)
+    interval_seconds: int = 300
+    enabled: int = 1
+    last_run_at: str | None = None
+    next_run_at: str | None = None
+    last_status: str | None = None   # 'ok' | 'error'
+    last_output: str | None = None
+    created_at: str = field(default_factory=_now)
+
+    def to_row(self) -> dict:
+        d = asdict(self)
+        d["params"] = json.dumps(d["params"] or {})
+        return d
+
+    @classmethod
+    def from_row(cls, row) -> "CronJob":
+        d = dict(row)
+        d["params"] = json.loads(d["params"]) if d["params"] else {}
+        return cls(**d)
+
+
+@dataclass
 class AgentEvent:
     """Tracks Planck agent lifecycle events for the real-time tree."""
     id: str = field(default_factory=_new_id)
