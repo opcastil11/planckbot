@@ -47,6 +47,7 @@ def _header():
                     ("Tools", "/tools"),
                     ("Training", "/training"),
                     ("Models", "/models"),
+                    ("Mascots", "/mascots"),
                     ("Paper Log", "/paper-log"),
                 ]:
                     ui.link(label, path).style(NAV_LINK_STYLE).classes(
@@ -106,6 +107,12 @@ def training():
 def models():
     from planckbot.ui.pages.models import models_page
     _page_wrapper(models_page)
+
+
+@ui.page("/mascots")
+def mascots():
+    from planckbot.ui.pages.mascots import mascots_page
+    _page_wrapper(mascots_page)
 
 
 @ui.page("/paper-log")
