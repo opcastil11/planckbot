@@ -17,7 +17,7 @@ src/planckbot/
   proxy/       — intercept layer + MCP stdio server (`planckbot-mcp`)
   ui/          — NiceGUI workbench (7 pages: dashboard, tools, experiments, training, models, mascots, paper-log)
   paper/       — research log + markdown export
-scripts/       — train_smoke.py, train_tool.py, proxy_demo.py, mcp_preflight.py, md_to_pdf.py
+scripts/       — train_smoke.py, train_tool.py, proxy_demo.py, mcp_preflight.py, md_to_pdf.py, auto_label.py
 static/branding/ — PlanckBots logo + favicon (used by UI + empty states)
 tests/         — 94 tests; full suite runs in ~5s (no torch needed for most)
 data/          — SQLite DB + LoRA checkpoints (gitignored except data/fixtures/)
@@ -42,6 +42,7 @@ data/          — SQLite DB + LoRA checkpoints (gitignored except data/fixtures
 | `.venv/bin/python scripts/train_tool.py --tool X --fixture Y.json [--activate]` | Train a LoRA on any tool/fixture combo |
 | `.venv/bin/python scripts/proxy_demo.py` | Exercise intercept path with trained adapter |
 | `.venv/bin/python scripts/mcp_preflight.py` | Verify planckbot-mcp wraps filesystem MCP |
+| `cat msg.txt \| .venv/bin/python scripts/auto_label.py --tool X --recent N` | Back-fill `filtered_output` on unlabeled triples from a reference text |
 | `.venv/bin/python scripts/md_to_pdf.py <in.md> <out.pdf>` | Regenerate concept-doc PDF |
 | `.venv/bin/planckbot-mcp --mode observe -- CMD ARGS` | Run the MCP stdio proxy |
 
@@ -108,9 +109,17 @@ Repo: **https://github.com/opcastil11/planckbot** (private). Auth via the `store
 - Tests live in `tests/test_meta.py` (15 tests).
 - **Still pending:** invoking `edit_tool` from the meta-tool interface (it's currently a python API, not a registered tool that the proxy can dispatch). Also pending: cold-start window forcing observe mode until N new-version triples accumulate.
 
+## Reference-tracking signal — partially wired
+
+- `src/planckbot/ingest/reference_tracker.py :: extract_referenced_lines(output, reference)` returns output lines whose stripped form appears as a substring of the reference (min_line_len filter to skip `{`/`}`/`[` noise).
+- `label_triple_from_reference(store, triple_id, reference, force=False)` writes `filtered_output` on a triple; no-op if already labeled unless `force=True`.
+- `TriplesStore.list_unlabeled(tool_name, limit)` returns the newest N triples with NULL `filtered_output`.
+- `scripts/auto_label.py` is the manual CLI: pipe in a reference text (the host LLM's message that quoted the tool output) and it labels the most recent N triples for a given tool.
+- **Still pending:** an automated watcher that reads Claude Code's conversation JSONL files (`~/.claude/projects/<slug>/*.jsonl`) and back-labels triples on a schedule — this is what flips "more usage → better adapter" from manual to automatic.
+
 ## Not yet built (next plausible work)
 
 - **Cold-start window** after a tool edit — force observe mode until N new-version triples accumulate.
-- **Real reference-tracking signal** for `filter_output` training — right now fixtures supply `filtered_output` by hand; production needs to infer it from "what did the LLM reference in its next message."
+- **Automated reference-tracking** from Claude Code conversation logs on a cron — so triples self-label as conversations happen.
 - **Multi-adapter memory management** — at >20 tools, we can't load every adapter simultaneously. LRU eviction + shared base model with swappable LoRA adapters.
 - **Workbench features**: scheduled retrain cadence, A/B comparison of adapter versions, adapter promotion flow (eval beats active → activate).

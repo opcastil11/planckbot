@@ -98,6 +98,31 @@ class TriplesStore:
         )
         return [Triple.from_row(r) for r in cur.fetchall()]
 
+    def list_unlabeled(
+        self,
+        tool_name: str | None = None,
+        limit: int = 20,
+    ) -> list[Triple]:
+        """Most recent triples with no filtered_output yet.
+
+        Handy for auto-label workflows: take the newest N unlabeled triples
+        for a given tool and pass them to `reference_tracker.label_triple_*`.
+        """
+        if tool_name is None:
+            cur = self.conn.execute(
+                "SELECT * FROM triples WHERE filtered_output IS NULL "
+                "ORDER BY created_at DESC LIMIT ?",
+                (limit,),
+            )
+        else:
+            cur = self.conn.execute(
+                "SELECT * FROM triples WHERE tool_name = ? "
+                "AND filtered_output IS NULL "
+                "ORDER BY created_at DESC LIMIT ?",
+                (tool_name, limit),
+            )
+        return [Triple.from_row(r) for r in cur.fetchall()]
+
     def token_savings(
         self,
         source: str = "proxy:intervene",
