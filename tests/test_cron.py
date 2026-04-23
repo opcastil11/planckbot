@@ -108,7 +108,9 @@ def test_reschedule_now_makes_job_due(cron_store):
 
 def test_default_registry_has_expected_types():
     reg = default_registry()
-    assert set(reg.types()) == {"noop", "autolabel", "retrain"}
+    assert set(reg.types()) == {
+        "noop", "autolabel", "retrain", "conversation_scanner",
+    }
 
 
 def test_noop_job_returns_message():

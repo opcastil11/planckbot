@@ -116,10 +116,11 @@ Repo: **https://github.com/opcastil11/planckbot** (private). Auth via the `store
 
 ## Cron / job scheduler — now wired
 
-- `src/planckbot/cron/` has `CronStore` (CRUD on `cron_jobs`, schema v3), a `JobRegistry` with built-in types `noop` / `autolabel` / `retrain`, and `Daemon` (blocking polling loop, file-locked at `/tmp/planckbot-cron.lock` so only one instance runs).
+- `src/planckbot/cron/` has `CronStore` (CRUD on `cron_jobs`, schema v3), a `JobRegistry` with built-in types `noop` / `autolabel` / `retrain` / `conversation_scanner`, and `Daemon` (blocking polling loop, file-locked at `/tmp/planckbot-cron.lock` so only one instance runs).
 - Dashboard → `/cron` lists all jobs, lets you toggle/run/delete them, and ships a "create job" form. Live-refreshes every 3s.
 - Run the scheduler with `.venv/bin/planckbot cron daemon` (systemd user unit is a good next step; not included yet).
 - `retrain` job is a "ready to retrain" signal, not a trigger — it prints the command to run. Firing a full LoRA retrain inside the daemon would block the scheduler for ~10 min and isn't worth the complexity right now. Wire it to a worker if/when that changes.
+- `conversation_scanner` reads `~/.claude/projects/<slug>/*.jsonl` and extracts recent assistant text blocks into a reference file. Pipe it through `autolabel` (via its own cron job with the same output path) and the loop "use Claude → triples get filtered_output" becomes fully automatic. Params: `output_path` (required), `project_slug` (default: slugified cwd), `max_messages` (default 30), `lookback_hours` (default 24).
 
 ## Reference-tracking signal — partially wired
 

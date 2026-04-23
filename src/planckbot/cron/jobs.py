@@ -152,8 +152,10 @@ def _retrain_job(ctx: JobContext) -> str:
 
 
 def default_registry() -> JobRegistry:
+    from planckbot.cron.scanner import scan_job as _scan_job
     reg = JobRegistry()
     reg.register("noop", _noop_job)
     reg.register("autolabel", _autolabel_job)
     reg.register("retrain", _retrain_job)
+    reg.register("conversation_scanner", _scan_job)
     return reg
