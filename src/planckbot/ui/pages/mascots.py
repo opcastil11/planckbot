@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from nicegui import ui
 
+from planckbot.ui.components.empty_state import empty_state
+from planckbot.ui.components.page_header import page_header
 from planckbot.ui.mascots import mascot_svg, style_for
 from planckbot.ui.state import get_state
 from planckbot.ui.theme import COLORS
@@ -23,26 +25,20 @@ def mascots_page():
         tools.add(row["tool_name"])
     tools = sorted(t for t in tools if t)
 
-    # Header
-    with ui.row().classes("w-full items-center justify-between"):
-        with ui.column().classes("gap-1"):
-            ui.label("PlanckBots Mascots").style(
-                f"color: {COLORS['text']}; font-size: 24px; font-weight: 700; "
-                "letter-spacing: -0.4px;"
-            )
-            ui.label(
-                f"{len(tools)} tool{'s' if len(tools) != 1 else ''} — each one gets "
-                "its own little bot. Same tool name always produces the same mascot."
-            ).style(f"color: {COLORS['text_muted']}; font-size: 13px;")
-
-    ui.separator().style(f"background: {COLORS['border']}; margin: 12px 0 20px 0;")
+    page_header(
+        title="PlanckBots mascots",
+        subtitle=(
+            f"{len(tools)} tool{'s' if len(tools) != 1 else ''} — each one gets "
+            "its own little bot. Same tool name always produces the same mascot."
+        ),
+    )
 
     if not tools:
-        ui.label(
-            "No tools registered yet. Call a tool through the proxy, add a "
-            "builtin, or run a training job and the mascots will appear here."
-        ).style(
-            f"color: {COLORS['text_muted']}; padding: 40px; text-align: center;"
+        empty_state(
+            title="No tools seen yet",
+            hint="Call a tool through the proxy, register a builtin, or "
+                 "run a training job and the mascots will appear here.",
+            icon="sentiment_satisfied",
         )
         return
 
@@ -101,13 +97,5 @@ def mascots_page():
                         f'margin-left: 4px;">ckpts</span>'
                     )
 
-    # Hover effect
-    ui.add_head_html("""
-    <style>
-      .planck-mascot-card:hover {
-        transform: translateY(-3px);
-        border-color: #2F6B8E !important;
-        box-shadow: 0 6px 24px rgba(95, 212, 163, 0.12);
-      }
-    </style>
-    """)
+    # Hover behavior comes from the global .planck-mascot-card rule in
+    # ui/app.py — no per-page CSS injection needed.

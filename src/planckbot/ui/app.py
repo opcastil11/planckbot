@@ -184,6 +184,48 @@ def _head_css() -> str:
             border-radius: 8px;
         }}
 
+        /* Stat card lift */
+        .planck-stat-card:hover {{
+            transform: translateY(-2px);
+            border-color: {c['border_glow']} !important;
+            box-shadow: 0 8px 28px rgba(95, 212, 163, 0.1),
+                        0 1px 0 {c['accent']}22 inset !important;
+        }}
+
+        /* Mascot gallery card lift (was inline on the page) */
+        .planck-mascot-card:hover {{
+            transform: translateY(-3px);
+            border-color: {c['border_glow']} !important;
+            box-shadow: 0 8px 28px rgba(95, 212, 163, 0.12) !important;
+        }}
+
+        /* Data pills / tag chips */
+        .planck-pill {{
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 3px 10px; border-radius: 999px;
+            background: {c['surface2']}; color: {c['text']};
+            font-size: 11px; font-weight: 600; letter-spacing: 0.3px;
+            border: 1px solid {c['border']};
+        }}
+        .planck-pill--muted {{ color: {c['text_muted']}; }}
+        .planck-pill--accent {{
+            color: {c['primary']};
+            background: {c['primary']}14;
+            border-color: {c['primary']}44;
+        }}
+        .planck-pill--brass {{
+            color: {c['brass']};
+            background: {c['brass']}14;
+            border-color: {c['brass']}44;
+        }}
+
+        /* Section label (small-caps) */
+        .planck-section-label {{
+            color: {c['text_muted']}; font-size: 11px;
+            font-weight: 700; letter-spacing: 1px;
+            text-transform: uppercase;
+        }}
+
         /* Links */
         a {{ color: {c['primary']} !important; text-decoration: none !important; }}
         a:hover {{ color: {c['accent']} !important; }}

@@ -4,22 +4,27 @@ import json
 from nicegui import ui
 from planckbot.ui.theme import COLORS, CARD_STYLE
 from planckbot.ui.components.status_badge import status_badge
+from planckbot.ui.components.page_header import page_header
+from planckbot.ui.components.empty_state import empty_state
 from planckbot.ui.state import get_state
 
 
 def models_page():
     state = get_state()
 
-    ui.label("Model Checkpoints").style(
-        f"color: {COLORS['text']}; font-size: 24px; font-weight: 700;"
+    page_header(
+        title="Model checkpoints",
+        subtitle="Every trained adapter PlanckBot has produced. "
+                 "Activate the one you want the proxy to use.",
     )
-
-    ui.separator().style(f"background: {COLORS['border']}; margin: 12px 0;")
 
     checkpoints = state.checkpoints.list_all()
     if not checkpoints:
-        ui.label("No checkpoints yet. Train a model from the Training page.").style(
-            f"color: {COLORS['text_muted']}; padding: 40px; text-align: center;"
+        empty_state(
+            title="No checkpoints yet",
+            hint="Train an adapter from the Training page and it will "
+                 "land here with its eval metrics and adapter size.",
+            icon="save",
         )
         return
 

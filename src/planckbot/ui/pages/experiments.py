@@ -6,6 +6,8 @@ from planckbot.ui.theme import COLORS, CARD_STYLE
 from planckbot.ui.components.metric_card import metric_card
 from planckbot.ui.components.status_badge import status_badge
 from planckbot.ui.components.comparison_table import comparison_table
+from planckbot.ui.components.page_header import page_header
+from planckbot.ui.components.empty_state import empty_state
 from planckbot.ui.state import get_state
 
 
@@ -128,22 +130,30 @@ def _detail_view(exp_id: str):
 def experiments_page():
     state = get_state()
 
-    # Header
-    with ui.row().classes("w-full items-center justify-between"):
-        ui.label("Experiments").style(
-            f"color: {COLORS['text']}; font-size: 24px; font-weight: 700;"
-        )
-        with ui.row().classes("gap-2"):
-            dialog = _create_dialog()
-            ui.button("New Experiment", on_click=dialog.open, icon="add").props("color=primary")
+    dialog = _create_dialog()
 
-    ui.separator().style(f"background: {COLORS['border']}; margin: 12px 0;")
+    def _actions():
+        ui.button("New experiment", on_click=dialog.open, icon="add").props(
+            "color=primary unelevated"
+        )
+
+    page_header(
+        title="Experiments",
+        subtitle="Log hypotheses, run training, compare adapters. "
+                 "Select two or more to compare side-by-side.",
+        actions=_actions,
+    )
 
     # Experiments list
     experiments = state.experiments.list_all()
     if not experiments:
-        ui.label("No experiments yet. Click 'New Experiment' to get started.").style(
-            f"color: {COLORS['text_muted']}; padding: 40px; text-align: center;"
+        empty_state(
+            title="No experiments yet",
+            hint="An experiment bundles a hypothesis, a training config, "
+                 "and its resulting metrics. Create one to start.",
+            cta_label="New experiment",
+            cta_action=dialog.open,
+            icon="science",
         )
         return
 

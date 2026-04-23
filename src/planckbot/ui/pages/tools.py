@@ -2,40 +2,50 @@
 
 import json
 from nicegui import ui
-from planckbot.ui.theme import COLORS, CARD_STYLE
+from planckbot.ui.theme import COLORS, CARD_STYLE, TEXT_LG, heading_style
 from planckbot.ui.components.triple_viewer import triple_viewer
+from planckbot.ui.components.page_header import page_header
+from planckbot.ui.components.empty_state import empty_state
+from planckbot.ui.mascots import mascot_svg
 from planckbot.ui.state import get_state
 from planckbot.experiments.metrics import count_tokens_approx
 
 
 def _tool_card(tool_def, triple_count: int):
-    """Card displaying a registered tool."""
-    with ui.card().style(
-        f"background-color: {COLORS['surface']}; "
+    """Card displaying a registered tool with its PlanckBot mascot."""
+    with ui.card().classes("planck-stat-card").style(
+        f"background: linear-gradient(180deg, {COLORS['surface']} 0%, "
+        f"{COLORS['bg']} 140%); "
         f"border: 1px solid {COLORS['border']}; "
-        "border-radius: 12px; padding: 16px; min-width: 280px;"
+        "border-radius: 14px; padding: 16px; min-width: 280px; "
+        "flex: 1; max-width: 340px;"
     ):
-        with ui.row().classes("items-center gap-2"):
-            ui.icon("build").style(f"color: {COLORS['primary']};")
-            ui.label(tool_def.name).style(
-                f"color: {COLORS['text']}; font-weight: 700; font-size: 16px;"
-            )
-            ui.label(tool_def.category).style(
-                f"color: {COLORS['text_muted']}; font-size: 11px; "
-                f"background: {COLORS['surface2']}; padding: 1px 8px; border-radius: 4px;"
-            )
+        with ui.row().classes("items-center gap-3 no-wrap"):
+            ui.html(mascot_svg(tool_def.name, size=48, title=True)).style("flex: 0 0 48px;")
+            with ui.column().classes("gap-0 flex-1").style("min-width: 0;"):
+                ui.label(tool_def.name).style(
+                    f"color: {COLORS['text']}; font-weight: 700; font-size: 15px; "
+                    "overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                )
+                ui.html(
+                    f'<span class="planck-pill planck-pill--muted">{tool_def.category}</span>'
+                )
         ui.label(tool_def.description).style(
-            f"color: {COLORS['text_muted']}; font-size: 13px; margin: 4px 0;"
+            f"color: {COLORS['text_muted']}; font-size: 13px; "
+            "margin-top: 10px; line-height: 1.5;"
         )
-        with ui.row().classes("items-center gap-4"):
-            ui.label(f"{triple_count} triples").style(
-                f"color: {COLORS['info']}; font-size: 12px;"
+        with ui.row().classes("items-center gap-2").style("margin-top: 10px;"):
+            ui.html(
+                f'<span class="planck-pill planck-pill--accent">'
+                f'{triple_count} triples</span>'
             )
             if tool_def.input_schema:
                 params = ", ".join(tool_def.input_schema.keys())
-                ui.label(f"Params: {params}").style(
-                    f"color: {COLORS['text_muted']}; font-size: 11px;"
-                )
+                ui.label(params).style(
+                    f"color: {COLORS['text_muted']}; font-size: 11px; "
+                    f"font-family: monospace; overflow: hidden; "
+                    "text-overflow: ellipsis; white-space: nowrap;"
+                ).tooltip(params)
 
 
 def _collection_form():
@@ -126,31 +136,42 @@ def _collection_form():
 def tools_page():
     state = get_state()
 
-    ui.label("Tools & Triple Collection").style(
-        f"color: {COLORS['text']}; font-size: 24px; font-weight: 700;"
+    page_header(
+        title="Tools",
+        subtitle="Registered tools PlanckBot can observe and optimize. "
+                 "Collect triples manually or let the proxy fill them in.",
     )
-
-    ui.separator().style(f"background: {COLORS['border']}; margin: 12px 0;")
 
     # Tool cards
     counts = state.triples.count_by_tool()
-    with ui.row().classes("gap-4 flex-wrap"):
-        for tool in state.registry.list_tools():
-            _tool_card(tool, counts.get(tool.name, 0))
+    tools = state.registry.list_tools()
+    if not tools:
+        empty_state(
+            title="No tools registered",
+            hint="Register builtins via `register_builtins(registry)` "
+                 "or wrap your own with `@planck_tool` to see them here.",
+            icon="build",
+        )
+    else:
+        with ui.row().classes("w-full gap-4 flex-wrap"):
+            for tool in tools:
+                _tool_card(tool, counts.get(tool.name, 0))
 
     # Collection form
     _collection_form()
 
-    ui.separator().style(f"background: {COLORS['border']}; margin: 20px 0;")
-
     # Triple browser
-    ui.label("Triple Browser").style(
-        f"color: {COLORS['text']}; font-size: 18px; font-weight: 600;"
+    ui.label("Triple browser").style(
+        heading_style(size=TEXT_LG) + " margin-top: 28px;"
+    )
+    ui.label("Filter by tool to inspect recent triples.").style(
+        f"color: {COLORS['text_muted']}; font-size: 13px; margin-top: 2px;"
     )
 
-    # Filter by tool
     tool_names = ["All"] + state.registry.names()
-    tool_filter = ui.select(tool_names, value="All", label="Filter by Tool").style("width: 200px;")
+    tool_filter = ui.select(
+        tool_names, value="All", label="Tool",
+    ).style("width: 220px; margin-top: 10px;")
 
     triples_container = ui.column().classes("w-full gap-2")
 
@@ -163,7 +184,12 @@ def tools_page():
                 triples = state.triples.get_by_tool(tool_filter.value, limit=20)
 
             if not triples:
-                ui.label("No triples collected yet.").style(f"color: {COLORS['text_muted']};")
+                empty_state(
+                    title="No triples yet",
+                    hint="Run a tool above or point the MCP proxy at a "
+                         "real upstream to start collecting.",
+                    icon="data_object",
+                )
             else:
                 for t in triples:
                     triple_viewer(t)

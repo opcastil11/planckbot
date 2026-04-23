@@ -5,6 +5,7 @@ from nicegui import ui
 from planckbot.ui.theme import COLORS, CARD_STYLE
 from planckbot.ui.components.metric_card import metric_card
 from planckbot.ui.components.loss_chart import loss_chart, update_loss_chart
+from planckbot.ui.components.page_header import page_header
 from planckbot.ui.state import get_state
 from planckbot.training.trainer import TrainingConfig, get_training_status
 from planckbot.experiments.runner import run_experiment
@@ -13,11 +14,11 @@ from planckbot.experiments.runner import run_experiment
 def training_page():
     state = get_state()
 
-    ui.label("Training").style(
-        f"color: {COLORS['text']}; font-size: 24px; font-weight: 700;"
+    page_header(
+        title="Training",
+        subtitle="Launch LoRA training runs and watch the loss curve "
+                 "live. History of completed runs is listed below.",
     )
-
-    ui.separator().style(f"background: {COLORS['border']}; margin: 12px 0;")
 
     # Current training status
     status = get_training_status()

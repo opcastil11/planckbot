@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 from nicegui import ui
 from planckbot.ui.theme import COLORS, CARD_STYLE
+from planckbot.ui.components.page_header import page_header
+from planckbot.ui.components.empty_state import empty_state
 from planckbot.ui.state import get_state
 from planckbot.paper.export import export_full_report
 
@@ -26,10 +28,24 @@ ENTRY_COLORS = {
 def paper_log_page():
     state = get_state()
 
+    # We need the buttons to attach to a row the page_header renders, so
+    # define them first and pass as actions.
+    def _actions():
+        # Add entry + export buttons (dialog/export defined below in closure)
+        pass
+
     with ui.row().classes("w-full items-center justify-between"):
-        ui.label("Paper Log").style(
-            f"color: {COLORS['text']}; font-size: 24px; font-weight: 700;"
-        )
+        with ui.column().classes("gap-1"):
+            ui.label("Paper log").style(
+                f"color: {COLORS['text']}; font-size: 24px; font-weight: 700; "
+                "letter-spacing: -0.4px;"
+            )
+            ui.label(
+                "Chronological journal of observations, results, decisions, "
+                "and open questions across all experiments."
+            ).style(
+                f"color: {COLORS['text_muted']}; font-size: 14px; line-height: 1.5;"
+            )
         with ui.row().classes("gap-2"):
             # Add entry button
             def add_entry_dialog():
@@ -100,8 +116,12 @@ def paper_log_page():
             entries = state.paper_log.list_entries(entry_type=entry_type)
 
             if not entries:
-                ui.label("No log entries yet. Add observations as you experiment.").style(
-                    f"color: {COLORS['text_muted']}; padding: 40px; text-align: center;"
+                empty_state(
+                    title="Nothing logged yet",
+                    hint="Capture observations, results, decisions, and "
+                         "open questions here as you experiment. Use it "
+                         "the way you'd use a real research paper log.",
+                    icon="menu_book",
                 )
                 return
 
