@@ -55,8 +55,13 @@ def _header():
                     )
 
 
-def _page_wrapper(build_fn):
-    """Wrap a page builder in the standard layout."""
+def _page_wrapper(build_fn, *, live_seconds: float | None = None):
+    """Wrap a page builder in the standard layout.
+
+    live_seconds: if set, the page body is rebuilt on that interval. Only use
+    on pages with no form state to preserve (input/textarea values would be
+    wiped on each refresh).
+    """
     ui.colors(
         primary=COLORS["primary"],
         secondary=COLORS["accent"],
@@ -70,13 +75,21 @@ def _page_wrapper(build_fn):
     with ui.column().classes("w-full max-w-7xl mx-auto p-6 gap-4").style(
         f"color: {COLORS['text']};"
     ):
-        build_fn()
+        if live_seconds is None:
+            build_fn()
+        else:
+            @ui.refreshable
+            def _live():
+                build_fn()
+
+            _live()
+            ui.timer(live_seconds, _live.refresh)
 
 
 @ui.page("/")
 def index():
     from planckbot.ui.pages.dashboard import dashboard_page
-    _page_wrapper(dashboard_page)
+    _page_wrapper(dashboard_page, live_seconds=3.0)
 
 
 @ui.page("/experiments")
@@ -273,9 +286,11 @@ def start_app():
 
     ui.add_head_html(_head_css(), shared=True)
 
+    favicon_path = BRANDING_DIR / "favicon.png"
+
     ui.run(
         title="PlanckBots — Research Workbench",
-        favicon="/branding/favicon.png",
+        favicon=str(favicon_path) if favicon_path.exists() else None,
         host=state.config.host,
         port=state.config.port,
         dark=True,

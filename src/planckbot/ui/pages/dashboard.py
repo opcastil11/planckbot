@@ -92,9 +92,27 @@ def _stats(state) -> None:
         recent_triples = 0
     triples_hint = f"+{number_fmt(recent_triples)} in last 24h"
 
+    # Token savings: only counts triples where proxy actually intervened
+    savings = state.triples.token_savings(source="proxy:intervene")
+    saved = savings["saved"]
+    n_intervene = savings["intervene_count"]
+    if n_intervene == 0:
+        savings_value = "—"
+        savings_hint = "no interventions yet"
+        savings_tint = "brass"
+    else:
+        # Show with sign so regressions are obvious
+        prefix = "+" if saved >= 0 else ""
+        savings_value = f"{prefix}{number_fmt(saved)}"
+        pct = (saved / savings["raw_tokens"] * 100) if savings["raw_tokens"] else 0
+        savings_hint = f"{prefix}{pct:.0f}% over {n_intervene} call{'s' if n_intervene != 1 else ''}"
+        savings_tint = "primary" if saved > 0 else "error"
+
     with ui.row().classes("w-full gap-4 flex-wrap").style(
         f"margin-bottom: {SPACE_LG}px;"
     ):
+        stat_card("Tokens saved", savings_value, delta=savings_hint,
+                  icon="savings", tint=savings_tint)
         stat_card("Experiments", exp_count, delta=running_hint,
                   icon="science", tint="primary")
         stat_card("Triples", triple_count, delta=triples_hint,

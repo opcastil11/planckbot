@@ -97,3 +97,37 @@ class TriplesStore:
             "SELECT * FROM triples ORDER BY created_at DESC LIMIT ?", (limit,)
         )
         return [Triple.from_row(r) for r in cur.fetchall()]
+
+    def token_savings(
+        self,
+        source: str = "proxy:intervene",
+        since: str | None = None,
+    ) -> dict[str, int]:
+        """Aggregate token savings across triples where the tiny LLM intervened.
+
+        Returns {raw_tokens, filtered_tokens, saved, intervene_count}. `saved`
+        is raw - filtered and can be negative when the adapter regresses.
+        """
+        q = (
+            "SELECT "
+            "  COALESCE(SUM(output_tokens), 0) AS raw, "
+            "  COALESCE(SUM(filtered_tokens), 0) AS filt, "
+            "  COUNT(*) AS n "
+            "FROM triples "
+            "WHERE source = ? AND filtered_output IS NOT NULL "
+            "  AND output_tokens IS NOT NULL AND filtered_tokens IS NOT NULL"
+        )
+        args: list = [source]
+        if since is not None:
+            q += " AND created_at >= ?"
+            args.append(since)
+
+        row = self.conn.execute(q, args).fetchone()
+        raw = row["raw"] or 0
+        filt = row["filt"] or 0
+        return {
+            "raw_tokens": int(raw),
+            "filtered_tokens": int(filt),
+            "saved": int(raw - filt),
+            "intervene_count": int(row["n"] or 0),
+        }

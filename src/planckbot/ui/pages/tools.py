@@ -196,3 +196,4 @@ def tools_page():
 
     tool_filter.on_value_change(lambda _: refresh_triples())
     refresh_triples()
+    ui.timer(3.0, refresh_triples)

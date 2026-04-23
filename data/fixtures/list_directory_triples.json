@@ -1,0 +1,98 @@
+[
+  {
+    "tool_name": "list_directory",
+    "input_data": {"path": "/repo"},
+    "output_data": "[DIR] .git\n[DIR] .venv\n[DIR] .pytest_cache\n[DIR] __pycache__\n[DIR] node_modules\n[DIR] dist\n[DIR] build\n[DIR] src\n[DIR] tests\n[DIR] docs\n[FILE] .gitignore\n[FILE] package-lock.json\n[FILE] pyproject.toml\n[FILE] README.md",
+    "filtered_output": "[DIR] src\n[DIR] tests\n[DIR] docs\n[FILE] pyproject.toml\n[FILE] README.md"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {"path": "/proj"},
+    "output_data": "[DIR] .git\n[DIR] .venv\n[DIR] .pytest_cache\n[DIR] __pycache__\n[DIR] node_modules\n[DIR] coverage\n[DIR] app\n[DIR] migrations\n[FILE] .gitignore\n[FILE] .env.example\n[FILE] yarn.lock\n[FILE] package.json",
+    "filtered_output": "[DIR] app\n[DIR] migrations\n[FILE] .env.example\n[FILE] package.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {"path": "/service"},
+    "output_data": "[DIR] .git\n[DIR] .venv\n[DIR] __pycache__\n[DIR] .mypy_cache\n[DIR] .ruff_cache\n[DIR] src\n[DIR] tests\n[FILE] pyproject.toml\n[FILE] uv.lock\n[FILE] README.md",
+    "filtered_output": "[DIR] src\n[DIR] tests\n[FILE] pyproject.toml\n[FILE] README.md"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {"path": "/web"},
+    "output_data": "[DIR] .git\n[DIR] node_modules\n[DIR] dist\n[DIR] build\n[DIR] .next\n[DIR] coverage\n[DIR] public\n[DIR] src\n[DIR] pages\n[FILE] package.json\n[FILE] next.config.js\n[FILE] tsconfig.json\n[FILE] package-lock.json",
+    "filtered_output": "[DIR] public\n[DIR] src\n[DIR] pages\n[FILE] package.json\n[FILE] next.config.js\n[FILE] tsconfig.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {"path": "/api"},
+    "output_data": "[DIR] .git\n[DIR] .venv\n[DIR] __pycache__\n[DIR] node_modules\n[DIR] logs\n[DIR] tmp\n[DIR] src\n[DIR] tests\n[FILE] Dockerfile\n[FILE] docker-compose.yml\n[FILE] pyproject.toml",
+    "filtered_output": "[DIR] src\n[DIR] tests\n[FILE] Dockerfile\n[FILE] docker-compose.yml\n[FILE] pyproject.toml"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {"path": "/ml"},
+    "output_data": "[DIR] .git\n[DIR] .venv\n[DIR] .ipynb_checkpoints\n[DIR] __pycache__\n[DIR] wandb\n[DIR] mlruns\n[DIR] notebooks\n[DIR] src\n[FILE] pyproject.toml\n[FILE] README.md",
+    "filtered_output": "[DIR] notebooks\n[DIR] src\n[FILE] pyproject.toml\n[FILE] README.md"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {"path": "/mobile"},
+    "output_data": "[DIR] .git\n[DIR] node_modules\n[DIR] ios\n[DIR] android\n[DIR] build\n[DIR] Pods\n[DIR] src\n[FILE] package.json\n[FILE] yarn.lock\n[FILE] metro.config.js",
+    "filtered_output": "[DIR] ios\n[DIR] android\n[DIR] src\n[FILE] package.json\n[FILE] metro.config.js"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {"path": "/backend"},
+    "output_data": "[DIR] .git\n[DIR] target\n[DIR] __pycache__\n[DIR] .venv\n[DIR] src\n[DIR] tests\n[DIR] migrations\n[FILE] Cargo.toml\n[FILE] Cargo.lock\n[FILE] README.md",
+    "filtered_output": "[DIR] src\n[DIR] tests\n[DIR] migrations\n[FILE] Cargo.toml\n[FILE] README.md"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {"path": "/go-svc"},
+    "output_data": "[DIR] .git\n[DIR] vendor\n[DIR] bin\n[DIR] tmp\n[DIR] cmd\n[DIR] internal\n[DIR] pkg\n[FILE] go.mod\n[FILE] go.sum\n[FILE] Makefile",
+    "filtered_output": "[DIR] cmd\n[DIR] internal\n[DIR] pkg\n[FILE] go.mod\n[FILE] Makefile"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {"path": "/lib"},
+    "output_data": "[DIR] .git\n[DIR] node_modules\n[DIR] dist\n[DIR] coverage\n[DIR] .vscode\n[DIR] src\n[DIR] test\n[DIR] examples\n[FILE] package.json\n[FILE] package-lock.json\n[FILE] tsconfig.json\n[FILE] README.md",
+    "filtered_output": "[DIR] src\n[DIR] test\n[DIR] examples\n[FILE] package.json\n[FILE] tsconfig.json\n[FILE] README.md"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {"path": "/deploy"},
+    "output_data": "[DIR] .git\n[DIR] .terraform\n[DIR] terraform\n[DIR] ansible\n[DIR] k8s\n[DIR] scripts\n[FILE] .gitignore\n[FILE] Makefile\n[FILE] README.md",
+    "filtered_output": "[DIR] terraform\n[DIR] ansible\n[DIR] k8s\n[DIR] scripts\n[FILE] Makefile\n[FILE] README.md"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {"path": "/site"},
+    "output_data": "[DIR] .git\n[DIR] node_modules\n[DIR] .cache\n[DIR] public\n[DIR] content\n[DIR] layouts\n[DIR] static\n[FILE] package.json\n[FILE] package-lock.json\n[FILE] gatsby-config.js",
+    "filtered_output": "[DIR] public\n[DIR] content\n[DIR] layouts\n[DIR] static\n[FILE] package.json\n[FILE] gatsby-config.js"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {"path": "/monorepo"},
+    "output_data": "[DIR] .git\n[DIR] node_modules\n[DIR] .turbo\n[DIR] .nx\n[DIR] apps\n[DIR] packages\n[DIR] tools\n[FILE] package.json\n[FILE] pnpm-lock.yaml\n[FILE] turbo.json",
+    "filtered_output": "[DIR] apps\n[DIR] packages\n[DIR] tools\n[FILE] package.json\n[FILE] turbo.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {"path": "/cli-tool"},
+    "output_data": "[DIR] .git\n[DIR] __pycache__\n[DIR] .pytest_cache\n[DIR] dist\n[DIR] build\n[DIR] src\n[DIR] tests\n[FILE] pyproject.toml\n[FILE] setup.cfg\n[FILE] uv.lock",
+    "filtered_output": "[DIR] src\n[DIR] tests\n[FILE] pyproject.toml\n[FILE] setup.cfg"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {"path": "/data-pipeline"},
+    "output_data": "[DIR] .git\n[DIR] .venv\n[DIR] __pycache__\n[DIR] data\n[DIR] logs\n[DIR] output\n[DIR] dags\n[DIR] plugins\n[FILE] airflow.cfg\n[FILE] requirements.txt",
+    "filtered_output": "[DIR] dags\n[DIR] plugins\n[FILE] airflow.cfg\n[FILE] requirements.txt"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {"path": "/infra"},
+    "output_data": "[DIR] .git\n[DIR] .terraform\n[DIR] .terragrunt-cache\n[DIR] modules\n[DIR] envs\n[DIR] scripts\n[FILE] .gitignore\n[FILE] terraform.lock.hcl\n[FILE] README.md",
+    "filtered_output": "[DIR] modules\n[DIR] envs\n[DIR] scripts\n[FILE] README.md"
+  }
+]

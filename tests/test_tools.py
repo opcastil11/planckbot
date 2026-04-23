@@ -145,3 +145,59 @@ def test_list_all_triples(triples_store):
     triples_store.add(tool_name="t", input_data="1", output_data="2")
     triples_store.add(tool_name="t", input_data="3", output_data="4")
     assert len(triples_store.list_all()) == 2
+
+
+def test_token_savings_empty(triples_store):
+    savings = triples_store.token_savings("proxy:intervene")
+    assert savings == {"raw_tokens": 0, "filtered_tokens": 0, "saved": 0, "intervene_count": 0}
+
+
+def test_token_savings_ignores_unfiltered(triples_store):
+    # Intervene triple without filtered_output is excluded
+    triples_store.add(
+        tool_name="t",
+        input_data="i",
+        output_data="x" * 100,
+        source="proxy:intervene",
+    )
+    savings = triples_store.token_savings("proxy:intervene")
+    assert savings["intervene_count"] == 0
+
+
+def test_token_savings_positive_and_negative(triples_store):
+    # Compressing triple: output 100 chars → filtered 20 chars (saves tokens)
+    t1 = triples_store.add(
+        tool_name="t",
+        input_data="i",
+        output_data="a" * 400,
+        source="proxy:intervene",
+    )
+    triples_store.update_filtered(t1.id, "a" * 40)
+
+    # Regressing triple: filtered is LONGER than raw (costs tokens)
+    t2 = triples_store.add(
+        tool_name="t",
+        input_data="i",
+        output_data="b" * 40,
+        source="proxy:intervene",
+    )
+    triples_store.update_filtered(t2.id, "b" * 400)
+
+    # observe triples must be excluded
+    triples_store.add(
+        tool_name="t",
+        input_data="i",
+        output_data="c" * 200,
+        source="proxy:observe",
+        filtered_output="c",
+    )
+
+    savings = triples_store.token_savings("proxy:intervene")
+    assert savings["intervene_count"] == 2
+    # With the ~4-chars-per-token heuristic, t1 saves 90 tokens, t2 loses 90.
+    # Net should be ~0. The exact numbers depend on the heuristic; just check the
+    # sign/magnitude invariants.
+    assert savings["raw_tokens"] > 0
+    assert savings["filtered_tokens"] > 0
+    # t1.raw - t1.filt  is positive, t2.raw - t2.filt is negative → they cancel
+    assert abs(savings["saved"]) <= 5
