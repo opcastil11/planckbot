@@ -210,14 +210,29 @@ def main(argv: Optional[list[str]] = None) -> None:
         prog="planckbot-mcp",
         description="Proxy an MCP server through PlanckBot for observation + "
                     "token-saving interception.",
+        epilog=(
+            "Pass the upstream command and its args after `--`. Example:\n"
+            "  planckbot-mcp --mode observe -- "
+            "npx -y @modelcontextprotocol/server-filesystem /path/to/repo\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
+    # Preferred form: `-- cmd args...`. Positional REMAINDER so dash-prefixed
+    # upstream args (like `-y`) don't get mistaken for our flags.
     p.add_argument(
-        "--upstream-command", required=True,
-        help="Executable for the upstream MCP server (e.g. 'uvx', 'npx', 'python').",
+        "upstream", nargs=argparse.REMAINDER,
+        help="Upstream command + args, after `--`.",
+    )
+    # Legacy form kept for backward-compat. Use `=` with values that start
+    # with a dash (argparse: `--upstream-args=-y`).
+    p.add_argument(
+        "--upstream-command", default=None,
+        help="[legacy] Upstream executable. Prefer `-- cmd args...`.",
     )
     p.add_argument(
         "--upstream-args", action="append", default=[],
-        help="Argument to pass to the upstream command (repeat for multiple).",
+        help="[legacy] Argument for the upstream command (repeatable). "
+             "Use `--upstream-args=VALUE` if the value starts with `-`.",
     )
     p.add_argument(
         "--mode", default="observe", choices=["observe", "suggest", "intervene"],
@@ -237,13 +252,30 @@ def main(argv: Optional[list[str]] = None) -> None:
     )
     args = p.parse_args(argv)
 
+    # Resolve the upstream from either form.
+    upstream_positional = list(args.upstream or [])
+    if upstream_positional and upstream_positional[0] == "--":
+        upstream_positional = upstream_positional[1:]
+
+    if upstream_positional:
+        upstream_command = upstream_positional[0]
+        upstream_args = upstream_positional[1:]
+    elif args.upstream_command:
+        upstream_command = args.upstream_command
+        upstream_args = args.upstream_args
+    else:
+        p.error(
+            "missing upstream. Use either `-- cmd args...` (preferred) or "
+            "`--upstream-command CMD --upstream-args=VALUE ...`."
+        )
+
     mode = _build_mode(args.mode, args.threshold)
     enable_predictor = args.mode in ("suggest", "intervene")
 
     try:
         asyncio.run(run_proxy(
-            upstream_command=args.upstream_command,
-            upstream_args=args.upstream_args,
+            upstream_command=upstream_command,
+            upstream_args=upstream_args,
             mode=mode,
             server_name=args.name,
             enable_predictor=enable_predictor,
