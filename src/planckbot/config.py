@@ -35,12 +35,28 @@ def _get_ram_gb() -> float:
     return 0.0
 
 
+def _default_data_dir() -> Path:
+    """Absolute path to the PlanckBot data directory.
+
+    `PLANCK_DATA_DIR` still wins (for tests, CI, alternative layouts). When
+    unset we anchor to the package location so subprocesses whose cwd comes
+    from their parent — Claude Code's MCP subprocesses, the systemd cron
+    daemon, etc. — all read and write the same DB no matter where they were
+    launched from. Until this fix the MCP spawned by a Claude Code session
+    on /orquesta was writing triples to /orquesta/data/planckbot.db.
+    """
+    env = os.environ.get("PLANCK_DATA_DIR")
+    if env:
+        return Path(env).expanduser().resolve()
+    # src/planckbot/config.py → parents[2] is the repo root for editable
+    # installs, which is the layout we ship.
+    return Path(__file__).resolve().parents[2] / "data"
+
+
 @dataclass
 class PlanckBotConfig:
     # Paths
-    data_dir: Path = field(default_factory=lambda: Path(
-        os.environ.get("PLANCK_DATA_DIR", "./data")
-    ))
+    data_dir: Path = field(default_factory=_default_data_dir)
     db_path: Path = field(default=None)
 
     # Hardware (auto-detected)
