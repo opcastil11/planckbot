@@ -159,11 +159,17 @@ class PlanckProxy:
         mode: Optional[ProxyMode] = None,
         predictor: Optional[Predictor] = None,
         strategy: str = "filter_output",
+        project_id: Optional[str] = None,
     ):
         self.store = store
         self.mode: ProxyMode = mode or ObserveMode()
         self.predictor = predictor
         self.strategy = strategy
+        # v6: triples this proxy records are tagged with this project_id.
+        # The MCP server resolves the currently-active project at startup
+        # and passes it in; standalone tests and the decorator form can
+        # leave it None (legacy/unscoped).
+        self.project_id = project_id
 
     def wrap(self, fn: Callable[..., Any], tool_name: str) -> Callable[..., ProxyResult]:
         """Return a new callable that runs `fn` through the proxy."""
@@ -215,6 +221,7 @@ class PlanckProxy:
             output_data=raw_str,
             source=f"proxy:{self.mode.name}",
             filtered_output=decision.predicted_output,
+            project_id=self.project_id,
         )
 
         return ProxyResult(

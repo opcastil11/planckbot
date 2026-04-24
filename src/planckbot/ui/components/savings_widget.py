@@ -26,34 +26,42 @@ from planckbot.ui.theme import (
 )
 
 
-def _savings_by_tool(conn) -> list[tuple[str, int, int, int]]:
+def _savings_by_tool(
+    conn, project_id: str | None = None,
+) -> list[tuple[str, int, int, int]]:
     """Aggregate per-tool savings for intervene triples with filtered_output.
 
     Returns list of (tool_name, n_interventions, raw_tokens, filtered_tokens)
-    sorted by savings (raw-filtered) descending.
+    sorted by savings (raw-filtered) descending. When `project_id` is set,
+    restricts to that project's triples only.
     """
-    rows = conn.execute(
-        """
-        SELECT tool_name,
-               COUNT(*) AS n,
-               COALESCE(SUM(output_tokens), 0) AS raw,
-               COALESCE(SUM(filtered_tokens), 0) AS filt
-        FROM triples
-        WHERE source = 'proxy:intervene'
-          AND filtered_output IS NOT NULL
-          AND output_tokens IS NOT NULL
-          AND filtered_tokens IS NOT NULL
-        GROUP BY tool_name
-        ORDER BY (raw - filt) DESC
-        """
-    ).fetchall()
+    q = (
+        "SELECT tool_name, "
+        "       COUNT(*) AS n, "
+        "       COALESCE(SUM(output_tokens), 0) AS raw, "
+        "       COALESCE(SUM(filtered_tokens), 0) AS filt "
+        "FROM triples "
+        "WHERE source = 'proxy:intervene' "
+        "  AND filtered_output IS NOT NULL "
+        "  AND output_tokens IS NOT NULL "
+        "  AND filtered_tokens IS NOT NULL"
+    )
+    args: list = []
+    if project_id is not None:
+        q += " AND project_id = ?"
+        args.append(project_id)
+    q += " GROUP BY tool_name ORDER BY (raw - filt) DESC"
+    rows = conn.execute(q, args).fetchall()
     return [(r[0], int(r[1]), int(r[2]), int(r[3])) for r in rows]
 
 
 def savings_widget(state) -> None:
     """Render the savings widget with model selector and per-tool breakdown."""
-    savings = state.triples.token_savings(source="proxy:intervene")
-    per_tool = _savings_by_tool(state.conn)
+    pid = state.active_project_id()
+    savings = state.triples.token_savings(
+        source="proxy:intervene", project_id=pid,
+    )
+    per_tool = _savings_by_tool(state.conn, project_id=pid)
 
     saved = savings["saved"]
     n_intervene = savings["intervene_count"]

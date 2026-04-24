@@ -70,12 +70,16 @@ def _build_predictor(
     ckpt_mgr: CheckpointManager,
     device: str,
     lazy_load: bool = True,
+    project_id: str | None = None,
 ):
     """Return a predictor(tool_name, input, output, strategy) -> (text, conf).
 
     Lazily loads the active adapter for each tool the first time it's asked
     about. Tools without a trained adapter return ("", 0.0), which means any
     gated mode falls through to the raw output.
+
+    When `project_id` is supplied, the adapter lookup prefers a
+    project-scoped checkpoint and falls back to a legacy NULL-project one.
     """
     from planckbot.models.inference import format_prompt, predict
     from planckbot.models.loader import load_model
@@ -84,7 +88,7 @@ def _build_predictor(
 
     def _predict(tool_name: str, input_str: str, output_str: str, strategy: str):
         if tool_name not in cache:
-            ckpt = ckpt_mgr.get_active(tool_name)
+            ckpt = ckpt_mgr.get_active(tool_name, project_id=project_id)
             if ckpt is None:
                 cache[tool_name] = None
                 return ("", 0.0)
@@ -158,16 +162,37 @@ async def run_proxy(
 
     conn = get_connection(config.db_path)
     store = TriplesStore(conn)
+
+    # Resolve the active project once per session. Every triple this proxy
+    # records gets tagged with this id so per-project dashboards and
+    # training runs stay cleanly separated. If no project has ever been
+    # created (fresh pre-v6 install upgraded without running `planckbot
+    # project create`) we keep project_id=None — the stores treat NULL as
+    # "legacy/unscoped" so nothing breaks.
+    from planckbot.tools.projects import ProjectStore
+    active_project = ProjectStore(conn).get_active()
+    active_project_id = active_project.id if active_project else None
+    if active_project:
+        print(
+            f"[planckbot-mcp] active project: {active_project.name} "
+            f"({active_project_id[:8]}) → {active_project.path}",
+            file=sys.stderr, flush=True,
+        )
+        ProjectStore(conn).touch(active_project.id)
+
     predictor = None
     if enable_predictor:
         ckpt_mgr = CheckpointManager(conn)
-        predictor = _build_predictor(ckpt_mgr, device=config.device)
+        predictor = _build_predictor(
+            ckpt_mgr, device=config.device, project_id=active_project_id,
+        )
 
     proxy = PlanckProxy(
         store=store,
         mode=mode,
         predictor=predictor,
         strategy=strategy,
+        project_id=active_project_id,
     )
 
     # Load ignore rules. Upstream tool servers like filesystem-server

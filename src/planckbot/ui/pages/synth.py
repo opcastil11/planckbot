@@ -33,7 +33,7 @@ def _status_color(status: str) -> str:
 
 def _tools_section(state) -> None:
     ui.label("Synthesized tools").style(heading_style(size=TEXT_MD))
-    tools = state.synth.list_all()
+    tools = state.synth.list_all(project_id=state.active_project_id())
     container = ui.column().classes("w-full gap-0").style(
         f"background: {COLORS['surface']}; "
         f"border: 1px solid {COLORS['border']}; "
@@ -200,7 +200,9 @@ def _gaps_section(state) -> None:
         "Tool sequences the detector flagged as candidates for a merged tool."
     ).style(f"color: {COLORS['text_muted']}; font-size: {TEXT_SM}px;")
 
-    reports = state.gaps.list_all(limit=20)
+    reports = state.gaps.list_all(
+        limit=20, project_id=state.active_project_id()
+    )
     container = ui.column().classes("w-full gap-0").style(
         f"background: {COLORS['surface']}; "
         f"border: 1px solid {COLORS['border']}; "

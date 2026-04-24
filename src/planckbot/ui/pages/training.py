@@ -94,7 +94,12 @@ def training_page():
                 exp = state.experiments.get(exp_select.value)
                 cfg = exp.config or {}
                 tool = cfg.get("tool_name", "")
-                triple_count = len(state.triples.get_by_tool(tool)) if tool else state.triples.count_total()
+                pid = state.active_project_id()
+                triple_count = (
+                    len(state.triples.get_by_tool(tool, project_id=pid))
+                    if tool
+                    else state.triples.count_total(project_id=pid)
+                )
 
                 if triple_count < 2:
                     ui.notify(

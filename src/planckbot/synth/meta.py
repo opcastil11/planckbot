@@ -52,17 +52,35 @@ class SynthesizedToolStore:
         row = cur.fetchone()
         return SynthesizedTool.from_row(row) if row else None
 
-    def list_all(self) -> list[SynthesizedTool]:
-        cur = self.conn.execute(
-            "SELECT * FROM synthesized_tools ORDER BY created_at DESC"
-        )
+    def list_all(self, project_id: str | None = None) -> list[SynthesizedTool]:
+        if project_id is None:
+            cur = self.conn.execute(
+                "SELECT * FROM synthesized_tools ORDER BY created_at DESC"
+            )
+        else:
+            cur = self.conn.execute(
+                "SELECT * FROM synthesized_tools "
+                "WHERE project_id = ? OR project_id IS NULL "
+                "ORDER BY created_at DESC",
+                (project_id,),
+            )
         return [SynthesizedTool.from_row(r) for r in cur.fetchall()]
 
-    def list_active(self) -> list[SynthesizedTool]:
-        cur = self.conn.execute(
-            "SELECT * FROM synthesized_tools WHERE status = 'active' "
-            "ORDER BY created_at ASC"
-        )
+    def list_active(
+        self, project_id: str | None = None
+    ) -> list[SynthesizedTool]:
+        if project_id is None:
+            cur = self.conn.execute(
+                "SELECT * FROM synthesized_tools WHERE status = 'active' "
+                "ORDER BY created_at ASC"
+            )
+        else:
+            cur = self.conn.execute(
+                "SELECT * FROM synthesized_tools WHERE status = 'active' "
+                "  AND (project_id = ? OR project_id IS NULL) "
+                "ORDER BY created_at ASC",
+                (project_id,),
+            )
         return [SynthesizedTool.from_row(r) for r in cur.fetchall()]
 
     def set_status(self, tool_id: str, status: str) -> None:
@@ -78,9 +96,15 @@ class SynthesizedToolStore:
         )
         self.conn.commit()
 
-    def count(self) -> int:
+    def count(self, project_id: str | None = None) -> int:
+        if project_id is None:
+            return self.conn.execute(
+                "SELECT COUNT(*) FROM synthesized_tools"
+            ).fetchone()[0]
         return self.conn.execute(
-            "SELECT COUNT(*) FROM synthesized_tools"
+            "SELECT COUNT(*) FROM synthesized_tools "
+            "WHERE project_id = ? OR project_id IS NULL",
+            (project_id,),
         ).fetchone()[0]
 
 
@@ -103,6 +127,7 @@ def synthesize_tool(
     gap_report_id: str | None = None,
     created_by: str = "agent:claude",
     synth_dir: Path | None = None,
+    project_id: str | None = None,
 ) -> SynthesisResult:
     """Register a brand-new tool built from usage observations.
 
@@ -139,6 +164,7 @@ def synthesize_tool(
         status="draft",
         created_by=created_by,
         gap_report_id=gap_report_id,
+        project_id=project_id,
     )
     store.insert(tool)
     return SynthesisResult(tool=tool, source_path=source_path)

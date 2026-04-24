@@ -33,19 +33,39 @@ from planckbot.ui.theme import (
 def _detect_state(state) -> dict:
     """Classify the install into one of four buckets so the hero can speak
     to the user's actual situation rather than generic marketing copy."""
-    triples_total = state.triples.count_total()
+    pid = state.active_project_id()
+    triples_total = state.triples.count_total(project_id=pid)
     conn = state.conn
-    proxy_triples = conn.execute(
-        "SELECT COUNT(*) FROM triples WHERE source LIKE 'proxy:%'"
-    ).fetchone()[0]
-    labeled = conn.execute(
-        "SELECT COUNT(*) FROM triples WHERE filtered_output IS NOT NULL"
-    ).fetchone()[0]
-    checkpoints = state.checkpoints.count()
-    active_ckpts = conn.execute(
-        "SELECT COUNT(*) FROM model_checkpoints WHERE is_active = 1"
-    ).fetchone()[0]
-    savings = state.triples.token_savings(source="proxy:intervene")
+    if pid is None:
+        proxy_triples = conn.execute(
+            "SELECT COUNT(*) FROM triples WHERE source LIKE 'proxy:%'"
+        ).fetchone()[0]
+        labeled = conn.execute(
+            "SELECT COUNT(*) FROM triples WHERE filtered_output IS NOT NULL"
+        ).fetchone()[0]
+        active_ckpts = conn.execute(
+            "SELECT COUNT(*) FROM model_checkpoints WHERE is_active = 1"
+        ).fetchone()[0]
+    else:
+        proxy_triples = conn.execute(
+            "SELECT COUNT(*) FROM triples WHERE source LIKE 'proxy:%' "
+            "AND project_id = ?",
+            (pid,),
+        ).fetchone()[0]
+        labeled = conn.execute(
+            "SELECT COUNT(*) FROM triples WHERE filtered_output IS NOT NULL "
+            "AND project_id = ?",
+            (pid,),
+        ).fetchone()[0]
+        active_ckpts = conn.execute(
+            "SELECT COUNT(*) FROM model_checkpoints "
+            "WHERE is_active = 1 AND project_id = ?",
+            (pid,),
+        ).fetchone()[0]
+    checkpoints = state.checkpoints.count(project_id=pid)
+    savings = state.triples.token_savings(
+        source="proxy:intervene", project_id=pid,
+    )
 
     if triples_total == 0:
         bucket = "setup"
@@ -252,9 +272,10 @@ def _onboarding_card(state) -> None:
 
 
 def _stats(state) -> None:
+    pid = state.active_project_id()
     exp_count = state.experiments.count()
-    triple_count = state.triples.count_total()
-    ckpt_count = state.checkpoints.count()
+    triple_count = state.triples.count_total(project_id=pid)
+    ckpt_count = state.checkpoints.count(project_id=pid)
     tool_count = len(state.registry.list_tools())
 
     # Running experiments count for a delta hint
@@ -265,16 +286,26 @@ def _stats(state) -> None:
     try:
         from datetime import datetime, timezone, timedelta
         cutoff = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
-        row = state.conn.execute(
-            "SELECT COUNT(*) AS n FROM triples WHERE created_at >= ?", (cutoff,)
-        ).fetchone()
+        if pid is None:
+            row = state.conn.execute(
+                "SELECT COUNT(*) AS n FROM triples WHERE created_at >= ?",
+                (cutoff,),
+            ).fetchone()
+        else:
+            row = state.conn.execute(
+                "SELECT COUNT(*) AS n FROM triples "
+                "WHERE created_at >= ? AND project_id = ?",
+                (cutoff, pid),
+            ).fetchone()
         recent_triples = row["n"] if row else 0
     except Exception:
         recent_triples = 0
     triples_hint = f"+{number_fmt(recent_triples)} in last 24h"
 
     # Token savings: only counts triples where proxy actually intervened
-    savings = state.triples.token_savings(source="proxy:intervene")
+    savings = state.triples.token_savings(
+        source="proxy:intervene", project_id=pid,
+    )
     saved = savings["saved"]
     n_intervene = savings["intervene_count"]
     if n_intervene == 0:
@@ -354,7 +385,9 @@ def _recent_experiments(state) -> None:
 
 
 def _tool_activity(state) -> None:
-    counts = state.triples.count_by_tool()
+    counts = state.triples.count_by_tool(
+        project_id=state.active_project_id()
+    )
     if not counts:
         return
 

@@ -84,12 +84,14 @@ def _collection_form():
                 result = state.registry.execute(tool_name, **params)
                 current_output["value"] = result
 
-                # Auto-save triple
+                # Auto-save triple (tagged to whichever project the user is
+                # currently lensing so the Tools dashboard stays coherent).
                 triple = state.triples.add(
                     tool_name=tool_name,
                     input_data=params,
                     output_data=result,
                     source="manual",
+                    project_id=state.active_project_id(),
                 )
                 current_output["triple_id"] = triple.id
 
@@ -143,7 +145,7 @@ def tools_page():
     )
 
     # Tool cards
-    counts = state.triples.count_by_tool()
+    counts = state.triples.count_by_tool(project_id=state.active_project_id())
     tools = state.registry.list_tools()
     if not tools:
         empty_state(
@@ -178,10 +180,13 @@ def tools_page():
     def refresh_triples():
         triples_container.clear()
         with triples_container:
+            pid = state.active_project_id()
             if tool_filter.value == "All":
-                triples = state.triples.list_all(limit=20)
+                triples = state.triples.list_all(limit=20, project_id=pid)
             else:
-                triples = state.triples.get_by_tool(tool_filter.value, limit=20)
+                triples = state.triples.get_by_tool(
+                    tool_filter.value, limit=20, project_id=pid,
+                )
 
             if not triples:
                 empty_state(

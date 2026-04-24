@@ -117,7 +117,9 @@ class Daemon:
             self.store.mark_run(job.id, status="error", output=output)
             return ("error", output)
 
-        ctx = JobContext(conn=self.conn, params=job.params)
+        ctx = JobContext(
+            conn=self.conn, params=job.params, project_id=job.project_id,
+        )
         try:
             output = fn(ctx)
             self.store.mark_run(job.id, status="ok", output=output or "")

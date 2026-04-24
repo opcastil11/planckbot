@@ -45,6 +45,7 @@ data/          — SQLite DB + LoRA checkpoints (gitignored except data/fixtures
 | `.venv/bin/planckbot cron list|add|rm|enable|disable|run|daemon` | Manage scheduled jobs |
 | `.venv/bin/planckbot cron daemon` | Start the blocking scheduler loop (file-locked) |
 | `.venv/bin/planckbot synth list|show|activate|deactivate|create|gaps|author` | Manage Layer D synthesized tools (`author` uses Claude API when `ANTHROPIC_API_KEY` set) |
+| `.venv/bin/planckbot project list|show|create|switch|delete|rename` | Manage target-folder projects (see "Per-project scoping" below) |
 | `.venv/bin/planckbot-synth` | Run the Layer D MCP server (exposes active synthesized tools to Claude Code) |
 | `.venv/bin/planckbot doctor [--json]` | 12-point health check; exit code 0/1/2 for ok/warn/fail |
 | `.venv/bin/planckbot status [--watch N]` | One-shot or polling summary of DB state + cost estimate |
@@ -122,6 +123,18 @@ Repo: **https://github.com/opcastil11/planckbot** (private). Auth via the `store
 - `src/planckbot/tools/versions.py :: ToolVersionStore` — CRUD over the `tool_versions` table (insert, get, latest, by_hash, list_for_tool, count).
 - Tests live in `tests/test_meta.py` (15 tests).
 - **Still pending:** invoking `edit_tool` from the meta-tool interface (it's currently a python API, not a registered tool that the proxy can dispatch). Also pending: cold-start window forcing observe mode until N new-version triples accumulate.
+
+## Per-project scoping (schema v6)
+
+- `projects` table + nullable `project_id` columns on `triples`, `model_checkpoints`, `cron_jobs`, `synthesized_tools`, `gap_reports`, `experiments`. Exactly zero or one row has `is_active=1`; its `path` is what `planckbot-fs` serves (the last positional arg in `~/.claude.json` → `mcpServers.planckbot-fs.args`).
+- `planckbot init` auto-creates a project from the resolved `--upstream-path` (or cwd). Re-runs with the same path reactivate the existing row instead of duplicating. `--adopt-legacy` on `init` / `project create` back-fills every pre-v6 NULL-project row onto the new project.
+- Switching active project via CLI (`planckbot project switch <name>`) or the sidebar switcher in the UI calls `ProjectStore.set_active(...)` AND rewrites `~/.claude.json` so Claude Code watches the new folder on next restart. Path rewrite is `_rewrite_mcp_upstream_path` in `src/planckbot/cli.py` — same helper is shared by UI and CLI.
+- Every store has an optional `project_id=None` filter on `list`/`count` methods. `None` = unscoped (all rows); a uuid = only that project's rows. `CheckpointManager.get_active(tool, project_id=<id>)` prefers the project-scoped adapter, falls back to a NULL-project legacy row.
+- `PlanckProxy(... , project_id=...)` tags every recorded triple with the project. `mcp_server.run_proxy()` resolves the active project at startup and passes it in, so a running Claude Code session always attributes traffic to the right folder.
+- Cron jobs carry a `project_id` too. The daemon sets `JobContext.project_id` from the job row, so autolabel/detect_tool_gaps/conversation_scanner only act on that project's triples unless the job is global (NULL).
+- `ProjectStore.delete(id)` re-parents child rows to `project_id=NULL` (keeps history, satisfies FK). `delete(id, cascade=True)` wipes them instead.
+- Project deletion is blocked on the active project until the user switches away. UI + CLI both enforce this.
+- Tests in `tests/test_projects.py` (26 tests): schema v5→v6 migration, ProjectStore CRUD invariants, per-store scoping, proxy tagging, `adopt_legacy`, `_rewrite_mcp_upstream_path`.
 
 ## Secret filtering — `.mcpignore` at proxy layer
 

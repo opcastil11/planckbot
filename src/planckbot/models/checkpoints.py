@@ -27,23 +27,53 @@ class CheckpointManager:
         row = cur.fetchone()
         return ModelCheckpoint.from_row(row) if row else None
 
-    def list_all(self, tool_name: str | None = None, limit: int = 100) -> list[ModelCheckpoint]:
+    def list_all(
+        self,
+        tool_name: str | None = None,
+        limit: int = 100,
+        project_id: str | None = None,
+    ) -> list[ModelCheckpoint]:
+        clauses: list[str] = []
+        args: list = []
         if tool_name:
-            cur = self.conn.execute(
-                "SELECT * FROM model_checkpoints WHERE tool_name = ? ORDER BY created_at DESC LIMIT ?",
-                (tool_name, limit),
-            )
-        else:
-            cur = self.conn.execute(
-                "SELECT * FROM model_checkpoints ORDER BY created_at DESC LIMIT ?", (limit,)
-            )
+            clauses.append("tool_name = ?")
+            args.append(tool_name)
+        if project_id is not None:
+            clauses.append("project_id = ?")
+            args.append(project_id)
+        where = "WHERE " + " AND ".join(clauses) if clauses else ""
+        args.append(limit)
+        cur = self.conn.execute(
+            f"SELECT * FROM model_checkpoints {where} "
+            "ORDER BY created_at DESC LIMIT ?",
+            args,
+        )
         return [ModelCheckpoint.from_row(r) for r in cur.fetchall()]
 
-    def get_active(self, tool_name: str) -> ModelCheckpoint | None:
-        cur = self.conn.execute(
-            "SELECT * FROM model_checkpoints WHERE tool_name = ? AND is_active = 1",
-            (tool_name,),
-        )
+    def get_active(
+        self, tool_name: str, project_id: str | None = None
+    ) -> ModelCheckpoint | None:
+        """Active checkpoint for a tool. When `project_id` is supplied, the
+        lookup is scoped to that project; otherwise any project (or legacy
+        NULL) wins. The proxy passes its active-project id at startup so
+        adapters trained on one repo don't leak into another."""
+        if project_id is None:
+            cur = self.conn.execute(
+                "SELECT * FROM model_checkpoints "
+                "WHERE tool_name = ? AND is_active = 1",
+                (tool_name,),
+            )
+        else:
+            # Prefer an adapter trained on this project; fall back to the
+            # unscoped (legacy) row so pre-v6 adapters still serve until
+            # retrained per-project.
+            cur = self.conn.execute(
+                "SELECT * FROM model_checkpoints "
+                "WHERE tool_name = ? AND is_active = 1 "
+                "  AND (project_id = ? OR project_id IS NULL) "
+                "ORDER BY (project_id = ?) DESC LIMIT 1",
+                (tool_name, project_id, project_id),
+            )
         row = cur.fetchone()
         return ModelCheckpoint.from_row(row) if row else None
 
@@ -66,12 +96,24 @@ class CheckpointManager:
                 "run `planckbot bless <ckpt_id>` first, or pass "
                 "require_blessed=False explicitly."
             )
-        # Deactivate all for same tool
+        # Deactivate other checkpoints for the same (tool, project) pair.
+        # A checkpoint scoped to project A doesn't interfere with project B's
+        # active adapter for the same tool — that's the whole point of
+        # per-project scoping. Legacy NULL-project checkpoints are treated
+        # as a scope of their own.
         if ckpt.tool_name:
-            self.conn.execute(
-                "UPDATE model_checkpoints SET is_active = 0 WHERE tool_name = ?",
-                (ckpt.tool_name,),
-            )
+            if ckpt.project_id is None:
+                self.conn.execute(
+                    "UPDATE model_checkpoints SET is_active = 0 "
+                    "WHERE tool_name = ? AND project_id IS NULL",
+                    (ckpt.tool_name,),
+                )
+            else:
+                self.conn.execute(
+                    "UPDATE model_checkpoints SET is_active = 0 "
+                    "WHERE tool_name = ? AND project_id = ?",
+                    (ckpt.tool_name, ckpt.project_id),
+                )
         self.conn.execute(
             "UPDATE model_checkpoints SET is_active = 1 WHERE id = ?", (ckpt_id,)
         )
@@ -127,8 +169,16 @@ class CheckpointManager:
         self.conn.execute("DELETE FROM model_checkpoints WHERE id = ?", (ckpt_id,))
         self.conn.commit()
 
-    def count(self) -> int:
-        cur = self.conn.execute("SELECT COUNT(*) FROM model_checkpoints")
+    def count(self, project_id: str | None = None) -> int:
+        if project_id is None:
+            cur = self.conn.execute(
+                "SELECT COUNT(*) FROM model_checkpoints"
+            )
+        else:
+            cur = self.conn.execute(
+                "SELECT COUNT(*) FROM model_checkpoints WHERE project_id = ?",
+                (project_id,),
+            )
         return cur.fetchone()[0]
 
     def compare(self, ids: list[str]) -> list[ModelCheckpoint]:

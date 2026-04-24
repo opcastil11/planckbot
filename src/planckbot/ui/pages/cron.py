@@ -160,11 +160,14 @@ def _create_form(state, on_created) -> None:
             except json.JSONDecodeError as e:
                 ui.notify(f"invalid JSON: {e}", type="negative")
                 return
+            # New jobs inherit whichever project is the UI lens right now.
+            # Keeping the job global is a CLI-only affair for simplicity.
             job = CronJob(
                 name=name.value.strip(),
                 job_type=job_type.value,
                 params=params,
                 interval_seconds=int(interval.value),
+                project_id=state.active_project_id(),
             )
             state.cron.add(job)
             ui.notify(f"created {job.name}", type="positive")
@@ -193,7 +196,7 @@ def cron_page():
 
     def refresh():
         jobs_container.clear()
-        jobs = state.cron.list_all()
+        jobs = state.cron.list_all(project_id=state.active_project_id())
         with jobs_container:
             if not jobs:
                 empty_state(

@@ -93,8 +93,13 @@ def train_lora(
     conn: sqlite3.Connection,
     tool_name: str = "",
     on_complete: Callable | None = None,
+    project_id: str | None = None,
 ) -> str:
-    """Run LoRA fine-tuning in a background thread. Returns checkpoint ID."""
+    """Run LoRA fine-tuning in a background thread. Returns checkpoint ID.
+
+    `project_id`, when set, tags the resulting checkpoint so `get_active`
+    can return the right adapter for the right target folder.
+    """
     checkpoint_id = _new_id()
 
     def _train():
@@ -210,6 +215,7 @@ def train_lora(
                     "batch_size": config.batch_size,
                 },
                 num_triples=len(train_dataset),
+                project_id=project_id,
             )
             row = ckpt.to_row()
             cols = ", ".join(row.keys())

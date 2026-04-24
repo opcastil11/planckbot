@@ -38,6 +38,7 @@ def _load_stores():
     from planckbot.db.engine import get_connection
     from planckbot.cron import CronStore, default_registry
     from planckbot.models.checkpoints import CheckpointManager
+    from planckbot.tools.projects import ProjectStore
     from planckbot.tools.triples import TriplesStore
 
     conn = get_connection(config.db_path)
@@ -48,7 +49,57 @@ def _load_stores():
         "checkpoints": CheckpointManager(conn),
         "cron": CronStore(conn),
         "cron_registry": default_registry(),
+        "projects": ProjectStore(conn),
     }
+
+
+def _claude_json_path() -> Path:
+    return Path.home() / ".claude.json"
+
+
+def _rewrite_mcp_upstream_path(new_path: str) -> tuple[bool, str]:
+    """Rewrite the planckbot-fs MCP entry in ~/.claude.json so its last
+    positional arg (the served folder) becomes `new_path`.
+
+    Returns (changed, message). No-op if the file doesn't exist or the
+    entry isn't present — in that case the caller can suggest `planckbot
+    init` to wire it up. Does NOT restart Claude Code; the user sees the
+    new path next time they relaunch.
+    """
+    claude_json = _claude_json_path()
+    if not claude_json.exists():
+        return (False, f"{claude_json} does not exist — run `planckbot init`")
+    try:
+        cfg = json.loads(claude_json.read_text())
+    except json.JSONDecodeError as e:
+        return (False, f"{claude_json} is malformed: {e}")
+
+    servers = cfg.get("mcpServers") or {}
+    fs = servers.get("planckbot-fs")
+    if not fs or not isinstance(fs.get("args"), list) or not fs["args"]:
+        return (
+            False,
+            "~/.claude.json has no planckbot-fs entry; run `planckbot init`",
+        )
+
+    args = list(fs["args"])
+    # The init command builds args as:
+    #   ["--mode", MODE, "--name", "planckbot-fs", "--",
+    #    NPX, "-y", "@modelcontextprotocol/server-filesystem", PATH]
+    # So the served path is always the LAST arg. Replace it in place.
+    if args[-1] == new_path:
+        return (False, "claude.json already points at that path")
+    args[-1] = new_path
+    fs["args"] = args
+    servers["planckbot-fs"] = fs
+    cfg["mcpServers"] = servers
+
+    backup = claude_json.with_suffix(
+        f".json.bak-{int(datetime.now().timestamp())}"
+    )
+    backup.write_text(claude_json.read_text())
+    claude_json.write_text(json.dumps(cfg, indent=2))
+    return (True, f"updated {claude_json} (backup at {backup.name})")
 
 
 def _resolve_job(cron_store, ref: str):
@@ -128,18 +179,40 @@ def _render_status() -> int:
     triples = s["triples"]
     ckpts = s["checkpoints"]
     cron = s["cron"]
+    projects = s["projects"]
 
-    total = triples.count_total()
-    counts = triples.count_by_tool()
-    savings = triples.token_savings("proxy:intervene")
-    jobs = cron.list_all()
-    ckpt_rows = ckpts.list_all()
+    active_project = projects.get_active()
+    pid = active_project.id if active_project else None
+    total = triples.count_total(project_id=pid)
+    counts = triples.count_by_tool(project_id=pid)
+    savings = triples.token_savings("proxy:intervene", project_id=pid)
+    jobs = cron.list_all(project_id=pid)
+    ckpt_rows = ckpts.list_all(project_id=pid)
+    all_projects = projects.list_all()
 
     # Connection: where PlanckBot is observing from, in what mode
     from planckbot.ui.mcp_status import read_mcp_status
     st = read_mcp_status()
 
     print(f"PlanckBot — db={config.db_path}")
+    print("")
+    scope_label = (
+        f"★ {active_project.name}" if active_project
+        else "(no active project — `planckbot project switch <name>`)"
+    )
+    print(f"  active project     : {scope_label}")
+    if all_projects:
+        print(
+            f"    projects         : {len(all_projects)} total"
+            + (
+                ", "
+                + ", ".join(
+                    f"{p.name}{'*' if p.is_active else ''}"
+                    for p in all_projects[:5]
+                )
+                if all_projects else ""
+            )
+        )
     print("")
     print("  connection         :")
     if st.config_error:
@@ -271,15 +344,27 @@ def cmd_cron_add(args) -> int:
     except json.JSONDecodeError as e:
         print(f"--params is not valid JSON: {e}", file=sys.stderr)
         return 2
+    project_id = None
+    if args.project:
+        project = s["projects"].by_name(args.project)
+        if project is None:
+            print(f"no such project: {args.project!r}", file=sys.stderr)
+            return 1
+        project_id = project.id
     job = CronJob(
         name=args.name,
         job_type=args.type,
         params=params,
         interval_seconds=args.interval,
         enabled=0 if args.disabled else 1,
+        project_id=project_id,
     )
     s["cron"].add(job)
-    print(f"added {job.id[:8]} {job.name} (every {job.interval_seconds}s)")
+    scope = f" project={args.project}" if args.project else " (global)"
+    print(
+        f"added {job.id[:8]} {job.name} "
+        f"(every {job.interval_seconds}s){scope}"
+    )
     return 0
 
 
@@ -496,6 +581,144 @@ def cmd_synth_gaps(_args) -> int:
     return 0
 
 
+# --- project subcommands ---------------------------------------------------
+
+
+def cmd_project_list(_args) -> int:
+    s = _load_stores()
+    projects = s["projects"].list_all()
+    if not projects:
+        print("no projects yet — create one with `planckbot project create`")
+        return 0
+    print(f"{'':<2} {'NAME':<24} {'ID':<10} {'PATH':<50} {'CREATED':<20}")
+    for p in projects:
+        marker = "★" if p.is_active else " "
+        print(
+            f"{marker:<2} {p.name[:24]:<24} {p.id[:8]:<10} "
+            f"{p.path[:50]:<50} {_fmt_ts(p.created_at):<20}"
+        )
+    return 0
+
+
+def cmd_project_show(args) -> int:
+    s = _load_stores()
+    target = args.name
+    project = (
+        s["projects"].by_name(target)
+        if target
+        else s["projects"].get_active()
+    )
+    if project is None:
+        print(
+            f"no such project: {target!r}" if target
+            else "no active project — use `planckbot project switch <name>`",
+            file=sys.stderr,
+        )
+        return 1
+    # Quick stats
+    triples = s["triples"].count_total(project_id=project.id)
+    ckpts = s["checkpoints"].count(project_id=project.id)
+
+    print(f"name        : {project.name}")
+    print(f"id          : {project.id}")
+    print(f"path        : {project.path}")
+    print(f"description : {project.description or '-'}")
+    print(f"active      : {'yes' if project.is_active else 'no'}")
+    print(f"created_at  : {_fmt_ts(project.created_at)}")
+    print(f"last_used_at: {_fmt_ts(project.last_used_at)}")
+    print(f"triples     : {triples}")
+    print(f"checkpoints : {ckpts}")
+    return 0
+
+
+def cmd_project_create(args) -> int:
+    s = _load_stores()
+    path = Path(args.path).expanduser().resolve()
+    try:
+        project = s["projects"].create(
+            name=args.name,
+            path=str(path),
+            description=args.description,
+            activate=args.activate,
+        )
+    except ValueError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+
+    print(f"created project {project.name} ({project.id[:8]}) → {project.path}")
+
+    if args.adopt_legacy:
+        touched = s["projects"].adopt_legacy(project.id)
+        total = sum(touched.values())
+        print(f"  adopted {total} pre-v6 row(s): {touched}")
+
+    if args.activate:
+        ok, msg = _rewrite_mcp_upstream_path(str(path))
+        print(f"  activated — {msg}")
+        if ok:
+            print(
+                "  restart Claude Code so it picks up the new folder."
+            )
+    return 0
+
+
+def cmd_project_switch(args) -> int:
+    s = _load_stores()
+    project = s["projects"].by_name(args.name)
+    if project is None:
+        print(f"no such project: {args.name!r}", file=sys.stderr)
+        return 1
+    s["projects"].set_active(project.id)
+    print(f"switched active project → {project.name} ({project.path})")
+    ok, msg = _rewrite_mcp_upstream_path(project.path)
+    print(f"  {msg}")
+    if ok:
+        print("  restart Claude Code so it picks up the new folder.")
+    return 0
+
+
+def cmd_project_delete(args) -> int:
+    s = _load_stores()
+    project = s["projects"].by_name(args.name)
+    if project is None:
+        print(f"no such project: {args.name!r}", file=sys.stderr)
+        return 1
+    if project.is_active and not args.yes:
+        print(
+            f"{project.name} is the active project. "
+            "Switch to a different one first, or pass --yes to force.",
+            file=sys.stderr,
+        )
+        return 2
+    if args.purge and not args.yes:
+        resp = input(
+            f"really delete {project.name} AND all its triples/checkpoints/"
+            f"cron/synth/gaps/experiments? [y/N] "
+        )
+        if resp.strip().lower() != "y":
+            print("aborted")
+            return 0
+    s["projects"].delete(project.id, cascade=args.purge)
+    note = "+ scoped rows" if args.purge else "(scoped rows kept — re-adopt via another project)"
+    print(f"deleted {project.name} {note}")
+    return 0
+
+
+def cmd_project_rename(args) -> int:
+    s = _load_stores()
+    project = s["projects"].by_name(args.old)
+    if project is None:
+        print(f"no such project: {args.old!r}", file=sys.stderr)
+        return 1
+    try:
+        s["projects"].rename(project.id, args.new)
+    except ValueError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+    print(f"renamed {args.old} → {args.new}")
+    return 0
+
+
 def cmd_cron_daemon(args) -> int:
     s = _load_stores()
     from planckbot.cron.daemon import Daemon
@@ -567,11 +790,13 @@ def cmd_init(args) -> int:
         )
 
     entries = {}
+    upstream: str | None = None
     if fs_bin:
         upstream = args.upstream_path or os.environ.get(
             "PLANCKBOT_UPSTREAM_PATH",
             str(Path.cwd()),
         )
+        upstream = str(Path(upstream).expanduser().resolve())
         npx = args.npx or which("npx") or "/usr/bin/npx"
         entries["planckbot-fs"] = {
             "command": fs_bin,
@@ -585,6 +810,38 @@ def cmd_init(args) -> int:
         }
     if synth_bin:
         entries["planckbot-synth"] = {"command": synth_bin}
+
+    # v6: auto-register the upstream path as a project so per-project
+    # scoping has a row to tag against from the very first tool call.
+    # Re-running `init` with the same path is idempotent: we find the
+    # existing row by path and just re-activate it.
+    if upstream and not args.print_config:
+        from planckbot.tools.projects import ProjectStore
+        pstore = ProjectStore(conn)
+        project = pstore.by_path(upstream)
+        if project is None:
+            name = args.project_name or _derive_project_name(
+                upstream, pstore
+            )
+            project = pstore.create(
+                name=name, path=upstream, activate=True,
+            )
+            print(f"[init] created project {project.name} → {upstream}")
+            # On a first install the pre-v6 DB is empty; on an upgrade
+            # there may be legacy triples/checkpoints. Only adopt legacy
+            # data when the user passes --adopt-legacy to avoid mixing a
+            # prior watched folder into the new project by accident.
+            if args.adopt_legacy:
+                touched = pstore.adopt_legacy(project.id)
+                total = sum(touched.values())
+                if total:
+                    print(f"[init]   adopted {total} pre-v6 row(s): {touched}")
+        else:
+            pstore.set_active(project.id)
+            print(
+                f"[init] reused existing project {project.name} "
+                f"({project.id[:8]}) → {upstream}"
+            )
 
     claude_json = Path.home() / ".claude.json"
 
@@ -644,6 +901,26 @@ def cmd_init(args) -> int:
 
     _print_next_steps()
     return 0
+
+
+def _derive_project_name(path: str, store) -> str:
+    """Pick a unique project name based on the folder basename.
+
+    `planckbot` → `planckbot`, and if that's taken, `planckbot-2`, etc.
+    Falls back to a UUID prefix when the basename is empty (e.g. `/`).
+    """
+    base = Path(path).name or "project"
+    # Normalize: strip anything that'd make it awkward on the CLI.
+    safe = "".join(c if c.isalnum() or c in "-_" else "-" for c in base)
+    safe = safe.strip("-") or "project"
+    if store.by_name(safe) is None:
+        return safe
+    for i in range(2, 100):
+        candidate = f"{safe}-{i}"
+        if store.by_name(candidate) is None:
+            return candidate
+    import uuid
+    return f"{safe}-{uuid.uuid4().hex[:6]}"
 
 
 def _print_next_steps() -> None:
@@ -934,6 +1211,19 @@ def cmd_uninstall(args) -> int:
         print("aborted")
         return 0
 
+    # 0. Deactivate any active project so a fresh re-install starts clean.
+    # We do NOT delete the project rows or their triples/checkpoints —
+    # that's what --purge-data is for. A user who uninstalls and later
+    # reinstalls against the same folder gets their history back.
+    try:
+        from planckbot.db.engine import get_connection
+        from planckbot.tools.projects import ProjectStore
+        conn = get_connection(config.db_path)
+        ProjectStore(conn).deactivate_all()
+    except Exception as e:
+        print(f"[uninstall] note: could not deactivate projects: {e}",
+              file=sys.stderr)
+
     # 1. Remove MCP entries from claude.json
     if claude_json.exists():
         try:
@@ -1088,6 +1378,11 @@ def _build_parser() -> argparse.ArgumentParser:
     cp.add_argument("--params", default="{}",
                     help="JSON object of job-specific parameters.")
     cp.add_argument("--disabled", action="store_true")
+    cp.add_argument(
+        "--project",
+        help="Name of the project this job should run under "
+             "(default: global).",
+    )
     cp.set_defaults(func=cmd_cron_add)
 
     cp = cron_sub.add_parser("rm", help="Delete a job by name or id.")
@@ -1162,6 +1457,64 @@ def _build_parser() -> argparse.ArgumentParser:
                      help="Print the generated code but don't persist it.")
     sp2.set_defaults(func=cmd_synth_author)
 
+    # project <subsub>
+    project_p = sub.add_parser(
+        "project",
+        help="Manage target-folder projects (the 'which folder should "
+             "PlanckBots watch' question).",
+    )
+    project_sub = project_p.add_subparsers(dest="project_command")
+
+    pp = project_sub.add_parser("list", help="List all projects.")
+    pp.set_defaults(func=cmd_project_list)
+
+    pp = project_sub.add_parser(
+        "show",
+        help="Show a project's config + stats. Omit name for the active one.",
+    )
+    pp.add_argument("name", nargs="?")
+    pp.set_defaults(func=cmd_project_show)
+
+    pp = project_sub.add_parser(
+        "create", help="Register a new target folder as a project.",
+    )
+    pp.add_argument("name", help="Short unique name (no spaces).")
+    pp.add_argument(
+        "--path", required=True,
+        help="Absolute path to the folder PlanckBots should watch.",
+    )
+    pp.add_argument("--description", default=None)
+    pp.add_argument(
+        "--activate", action="store_true",
+        help="Make this the active project; rewrites ~/.claude.json.",
+    )
+    pp.add_argument(
+        "--adopt-legacy", action="store_true",
+        help="Reassign every pre-v6 row (NULL project_id) to this project.",
+    )
+    pp.set_defaults(func=cmd_project_create)
+
+    pp = project_sub.add_parser(
+        "switch",
+        help="Set the active project (updates DB + ~/.claude.json).",
+    )
+    pp.add_argument("name")
+    pp.set_defaults(func=cmd_project_switch)
+
+    pp = project_sub.add_parser("delete", help="Delete a project.")
+    pp.add_argument("name")
+    pp.add_argument(
+        "--purge", action="store_true",
+        help="Also delete triples/checkpoints/etc. for this project.",
+    )
+    pp.add_argument("--yes", "-y", action="store_true")
+    pp.set_defaults(func=cmd_project_delete)
+
+    pp = project_sub.add_parser("rename", help="Rename a project.")
+    pp.add_argument("old")
+    pp.add_argument("new")
+    pp.set_defaults(func=cmd_project_rename)
+
     # init (first-run setup)
     sp = sub.add_parser(
         "init",
@@ -1189,6 +1542,14 @@ def _build_parser() -> argparse.ArgumentParser:
     sp.add_argument(
         "--print-config", action="store_true",
         help="Print the JSON block and exit without touching any file.",
+    )
+    sp.add_argument(
+        "--project-name",
+        help="Name for the auto-created project (default: folder basename).",
+    )
+    sp.add_argument(
+        "--adopt-legacy", action="store_true",
+        help="Reassign pre-v6 rows (NULL project_id) to the new project.",
     )
     sp.set_defaults(func=cmd_init)
 
@@ -1285,6 +1646,10 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.command == "synth" and getattr(args, "synth_command", None) is None:
         parser.parse_args(["synth", "--help"])
+        return 2
+
+    if args.command == "project" and getattr(args, "project_command", None) is None:
+        parser.parse_args(["project", "--help"])
         return 2
 
     if args.command == "systemd" and getattr(args, "systemd_command", None) is None:

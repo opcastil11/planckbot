@@ -367,6 +367,46 @@ def _check_data_dir() -> CheckResult:
 # ---------------------------------------------------------------------------
 
 
+def _check_active_project() -> CheckResult:
+    """Warn if no active project is set. Without one, every new triple
+    lands unscoped (project_id=NULL) — which works, but defeats the
+    point of having multiple projects."""
+    try:
+        from planckbot.config import config
+        from planckbot.db.engine import get_connection
+        from planckbot.tools.projects import ProjectStore
+        conn = get_connection(config.db_path)
+        ps = ProjectStore(conn)
+        all_projects = ps.list_all()
+        active = ps.get_active()
+    except Exception as e:
+        return CheckResult(
+            status=CHECK_WARN,
+            title="Active project",
+            detail=f"could not read projects table: {e}",
+        )
+
+    if not all_projects:
+        return CheckResult(
+            status=CHECK_WARN,
+            title="Active project",
+            detail="no projects defined",
+            fix="planckbot project create <name> --path /abs/path --activate",
+        )
+    if active is None:
+        return CheckResult(
+            status=CHECK_WARN,
+            title="Active project",
+            detail=f"{len(all_projects)} project(s) defined, none active",
+            fix="planckbot project switch <name>",
+        )
+    return CheckResult(
+        status=CHECK_OK,
+        title="Active project",
+        detail=f"{active.name} → {active.path}",
+    )
+
+
 CHECKS = [
     _check_python_version,
     _check_in_venv,
@@ -377,6 +417,7 @@ CHECKS = [
     _check_db,
     _check_claude_config,
     _check_mcp_processes,
+    _check_active_project,
     _check_adapters,
     _check_cron_jobs,
     _check_systemd_unit,

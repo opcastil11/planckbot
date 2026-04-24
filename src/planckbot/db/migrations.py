@@ -21,16 +21,43 @@ v5 — adds `blessed` (bool) and `tuned_threshold` (float) columns to
      proxy will apply it in `intervene` mode, and its tuned threshold
      (if set) overrides the global default. Both are additive nullable
      columns.
+v6 — adds `projects` table + nullable `project_id` columns on
+     `triples`, `model_checkpoints`, `cron_jobs`, `synthesized_tools`,
+     `gap_reports`, and `experiments`. Lets the user define multiple
+     target folders ("projects"), scope data and adapters per-project,
+     and switch which one Claude Code points at without losing history
+     from the others. Existing rows get NULL `project_id` (treated as
+     "legacy / unscoped" — visible in All-Projects views, invisible in
+     any per-project filter) so the upgrade is lossless.
 """
 
 import sqlite3
 
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 TABLES = """
 CREATE TABLE IF NOT EXISTS schema_version (
     version INTEGER NOT NULL
 );
+
+-- v6: projects = named target folders. The user creates one per repo/codebase
+-- they want PlanckBot to watch. At any time exactly zero or one project has
+-- `is_active = 1`; its `path` is the one baked into the planckbot-fs MCP
+-- entry in ~/.claude.json. Rows in the per-project tables (triples,
+-- checkpoints, cron_jobs, synthesized_tools, gap_reports, experiments)
+-- carry a `project_id` so we can segregate training data and adapters by
+-- project. NULL `project_id` = legacy unscoped data from before v6.
+CREATE TABLE IF NOT EXISTS projects (
+    id           TEXT PRIMARY KEY,
+    name         TEXT NOT NULL UNIQUE,
+    path         TEXT NOT NULL,
+    description  TEXT,
+    is_active    INTEGER NOT NULL DEFAULT 0,
+    created_at   TEXT NOT NULL,
+    last_used_at TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_projects_active ON projects(is_active);
 
 CREATE TABLE IF NOT EXISTS experiments (
     id              TEXT PRIMARY KEY,
@@ -48,7 +75,9 @@ CREATE TABLE IF NOT EXISTS experiments (
     completed_at    TEXT,
     metrics         TEXT,
     observations    TEXT,
-    FOREIGN KEY (checkpoint_id) REFERENCES model_checkpoints(id)
+    project_id      TEXT,                 -- v6: target project
+    FOREIGN KEY (checkpoint_id) REFERENCES model_checkpoints(id),
+    FOREIGN KEY (project_id) REFERENCES projects(id)
 );
 
 CREATE TABLE IF NOT EXISTS triples (
@@ -66,12 +95,15 @@ CREATE TABLE IF NOT EXISTS triples (
     created_at      TEXT NOT NULL,
     experiment_id   TEXT,
     tool_version_id TEXT,                 -- v2: which tool revision this was observed on
+    project_id      TEXT,                 -- v6: which project this triple belongs to
     FOREIGN KEY (experiment_id) REFERENCES experiments(id),
-    FOREIGN KEY (tool_version_id) REFERENCES tool_versions(id)
+    FOREIGN KEY (tool_version_id) REFERENCES tool_versions(id),
+    FOREIGN KEY (project_id) REFERENCES projects(id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_triples_tool ON triples(tool_name);
 CREATE INDEX IF NOT EXISTS idx_triples_experiment ON triples(experiment_id);
+CREATE INDEX IF NOT EXISTS idx_triples_project ON triples(project_id);
 
 -- v2: tool_versions + tool_version_id columns.
 -- See docs/PLANCKBOT_CONCEPT.md §7 (Mutable Tools & Co-evolution).
@@ -115,12 +147,16 @@ CREATE TABLE IF NOT EXISTS model_checkpoints (
     blessed         INTEGER NOT NULL DEFAULT 0,        -- v5: safety gate
     tuned_threshold REAL,                              -- v5: per-ckpt θ
     created_at      TEXT NOT NULL,
+    project_id      TEXT,                 -- v6: which project this adapter is for
     FOREIGN KEY (experiment_id) REFERENCES experiments(id),
-    FOREIGN KEY (tool_version_id) REFERENCES tool_versions(id)
+    FOREIGN KEY (tool_version_id) REFERENCES tool_versions(id),
+    FOREIGN KEY (project_id) REFERENCES projects(id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_checkpoints_tool_version
     ON model_checkpoints(tool_name, tool_version_id);
+CREATE INDEX IF NOT EXISTS idx_checkpoints_project
+    ON model_checkpoints(project_id, tool_name);
 
 CREATE TABLE IF NOT EXISTS paper_log (
     id              TEXT PRIMARY KEY,
@@ -170,10 +206,13 @@ CREATE TABLE IF NOT EXISTS cron_jobs (
     next_run_at      TEXT,
     last_status      TEXT,                   -- 'ok' | 'error' | NULL
     last_output      TEXT,
-    created_at       TEXT NOT NULL
+    created_at       TEXT NOT NULL,
+    project_id       TEXT,                   -- v6: which project this job is for (NULL = global)
+    FOREIGN KEY (project_id) REFERENCES projects(id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_cron_due ON cron_jobs(enabled, next_run_at);
+CREATE INDEX IF NOT EXISTS idx_cron_project ON cron_jobs(project_id);
 
 -- v4: Layer D — synthesized tools + gap reports.
 CREATE TABLE IF NOT EXISTS synthesized_tools (
@@ -187,10 +226,13 @@ CREATE TABLE IF NOT EXISTS synthesized_tools (
     created_at        TEXT NOT NULL,
     created_by        TEXT,
     gap_report_id     TEXT,
-    FOREIGN KEY (gap_report_id) REFERENCES gap_reports(id)
+    project_id        TEXT,                 -- v6: which project this tool was synthesized from
+    FOREIGN KEY (gap_report_id) REFERENCES gap_reports(id),
+    FOREIGN KEY (project_id) REFERENCES projects(id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_synth_status ON synthesized_tools(status);
+CREATE INDEX IF NOT EXISTS idx_synth_project ON synthesized_tools(project_id);
 
 CREATE TABLE IF NOT EXISTS gap_reports (
     id                      TEXT PRIMARY KEY,
@@ -200,10 +242,13 @@ CREATE TABLE IF NOT EXISTS gap_reports (
     proposed_name           TEXT,
     proposed_description    TEXT,
     status                  TEXT NOT NULL DEFAULT 'open', -- open | accepted | rejected
-    created_at              TEXT NOT NULL
+    created_at              TEXT NOT NULL,
+    project_id              TEXT,                    -- v6: which project this gap was detected in
+    FOREIGN KEY (project_id) REFERENCES projects(id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_gap_status ON gap_reports(status);
+CREATE INDEX IF NOT EXISTS idx_gap_project ON gap_reports(project_id);
 """
 
 
@@ -345,6 +390,63 @@ def _upgrade_to_v5(conn: sqlite3.Connection) -> None:
         )
 
 
+V6_UPGRADE_STATEMENTS = [
+    """
+    CREATE TABLE IF NOT EXISTS projects (
+        id           TEXT PRIMARY KEY,
+        name         TEXT NOT NULL UNIQUE,
+        path         TEXT NOT NULL,
+        description  TEXT,
+        is_active    INTEGER NOT NULL DEFAULT 0,
+        created_at   TEXT NOT NULL,
+        last_used_at TEXT
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_projects_active ON projects(is_active)",
+]
+
+
+_V6_COLUMN_ADDS = [
+    # (table, column, type)
+    ("triples", "project_id", "TEXT"),
+    ("model_checkpoints", "project_id", "TEXT"),
+    ("cron_jobs", "project_id", "TEXT"),
+    ("synthesized_tools", "project_id", "TEXT"),
+    ("gap_reports", "project_id", "TEXT"),
+    ("experiments", "project_id", "TEXT"),
+]
+
+
+_V6_INDEXES = [
+    "CREATE INDEX IF NOT EXISTS idx_triples_project ON triples(project_id)",
+    "CREATE INDEX IF NOT EXISTS idx_checkpoints_project "
+    "ON model_checkpoints(project_id, tool_name)",
+    "CREATE INDEX IF NOT EXISTS idx_cron_project ON cron_jobs(project_id)",
+    "CREATE INDEX IF NOT EXISTS idx_synth_project "
+    "ON synthesized_tools(project_id)",
+    "CREATE INDEX IF NOT EXISTS idx_gap_project ON gap_reports(project_id)",
+]
+
+
+def _upgrade_to_v6(conn: sqlite3.Connection) -> None:
+    """Add projects table + nullable project_id columns on the per-project
+    tables.
+
+    Intentionally lossless: existing rows get NULL project_id (treated as
+    "legacy / unscoped" by the stores). The first `planckbot project create
+    --adopt-legacy` can bulk-reassign them to a newly-created project.
+    """
+    for stmt in V6_UPGRADE_STATEMENTS:
+        conn.execute(stmt)
+    for table, column, coltype in _V6_COLUMN_ADDS:
+        if not _column_exists(conn, table, column):
+            conn.execute(
+                f"ALTER TABLE {table} ADD COLUMN {column} {coltype}"
+            )
+    for stmt in _V6_INDEXES:
+        conn.execute(stmt)
+
+
 def migrate(conn: sqlite3.Connection):
     """Apply pending migrations. Safe to call repeatedly."""
     cur = conn.execute(
@@ -370,6 +472,8 @@ def migrate(conn: sqlite3.Connection):
         _upgrade_to_v4(conn)
     if current < 5:
         _upgrade_to_v5(conn)
+    if current < 6:
+        _upgrade_to_v6(conn)
 
     # Hygiene: store the version as a SINGLE row that we UPDATE in place.
     # Pre-v5 DBs have one row per migration (accumulating cruft); we

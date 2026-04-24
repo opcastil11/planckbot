@@ -42,10 +42,21 @@ class CronStore:
         row = cur.fetchone()
         return CronJob.from_row(row) if row else None
 
-    def list_all(self) -> list[CronJob]:
-        cur = self.conn.execute(
-            "SELECT * FROM cron_jobs ORDER BY created_at DESC"
-        )
+    def list_all(self, project_id: str | None = None) -> list[CronJob]:
+        if project_id is None:
+            cur = self.conn.execute(
+                "SELECT * FROM cron_jobs ORDER BY created_at DESC"
+            )
+        else:
+            # Include NULL-project jobs: those are "global" and should be
+            # visible in every project's view (e.g. a machine-wide retrain
+            # signal doesn't want to be duplicated per project).
+            cur = self.conn.execute(
+                "SELECT * FROM cron_jobs "
+                "WHERE project_id = ? OR project_id IS NULL "
+                "ORDER BY created_at DESC",
+                (project_id,),
+            )
         return [CronJob.from_row(r) for r in cur.fetchall()]
 
     def list_due(self, now: datetime | None = None) -> list[CronJob]:
@@ -102,5 +113,13 @@ class CronStore:
         )
         self.conn.commit()
 
-    def count(self) -> int:
-        return self.conn.execute("SELECT COUNT(*) FROM cron_jobs").fetchone()[0]
+    def count(self, project_id: str | None = None) -> int:
+        if project_id is None:
+            return self.conn.execute(
+                "SELECT COUNT(*) FROM cron_jobs"
+            ).fetchone()[0]
+        return self.conn.execute(
+            "SELECT COUNT(*) FROM cron_jobs "
+            "WHERE project_id = ? OR project_id IS NULL",
+            (project_id,),
+        ).fetchone()[0]

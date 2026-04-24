@@ -127,18 +127,39 @@ class GapReportStore:
         row = cur.fetchone()
         return GapReport.from_row(row) if row else None
 
-    def list_open(self, limit: int = 50) -> list[GapReport]:
-        cur = self.conn.execute(
-            "SELECT * FROM gap_reports WHERE status = 'open' "
-            "ORDER BY occurrences DESC, created_at DESC LIMIT ?",
-            (limit,),
-        )
+    def list_open(
+        self, limit: int = 50, project_id: str | None = None
+    ) -> list[GapReport]:
+        if project_id is None:
+            cur = self.conn.execute(
+                "SELECT * FROM gap_reports WHERE status = 'open' "
+                "ORDER BY occurrences DESC, created_at DESC LIMIT ?",
+                (limit,),
+            )
+        else:
+            cur = self.conn.execute(
+                "SELECT * FROM gap_reports WHERE status = 'open' "
+                "  AND (project_id = ? OR project_id IS NULL) "
+                "ORDER BY occurrences DESC, created_at DESC LIMIT ?",
+                (project_id, limit),
+            )
         return [GapReport.from_row(r) for r in cur.fetchall()]
 
-    def list_all(self, limit: int = 50) -> list[GapReport]:
-        cur = self.conn.execute(
-            "SELECT * FROM gap_reports ORDER BY created_at DESC LIMIT ?", (limit,)
-        )
+    def list_all(
+        self, limit: int = 50, project_id: str | None = None
+    ) -> list[GapReport]:
+        if project_id is None:
+            cur = self.conn.execute(
+                "SELECT * FROM gap_reports ORDER BY created_at DESC LIMIT ?",
+                (limit,),
+            )
+        else:
+            cur = self.conn.execute(
+                "SELECT * FROM gap_reports "
+                "WHERE project_id = ? OR project_id IS NULL "
+                "ORDER BY created_at DESC LIMIT ?",
+                (project_id, limit),
+            )
         return [GapReport.from_row(r) for r in cur.fetchall()]
 
     def set_status(self, report_id: str, status: str) -> None:
@@ -148,8 +169,16 @@ class GapReportStore:
         )
         self.conn.commit()
 
-    def count(self) -> int:
-        return self.conn.execute("SELECT COUNT(*) FROM gap_reports").fetchone()[0]
+    def count(self, project_id: str | None = None) -> int:
+        if project_id is None:
+            return self.conn.execute(
+                "SELECT COUNT(*) FROM gap_reports"
+            ).fetchone()[0]
+        return self.conn.execute(
+            "SELECT COUNT(*) FROM gap_reports "
+            "WHERE project_id = ? OR project_id IS NULL",
+            (project_id,),
+        ).fetchone()[0]
 
     def find_by_sequence(self, sequence: tuple[str, ...]) -> GapReport | None:
         """Dedup helper: the detector runs on a cron so we don't want to
@@ -167,11 +196,16 @@ class GapReportStore:
 def build_gap_reports(
     conn: sqlite3.Connection,
     matches: list[SequenceMatch],
+    *,
+    project_id: str | None = None,
 ) -> tuple[int, int]:
     """Persist `matches` as gap reports. Returns (created, updated).
 
     If an open report for the same sequence already exists, increment its
-    occurrences instead of inserting a duplicate.
+    occurrences instead of inserting a duplicate. When `project_id` is
+    supplied, new reports are tagged to it (existing ones keep their
+    original project tag — a pattern that spans two projects shouldn't
+    accidentally rewrite history).
     """
     store = GapReportStore(conn)
     created = updated = 0
@@ -201,6 +235,7 @@ def build_gap_reports(
                     f"Candidate tool: combines {' → '.join(m.sequence)} "
                     f"(observed {m.occurrences} times)."
                 ),
+                project_id=project_id,
             )
             store.insert(report)
             created += 1

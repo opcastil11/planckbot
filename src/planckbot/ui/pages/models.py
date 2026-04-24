@@ -18,7 +18,9 @@ def models_page():
                  "Activate the one you want the proxy to use.",
     )
 
-    checkpoints = state.checkpoints.list_all()
+    checkpoints = state.checkpoints.list_all(
+        project_id=state.active_project_id()
+    )
     if not checkpoints:
         empty_state(
             title="No checkpoints yet",

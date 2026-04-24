@@ -15,6 +15,32 @@ def _now() -> str:
 
 
 @dataclass
+class Project:
+    """A named target folder that PlanckBots operate on.
+
+    At most one project has `is_active = 1` at a time — its `path` is the
+    one baked into the planckbot-fs MCP entry in `~/.claude.json`. All
+    per-project tables (triples, checkpoints, cron_jobs, synthesized_tools,
+    gap_reports, experiments) carry a nullable `project_id` so a full
+    history of every watched folder stays addressable.
+    """
+    id: str = field(default_factory=_new_id)
+    name: str = ""
+    path: str = ""               # absolute filesystem path being watched
+    description: str | None = None
+    is_active: int = 0
+    created_at: str = field(default_factory=_now)
+    last_used_at: str | None = None
+
+    def to_row(self) -> dict:
+        return asdict(self)
+
+    @classmethod
+    def from_row(cls, row) -> "Project":
+        return cls(**dict(row))
+
+
+@dataclass
 class Experiment:
     id: str = field(default_factory=_new_id)
     name: str = ""
@@ -31,6 +57,7 @@ class Experiment:
     completed_at: str | None = None
     metrics: dict | None = None
     observations: str | None = None
+    project_id: str | None = None  # v6
 
     def to_row(self) -> dict:
         d = asdict(self)
@@ -62,6 +89,7 @@ class Triple:
     created_at: str = field(default_factory=_now)
     experiment_id: str | None = None
     tool_version_id: str | None = None  # v2: co-evolution tracking
+    project_id: str | None = None       # v6: target project scope
 
     def to_row(self) -> dict:
         return asdict(self)
@@ -91,6 +119,7 @@ class ModelCheckpoint:
     blessed: int = 0                  # v5: safety gate — set with `planckbot bless`
     tuned_threshold: float | None = None  # v5: per-ckpt confidence override
     created_at: str = field(default_factory=_now)
+    project_id: str | None = None         # v6: which project this adapter serves
 
     def to_row(self) -> dict:
         d = asdict(self)
@@ -195,6 +224,7 @@ class CronJob:
     last_status: str | None = None   # 'ok' | 'error'
     last_output: str | None = None
     created_at: str = field(default_factory=_now)
+    project_id: str | None = None    # v6: scope this job to a project (NULL = global)
 
     def to_row(self) -> dict:
         d = asdict(self)
@@ -225,6 +255,7 @@ class GapReport:
     proposed_description: str | None = None
     status: str = "open"          # open | accepted | rejected
     created_at: str = field(default_factory=_now)
+    project_id: str | None = None  # v6: which project this pattern came from
 
     def to_row(self) -> dict:
         d = asdict(self)
@@ -260,6 +291,7 @@ class SynthesizedTool:
     created_at: str = field(default_factory=_now)
     created_by: str | None = None
     gap_report_id: str | None = None
+    project_id: str | None = None  # v6: which project this tool was synthesized in
 
     def to_row(self) -> dict:
         d = asdict(self)

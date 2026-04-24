@@ -20,9 +20,17 @@ JobFn = Callable[["JobContext"], str]
 
 @dataclass
 class JobContext:
-    """Everything a job function needs at run time."""
+    """Everything a job function needs at run time.
+
+    `project_id` comes from the owning cron_jobs row. Jobs that scope data
+    queries (autolabel, detect_tool_gaps, conversation_scanner, retrain)
+    should honor it so a per-project job doesn't accidentally label or
+    retrain against another project's triples. NULL = global job, operate
+    across every project.
+    """
     conn: sqlite3.Connection
     params: dict = field(default_factory=dict)
+    project_id: str | None = None
 
 
 class JobRegistry:
@@ -70,7 +78,9 @@ def _autolabel_job(ctx: JobContext) -> str:
 
     reference = Path(ref_path).read_text()
     store = TriplesStore(ctx.conn)
-    candidates = store.list_unlabeled(tool_name=tool, limit=recent)
+    candidates = store.list_unlabeled(
+        tool_name=tool, limit=recent, project_id=ctx.project_id,
+    )
 
     if not candidates:
         return f"no unlabeled triples for tool={tool}"
@@ -203,7 +213,9 @@ def _autolabel_precise_job(ctx: JobContext) -> str:
         return f"no jsonl files in {project_dir}"
 
     store = TriplesStore(ctx.conn)
-    candidates = store.list_unlabeled(tool_name=tool, limit=recent)
+    candidates = store.list_unlabeled(
+        tool_name=tool, limit=recent, project_id=ctx.project_id,
+    )
     if not candidates:
         return f"no unlabeled triples for tool={tool}"
 
@@ -262,7 +274,9 @@ def _detect_tool_gaps_job(ctx: JobContext) -> str:
     min_occ = int(params.get("min_occurrences", 2))
     limit = int(params.get("limit_triples", 500))
 
-    triples = TriplesStore(ctx.conn).list_all(limit=limit)
+    triples = TriplesStore(ctx.conn).list_all(
+        limit=limit, project_id=ctx.project_id,
+    )
     matches = find_tool_sequences(
         triples,
         window_seconds=window,
@@ -270,7 +284,9 @@ def _detect_tool_gaps_job(ctx: JobContext) -> str:
     )
     if not matches:
         return f"no repeated sequences (window={window}s min={min_occ})"
-    created, updated = build_gap_reports(ctx.conn, matches)
+    created, updated = build_gap_reports(
+        ctx.conn, matches, project_id=ctx.project_id,
+    )
     top = matches[0]
     return (
         f"matches={len(matches)} created={created} updated={updated} "

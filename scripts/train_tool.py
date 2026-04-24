@@ -21,6 +21,7 @@ from planckbot.db.engine import get_connection
 from planckbot.experiments.manager import ExperimentManager
 from planckbot.ingest import ManualSource
 from planckbot.models.checkpoints import CheckpointManager
+from planckbot.tools.projects import ProjectStore
 from planckbot.tools.triples import TriplesStore
 from planckbot.training.dataset import build_hf_dataset
 from planckbot.training.trainer import (
@@ -59,15 +60,25 @@ def main():
 
     conn = get_connection(config.db_path)
 
+    # Tag training data and the resulting checkpoint with the currently
+    # active project so per-project scoping sees them. A non-interactive
+    # training run outside a project context (CI, fresh clone) falls back
+    # to None, which keeps rows legacy/unscoped.
+    active_project = ProjectStore(conn).get_active()
+    project_id = active_project.id if active_project else None
+    if active_project:
+        print(f"[planckbot] project:   {active_project.name} "
+              f"({project_id[:8]})")
+
     store = TriplesStore(conn)
     before = store.count_total()
-    count = ManualSource(fixture).ingest(store)
+    count = ManualSource(fixture).ingest(store, project_id=project_id)
     print(
         f"[ingest] loaded {count} triples "
         f"(db had {before}, now {store.count_total()})"
     )
 
-    triples = store.get_by_tool(args.tool, limit=1000)
+    triples = store.get_by_tool(args.tool, limit=1000, project_id=project_id)
     if not triples:
         print(f"no {args.tool} triples found after ingest", file=sys.stderr)
         sys.exit(2)
@@ -119,6 +130,7 @@ def main():
         experiment_id=exp.id,
         conn=conn,
         tool_name=args.tool,
+        project_id=project_id,
     )
     print(f"[train] kicked off checkpoint_id={checkpoint_id}")
 

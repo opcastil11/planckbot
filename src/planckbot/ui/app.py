@@ -25,6 +25,7 @@ BRANDING_DIR = REPO_ROOT / "static" / "branding"
 NAV_GROUPS = [
     ("Overview", [
         ("Dashboard", "/", "dashboard"),
+        ("Projects", "/projects", "folder_special"),
         ("How it works", "/how-it-works", "school"),
         ("Paper", "/paper", "description"),
     ]),
@@ -90,6 +91,12 @@ def _sidebar(current_path: str) -> None:
         # Subtle status line (live connection indicator)
         _sidebar_status()
 
+        # Project switcher — a compact dropdown that changes the DB's
+        # active-project flag (and rewrites ~/.claude.json). Shown only
+        # when there IS at least one project; otherwise it's a link to
+        # the projects page with a "Create one" CTA.
+        _sidebar_project_switcher()
+
         # Groups
         for group_label, items in NAV_GROUPS:
             ui.label(group_label).style(
@@ -147,6 +154,85 @@ def _sidebar_status() -> None:
                     "overflow: hidden; text-overflow: ellipsis; "
                     "white-space: nowrap; max-width: 180px;"
                 )
+
+
+def _sidebar_project_switcher() -> None:
+    """Compact per-project lens selector beneath the brand.
+
+    Shows the active project's name and a dropdown to switch. Switching
+    goes through `ProjectStore.set_active` (DB) and `_rewrite_mcp_upstream_path`
+    (~/.claude.json), same as the CLI `planckbot project switch`. User must
+    restart Claude Code for the new path to take effect on that side.
+    """
+    from planckbot.ui.state import get_state
+    from planckbot.cli import _rewrite_mcp_upstream_path
+
+    state = get_state()
+    projects = state.projects.list_all()
+    active = state.active_project()
+
+    if not projects:
+        with ui.link(target="/projects").classes(
+            "no-underline planck-nav-item"
+        ):
+            with ui.row().classes("items-center gap-2 no-wrap").style(
+                f"padding: 6px 10px; margin: 6px 4px 0 4px; "
+                f"background: {COLORS['surface2']}; "
+                f"border: 1px dashed {COLORS['border']}; "
+                f"border-radius: 8px; cursor: pointer;"
+            ):
+                ui.icon("folder_special").style(
+                    f"color: {COLORS['text_muted']}; font-size: 16px;"
+                )
+                ui.label("Create a project").style(
+                    f"color: {COLORS['text_muted']}; font-size: 11px; "
+                    "font-weight: 600;"
+                )
+        return
+
+    # Build the option map. Include a synthetic "All projects" row so a
+    # user can peek at cross-project data without flipping is_active.
+    opts: dict[str, str] = {"__all__": "· All projects ·"}
+    for p in projects:
+        tag = " ★" if p.is_active else ""
+        opts[p.id] = f"{p.name}{tag}"
+
+    current_value = (
+        state._lens_override if state._lens_override
+        else (active.id if active else "__all__")
+    )
+    if current_value not in opts:
+        current_value = "__all__"
+
+    def _on_change(e):
+        new_id = e.value
+        if new_id == "__all__":
+            state.set_lens("__all__")
+            ui.notify("lens: all projects", type="info")
+        else:
+            # Actually switch the DB's active project + ~/.claude.json.
+            # This matches the CLI behavior so there's one source of
+            # truth per machine.
+            project = state.projects.set_active(new_id)
+            state.set_lens(None)  # follow the DB again
+            ok, msg = _rewrite_mcp_upstream_path(project.path)
+            ui.notify(
+                f"switched → {project.name}: {msg}",
+                type="positive" if ok else "warning",
+            )
+        ui.navigate.reload()
+
+    with ui.row().classes("items-center no-wrap").style(
+        f"padding: 4px 4px 0 4px; margin: 6px 0 0 0;"
+    ):
+        sel = ui.select(
+            opts,
+            value=current_value,
+            on_change=_on_change,
+        ).props("dense outlined options-dense").style(
+            "width: 100%; font-size: 11px;"
+        )
+        sel.classes("planck-project-switcher")
 
 
 def _nav_item(label: str, path: str, icon: str, current_path: str) -> None:
@@ -243,6 +329,15 @@ def _page_wrapper(
 def index():
     from planckbot.ui.pages.dashboard import dashboard_page
     _page_wrapper(dashboard_page, current_path="/", live_seconds=3.0)
+
+
+@ui.page("/projects")
+def projects():
+    from planckbot.ui.pages.projects import projects_page
+    # Not live-refreshed: the page has form state (create inputs) that
+    # would be wiped by a periodic rebuild. Users reload manually on
+    # create/switch/delete.
+    _page_wrapper(projects_page, current_path="/projects")
 
 
 @ui.page("/experiments")
