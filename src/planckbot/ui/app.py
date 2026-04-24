@@ -44,6 +44,7 @@ def _header():
                 for label, path in [
                     ("Dashboard", "/"),
                     ("How it works", "/how-it-works"),
+                    ("Paper", "/paper"),
                     ("Experiments", "/experiments"),
                     ("Tools", "/tools"),
                     ("Training", "/training"),
@@ -87,6 +88,34 @@ def _page_wrapper(build_fn, *, live_seconds: float | None = None):
 
             _live()
             ui.timer(live_seconds, _live.refresh)
+        _footer()
+
+
+def _footer() -> None:
+    """Compact branding footer with version + repo + paper links."""
+    from planckbot import __version__
+    with ui.row().classes("w-full items-center justify-between no-wrap").style(
+        f"margin-top: 40px; padding: 16px 0 24px 0; "
+        f"border-top: 1px solid {COLORS['border']}; "
+        f"color: {COLORS['text_muted']}; font-size: 11px;"
+    ):
+        ui.label(f"PlanckBot v{__version__} · Apache 2.0").style(
+            "letter-spacing: 0.5px;"
+        )
+        with ui.row().classes("items-center gap-4"):
+            ui.link("How it works", "/how-it-works").classes(
+                "no-underline"
+            ).style(f"color: {COLORS['text_muted']}; font-size: 11px;")
+            ui.link("Paper", "/paper").classes("no-underline").style(
+                f"color: {COLORS['text_muted']}; font-size: 11px;"
+            )
+            ui.link(
+                "GitHub",
+                "https://github.com/opcastil11/planckbot",
+                new_tab=True,
+            ).classes("no-underline").style(
+                f"color: {COLORS['text_muted']}; font-size: 11px;"
+            )
 
 
 @ui.page("/")
@@ -147,6 +176,12 @@ def synth():
 def how_it_works():
     from planckbot.ui.pages.how_it_works import how_it_works_page
     _page_wrapper(how_it_works_page)
+
+
+@ui.page("/paper")
+def paper():
+    from planckbot.ui.pages.paper import paper_page
+    _page_wrapper(paper_page)
 
 
 @ui.page("/paper-log")
@@ -304,6 +339,11 @@ def start_app():
     # Serve the static/branding folder at /branding/*
     if BRANDING_DIR.exists():
         app.add_static_files("/branding", str(BRANDING_DIR))
+
+    # Serve docs/ so the paper page can link to its PDF.
+    docs_dir = REPO_ROOT / "docs"
+    if docs_dir.exists():
+        app.add_static_files("/docs", str(docs_dir))
 
     ui.add_head_html(_head_css(), shared=True)
 

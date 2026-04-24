@@ -1,0 +1,35 @@
+name: Bug report
+description: Something in PlanckBot doesn't work the way the docs say it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. Before submitting:
+        1. Run `planckbot status` and paste its output below — it's a 5-line summary of DB state, cron jobs, and active adapters.
+        2. Run `python -m pytest -q` — if the test suite fails, that's a more urgent flavor of bug.
+  - type: input
+    attributes:
+      label: PlanckBot version / commit
+      description: Output of `planckbot --version` or the commit SHA you're running.
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Host LLM
+      description: Claude Code (version X), GPT-4 via API, etc.
+  - type: textarea
+    attributes:
+      label: What happened
+      description: What did you do, what did you expect, what did you see instead?
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: `planckbot status` output
+      render: shell
+  - type: textarea
+    attributes:
+      label: Repro steps
+      description: The minimum sequence of commands that reproduces the bug.
+      render: shell

@@ -1,0 +1,47 @@
+name: Feature request
+description: Propose a new capability for PlanckBot.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Most good PlanckBot features fit cleanly into one of the four layers:
+
+        - **Layer A** — tool selection (you won't usually touch this; it's the host LLM's job)
+        - **Layer B** — runtime I/O filtering (adapters, confidence gating, modes)
+        - **Layer C** — tool source editing (the edit_tool meta-tool, AST gate)
+        - **Layer D** — tool synthesis (pattern detector, synthesize_tool, synth MCP)
+
+        Or in supporting infrastructure:
+
+        - **Cron / scheduling** — new job types, scheduler policies
+        - **UI** — new dashboard pages, visualizations
+        - **CLI / dist** — new subcommands, packaging, systemd integration
+
+        Tagging the layer in your title (e.g. `[Layer B] …`) speeds review.
+  - type: textarea
+    attributes:
+      label: What problem are you trying to solve?
+      description: What user-visible pain point does the feature address?
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Proposed solution
+      description: High-level design. Pseudo-API or CLI sketch is very welcome.
+  - type: textarea
+    attributes:
+      label: Alternatives considered
+  - type: dropdown
+    attributes:
+      label: Which layer(s) does this touch?
+      multiple: true
+      options:
+        - A (tool selection)
+        - B (runtime filtering)
+        - C (tool source editing)
+        - D (tool synthesis)
+        - Cron / scheduling
+        - UI
+        - CLI / distribution
+        - Other

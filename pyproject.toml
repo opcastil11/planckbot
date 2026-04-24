@@ -5,8 +5,32 @@ build-backend = "hatchling.build"
 [project]
 name = "planckbot"
 version = "0.1.0"
-description = "Adaptive tiny model layer for LLM token optimization"
+description = "Adaptive tiny-model layer that sits between an LLM agent and its tools — observes usage, trains per-tool compression adapters, synthesizes new tools from patterns."
+readme = "README.md"
 requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Oscar Castillo" },
+]
+keywords = [
+    "llm", "mcp", "model-context-protocol", "lora", "peft",
+    "prompt-compression", "token-optimization", "claude-code",
+    "agent", "tool-use", "smollm2",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
 dependencies = [
     "nicegui>=2.0",
     "torch>=2.1",
@@ -17,10 +41,17 @@ dependencies = [
     "rich>=13.0",
     "tiktoken>=0.5",
     "mcp>=1.0",
+    "markdown>=3.5",
 ]
 
 [project.optional-dependencies]
 dev = ["pytest", "pytest-asyncio", "ruff"]
+
+[project.urls]
+Homepage = "https://github.com/opcastil11/planckbot"
+Repository = "https://github.com/opcastil11/planckbot"
+Issues = "https://github.com/opcastil11/planckbot/issues"
+Paper = "https://github.com/opcastil11/planckbot/blob/main/docs/PLANCKBOT_PAPER.md"
 
 [project.scripts]
 planckbot = "planckbot.__main__:main"

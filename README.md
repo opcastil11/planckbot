@@ -1,11 +1,17 @@
 # PlanckBot
 
+[![tests](https://github.com/opcastil11/planckbot/actions/workflows/test.yml/badge.svg)](https://github.com/opcastil11/planckbot/actions/workflows/test.yml)
+[![license: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![python: 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](pyproject.toml)
+[![MCP](https://img.shields.io/badge/MCP-stdio-5fd4a3.svg)](https://modelcontextprotocol.io)
+
 **An adaptive tiny-model layer for LLM token optimization.**
 
 PlanckBot sits between a host LLM (Claude, GPT-4, any MCP-capable agent) and its tools. It observes every tool call, trains a per-tool LoRA adapter on the observed I/O, and at runtime filters tool output down to the fragments the LLM actually cites — cutting context tokens by up to two orders of magnitude on verbose tools like `list_directory`, `read_file`, and `search_files`.
 
 **Paper**: [docs/PLANCKBOT_PAPER.pdf](docs/PLANCKBOT_PAPER.pdf) · [markdown](docs/PLANCKBOT_PAPER.md)
 **Concept doc**: [docs/PLANCKBOT_CONCEPT.md](docs/PLANCKBOT_CONCEPT.md)
+**Demo page** (after `planckbot ui`): [localhost:8080/how-it-works](http://localhost:8080/how-it-works)
 
 ---
 
@@ -40,25 +46,41 @@ All four layers share one data unit: a **triple** `(input, output, filtered_outp
 
 Everything runs locally. No external services. No GPU required — a trained adapter is ~10 MB and inference is <50 ms on CPU.
 
-## Quick start
+## Install
+
+Requires Python 3.10+, [`uv`](https://docs.astral.sh/uv/) (recommended) or `pip`, and `npx` on `$PATH` for the upstream filesystem MCP.
 
 ```bash
+# 1. clone + install
 git clone https://github.com/opcastil11/planckbot
 cd planckbot
-uv venv && source .venv/bin/activate
+uv venv .venv && source .venv/bin/activate
 uv pip install -e ".[dev]"
 
-# run the test suite (should pass in ~10s)
-python -m pytest
+# 2. verify the install (must print "195 passed")
+python -m pytest -q
 
-# see what's in the box
-planckbot status
-planckbot ui           # workbench at http://localhost:8080
+# 3. one-shot: create data dir, migrate DB, register MCP servers with
+#    Claude Code (prompts before writing ~/.claude.json).
+planckbot init --upstream-path /abs/path/to/the/repo/you/want/observed
+
+# 4. background scheduler (systemd user unit, survives reboot).
+#    If you're not on systemd, skip and run `planckbot cron daemon` instead.
+planckbot systemd install
+
+# 5. launch the workbench
+planckbot ui            # http://localhost:8080
 ```
 
-## Wiring to Claude Code
+After `planckbot init`, restart Claude Code so it picks up the new MCP
+servers. Then the filesystem tools appear as `mcp__planckbot-fs__*` and every
+call is recorded as a triple in the local SQLite DB.
 
-Add the MCP servers to `~/.claude.json`:
+### Manual MCP registration
+
+If you prefer to write `~/.claude.json` by hand (e.g. you already have a
+custom `mcpServers` block), run `planckbot init --print-config` to see the
+exact JSON to paste:
 
 ```json
 {
@@ -79,8 +101,6 @@ Add the MCP servers to `~/.claude.json`:
   }
 }
 ```
-
-Restart Claude Code. The filesystem tools now appear as `mcp__planckbot-fs__*` and every call is recorded in the local SQLite DB.
 
 ## The self-supervising loop
 
@@ -104,8 +124,12 @@ planckbot cron daemon
 
 ```
 planckbot                     → launches the UI (back-compat default)
-planckbot status              → one-shot summary
-planckbot ui                  → launch NiceGUI workbench
+planckbot status              → one-shot summary (triples, savings, cron jobs)
+planckbot ui                  → launch NiceGUI workbench on :8080
+
+planckbot init                → first-run setup (data dir, DB, MCP registration)
+planckbot systemd install     → install cron daemon as systemd user unit
+planckbot systemd uninstall   → stop + remove the systemd unit
 
 planckbot train --tool X --fixture Y.json [--activate]
 planckbot label --tool X --recent N [--reference file.txt] [--dry-run]

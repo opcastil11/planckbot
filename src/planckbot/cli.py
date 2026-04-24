@@ -418,6 +418,224 @@ def cmd_cron_daemon(args) -> int:
     return 0
 
 
+# --- init + systemd --------------------------------------------------------
+
+
+def cmd_init(args) -> int:
+    """First-run setup: create the data dir, apply migrations, (optionally)
+    register the MCP servers with Claude Code.
+
+    We never overwrite an existing entry in ~/.claude.json unless --force is
+    passed. Without --force we show a diff and ask the user to add it by
+    hand. This protects any custom config the user already has.
+    """
+    from planckbot.config import config
+    from planckbot.db.engine import get_connection
+
+    print(f"[init] data dir: {config.data_dir}")
+    config.data_dir.mkdir(parents=True, exist_ok=True)
+    (config.data_dir / "checkpoints").mkdir(exist_ok=True)
+    (config.data_dir / "exports").mkdir(exist_ok=True)
+    (config.data_dir / "fixtures").mkdir(exist_ok=True)
+
+    # Migrations run in get_connection()
+    conn = get_connection(config.db_path)
+    conn.execute("SELECT MAX(version) FROM schema_version")
+    print(f"[init] db ready: {config.db_path}")
+
+    # Locate the two console_script binaries. In an editable venv install the
+    # binaries live next to sys.executable; in a global install, on $PATH.
+    from shutil import which
+    exec_dir = Path(sys.executable).parent
+    def _find_bin(name: str) -> str | None:
+        candidate = exec_dir / name
+        if candidate.exists():
+            return str(candidate)
+        return which(name)
+    fs_bin = _find_bin("planckbot-mcp")
+    synth_bin = _find_bin("planckbot-synth")
+    if not fs_bin or not synth_bin:
+        print(
+            "[init] warning: could not locate planckbot-mcp / planckbot-synth "
+            "on $PATH. Install the package (`pip install planckbot` or "
+            "`uv pip install -e .`) before calling `planckbot init`.",
+            file=sys.stderr,
+        )
+
+    entries = {}
+    if fs_bin:
+        upstream = args.upstream_path or os.environ.get(
+            "PLANCKBOT_UPSTREAM_PATH",
+            str(Path.cwd()),
+        )
+        npx = args.npx or which("npx") or "/usr/bin/npx"
+        entries["planckbot-fs"] = {
+            "command": fs_bin,
+            "args": [
+                "--mode", args.mode,
+                "--name", "planckbot-fs",
+                "--",
+                npx, "-y", "@modelcontextprotocol/server-filesystem",
+                upstream,
+            ],
+        }
+    if synth_bin:
+        entries["planckbot-synth"] = {"command": synth_bin}
+
+    claude_json = Path.home() / ".claude.json"
+
+    if args.print_config:
+        # Just show the JSON block and exit.
+        print(json.dumps({"mcpServers": entries}, indent=2))
+        return 0
+
+    if not claude_json.exists():
+        if args.claude_config or input(
+            f"[init] write {claude_json} with PlanckBot MCP entries? [y/N] "
+        ).lower() == "y":
+            claude_json.write_text(
+                json.dumps({"mcpServers": entries}, indent=2)
+            )
+            print(f"[init] wrote {claude_json}")
+        else:
+            print("[init] skipped writing claude.json — here's the block:")
+            print(json.dumps({"mcpServers": entries}, indent=2))
+        _print_next_steps()
+        return 0
+
+    # Existing config: parse, detect conflicts, merge only when safe.
+    try:
+        cfg = json.loads(claude_json.read_text())
+    except json.JSONDecodeError as e:
+        print(f"[init] ~/.claude.json is not valid JSON: {e}", file=sys.stderr)
+        print("[init] fix it first, then re-run `planckbot init`")
+        return 2
+
+    existing = cfg.setdefault("mcpServers", {})
+    conflicts = [name for name in entries if name in existing]
+    added = [name for name in entries if name not in existing]
+
+    if conflicts and not args.force:
+        print(
+            f"[init] already present in ~/.claude.json: {conflicts}\n"
+            "[init] re-run with --force to overwrite, "
+            "or add the block manually:"
+        )
+        print(json.dumps({"mcpServers": entries}, indent=2))
+        _print_next_steps()
+        return 0
+
+    for name, spec in entries.items():
+        existing[name] = spec
+    # Backup before writing
+    backup = claude_json.with_suffix(
+        f".json.bak-{int(datetime.now().timestamp())}"
+    )
+    backup.write_text(claude_json.read_text())
+    claude_json.write_text(json.dumps(cfg, indent=2))
+    print(f"[init] updated {claude_json} (backup at {backup.name})")
+    print(f"[init]   added: {added or '(none new)'}")
+    if conflicts:
+        print(f"[init]   overwrote: {conflicts}")
+
+    _print_next_steps()
+    return 0
+
+
+def _print_next_steps() -> None:
+    print("\n[init] next steps:")
+    print("  1. Restart Claude Code so it picks up the new MCP servers.")
+    print("  2. Launch the workbench:        planckbot ui")
+    print("  3. Start the background loop:   planckbot systemd install")
+    print("                                  # or ad-hoc: planckbot cron daemon")
+    print("  4. Read the docs:               planckbot-ui /how-it-works + /paper")
+
+
+def cmd_systemd_install(_args) -> int:
+    """Write a systemd --user unit for the cron daemon and enable it.
+    Linux-only. Uses `systemctl --user` with the current user's context."""
+    import shutil
+    import subprocess
+
+    if shutil.which("systemctl") is None:
+        print("[systemd] systemctl not found; skipping. "
+              "Start the daemon manually with `planckbot cron daemon`.",
+              file=sys.stderr)
+        return 2
+
+    planckbot_bin = shutil.which("planckbot")
+    if planckbot_bin is None:
+        print("[systemd] planckbot not on $PATH. Install the package first.",
+              file=sys.stderr)
+        return 2
+
+    repo_root = Path(__file__).resolve().parents[2]
+
+    unit_dir = Path.home() / ".config" / "systemd" / "user"
+    unit_dir.mkdir(parents=True, exist_ok=True)
+    unit_file = unit_dir / "planckbot-cron.service"
+
+    unit_body = f"""[Unit]
+Description=PlanckBot cron daemon — scheduled jobs (autolabel, detect_tool_gaps, ...)
+Documentation=https://github.com/opcastil11/planckbot
+After=default.target
+
+[Service]
+Type=simple
+ExecStart={planckbot_bin} cron daemon
+WorkingDirectory={repo_root}
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target
+"""
+
+    if unit_file.exists():
+        print(f"[systemd] {unit_file} already exists — re-writing")
+    unit_file.write_text(unit_body)
+    print(f"[systemd] wrote {unit_file}")
+
+    for cmd in (
+        ["systemctl", "--user", "daemon-reload"],
+        ["systemctl", "--user", "enable", "--now", "planckbot-cron.service"],
+    ):
+        res = subprocess.run(cmd, capture_output=True, text=True)
+        if res.returncode != 0:
+            print(f"[systemd] `{' '.join(cmd)}` failed:\n{res.stderr}",
+                  file=sys.stderr)
+            return res.returncode
+
+    print("[systemd] service enabled + started. Check status with:")
+    print("           systemctl --user status planckbot-cron.service")
+    print("[systemd] to survive logout, also run: sudo loginctl "
+          "enable-linger $USER")
+    return 0
+
+
+def cmd_systemd_uninstall(_args) -> int:
+    import shutil
+    import subprocess
+
+    if shutil.which("systemctl") is None:
+        print("[systemd] systemctl not found; nothing to do.", file=sys.stderr)
+        return 0
+
+    unit_file = Path.home() / ".config/systemd/user/planckbot-cron.service"
+    for cmd in (
+        ["systemctl", "--user", "disable", "--now", "planckbot-cron.service"],
+        ["systemctl", "--user", "daemon-reload"],
+    ):
+        subprocess.run(cmd, capture_output=True, text=True)
+    if unit_file.exists():
+        unit_file.unlink()
+        print(f"[systemd] removed {unit_file}")
+    print("[systemd] service disabled and removed.")
+    return 0
+
+
 # --- parser ----------------------------------------------------------------
 
 
@@ -543,6 +761,54 @@ def _build_parser() -> argparse.ArgumentParser:
     sp2 = synth_sub.add_parser("gaps", help="List detected tool-gap reports.")
     sp2.set_defaults(func=cmd_synth_gaps)
 
+    # init (first-run setup)
+    sp = sub.add_parser(
+        "init",
+        help="First-run setup: create data dir, migrate DB, "
+             "register MCP servers with Claude Code.",
+    )
+    sp.add_argument(
+        "--mode", choices=["observe", "suggest", "intervene"],
+        default="observe", help="Proxy mode for planckbot-fs (default: observe).",
+    )
+    sp.add_argument(
+        "--upstream-path",
+        help="Absolute path served by the filesystem MCP upstream. "
+             "Defaults to $PLANCKBOT_UPSTREAM_PATH or the current directory.",
+    )
+    sp.add_argument("--npx", help="Path to npx (autodetected if omitted).")
+    sp.add_argument(
+        "--claude-config", action="store_true",
+        help="Write ~/.claude.json without prompting.",
+    )
+    sp.add_argument(
+        "--force", action="store_true",
+        help="Overwrite existing MCP server entries in ~/.claude.json.",
+    )
+    sp.add_argument(
+        "--print-config", action="store_true",
+        help="Print the JSON block and exit without touching any file.",
+    )
+    sp.set_defaults(func=cmd_init)
+
+    # systemd
+    sy = sub.add_parser(
+        "systemd",
+        help="Install/uninstall the cron daemon as a systemd user unit "
+             "(Linux only).",
+    )
+    sy_sub = sy.add_subparsers(dest="systemd_command")
+    sy_i = sy_sub.add_parser(
+        "install",
+        help="Write ~/.config/systemd/user/planckbot-cron.service and start it.",
+    )
+    sy_i.set_defaults(func=cmd_systemd_install)
+    sy_u = sy_sub.add_parser(
+        "uninstall",
+        help="Stop + remove the planckbot-cron systemd user unit.",
+    )
+    sy_u.set_defaults(func=cmd_systemd_uninstall)
+
     return p
 
 
@@ -565,6 +831,10 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.command == "synth" and getattr(args, "synth_command", None) is None:
         parser.parse_args(["synth", "--help"])
+        return 2
+
+    if args.command == "systemd" and getattr(args, "systemd_command", None) is None:
+        parser.parse_args(["systemd", "--help"])
         return 2
 
     return args.func(args)
