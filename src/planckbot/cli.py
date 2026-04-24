@@ -152,6 +152,11 @@ def cmd_status(_args) -> int:
     pct = (saved / savings["raw_tokens"] * 100) if savings["raw_tokens"] else 0
     print(f"  tokens saved       : {sign}{saved} ({sign}{pct:.0f}%) "
           f"over {savings['intervene_count']} proxy:intervene calls")
+    # Cost estimate
+    from planckbot.pricing import estimate_cost
+    quote = estimate_cost(saved)
+    print(f"  estimated $        : {quote.cost_str} at {quote.model_label} "
+          f"(${quote.per_million_input_usd:.2f}/M input tokens)")
     print("")
     print(f"  checkpoints        : {len(ckpt_rows)}")
     for c in ckpt_rows[:5]:
