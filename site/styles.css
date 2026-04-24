@@ -1,0 +1,401 @@
+/* PlanckBot marketing site — palette synced with ui/theme.py COLORS */
+:root {
+  --primary:     #5FD4A3;
+  --primary-dim: #3FA07D;
+  --accent:      #7EE5D6;
+  --brass:       #D4A84A;
+  --secondary:   #9F7EE5;
+
+  --bg:          #07121C;
+  --surface:     #0F1E2D;
+  --surface2:    #162B3E;
+  --border:      #1E3A50;
+  --border-glow: #2F6B8E;
+
+  --text:        #E8F5F0;
+  --text-muted:  #6E8BA0;
+  --text-dim:    #4A6578;
+
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo,
+               Consolas, monospace;
+}
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background:
+    radial-gradient(1400px 900px at 15% -10%, rgba(95,212,163,0.08) 0%, transparent 55%),
+    radial-gradient(1100px 700px at 85% 110%, rgba(126,229,214,0.05) 0%, transparent 60%),
+    var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: var(--primary); }
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.08em 0.4em;
+  color: var(--accent);
+}
+
+pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px 22px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--text);
+  box-shadow: 0 0 30px rgba(95,212,163,0.05);
+}
+pre code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: inherit;
+}
+
+/* Decorative orbs behind content */
+.bg-orb {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: -1;
+}
+.bg-orb--1 {
+  top: -150px;
+  left: -150px;
+  width: 500px;
+  height: 500px;
+  background: rgba(95,212,163,0.12);
+}
+.bg-orb--2 {
+  bottom: -200px;
+  right: -100px;
+  width: 600px;
+  height: 600px;
+  background: rgba(126,229,214,0.08);
+}
+
+/* Layout shell */
+main, header, footer {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 28px;
+}
+
+header.nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 22px;
+  padding-bottom: 22px;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.2px;
+}
+.brand:hover { color: var(--primary); }
+.brand-mark {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  box-shadow: 0 0 22px rgba(95,212,163,0.3);
+}
+.brand-name .brand-plural {
+  color: var(--primary);
+}
+header.nav nav a {
+  color: var(--text-muted);
+  margin-left: 28px;
+  font-size: 14px;
+  transition: color 0.15s ease;
+}
+header.nav nav a:hover { color: var(--text); }
+
+/* Hero */
+.hero {
+  padding: 64px 0 56px;
+  text-align: center;
+}
+.eyebrow {
+  color: var(--primary);
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin: 0 0 18px;
+}
+.hero h1 {
+  font-size: clamp(34px, 5.5vw, 58px);
+  line-height: 1.08;
+  letter-spacing: -0.015em;
+  margin: 0 auto 22px;
+  max-width: 920px;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--text) 0%, var(--accent) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.lead {
+  max-width: 720px;
+  margin: 0 auto;
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.cta {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 36px;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 26px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 15px;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.btn-primary {
+  background: var(--primary);
+  color: var(--bg);
+  box-shadow: 0 0 30px rgba(95,212,163,0.35);
+}
+.btn-primary:hover {
+  background: var(--accent);
+  color: var(--bg);
+  transform: translateY(-1px);
+  box-shadow: 0 0 40px rgba(126,229,214,0.5);
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border);
+}
+.btn-ghost:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.btn-lg {
+  padding: 16px 34px;
+  font-size: 17px;
+}
+
+.stat-row {
+  display: flex;
+  gap: 32px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 56px;
+  padding-top: 32px;
+  border-top: 1px solid var(--border);
+}
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 180px;
+}
+.stat-num {
+  font-size: 42px;
+  font-weight: 800;
+  color: var(--primary);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.stat-unit {
+  font-size: 20px;
+  color: var(--primary-dim);
+  margin-left: 2px;
+  font-weight: 700;
+}
+.stat-label {
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* Screenshot section */
+.shot {
+  padding: 24px 0 48px;
+  text-align: center;
+}
+.shot img {
+  width: 100%;
+  max-width: 1080px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  box-shadow:
+    0 0 40px rgba(95,212,163,0.12),
+    0 20px 60px rgba(0,0,0,0.4);
+}
+
+/* Layer grid */
+.layers {
+  padding: 64px 0 48px;
+}
+.layers h2, .install h2, .features h2, .cta-block h2 {
+  font-size: clamp(26px, 3.5vw, 36px);
+  letter-spacing: -0.01em;
+  margin: 0 0 10px;
+  text-align: center;
+}
+.section-lead {
+  text-align: center;
+  color: var(--text-muted);
+  margin: 0 auto 36px;
+  max-width: 640px;
+}
+
+.layer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+.layer-grid article {
+  background: linear-gradient(180deg, var(--surface) 0%, rgba(15,30,45,0.2) 120%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  position: relative;
+}
+.layer-tag {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--surface2);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 12px;
+  border: 1px solid var(--primary);
+}
+.layer-grid h3 {
+  margin: 0 0 8px;
+  font-size: 17px;
+  color: var(--text);
+}
+.layer-grid p {
+  color: var(--text-muted);
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Install */
+.install {
+  padding: 48px 0;
+}
+.install pre {
+  max-width: 760px;
+  margin: 0 auto 20px;
+}
+
+/* Features */
+.features {
+  padding: 64px 0 48px;
+}
+.feature-grid {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+.feature-grid li {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px 22px;
+}
+.feature-grid h3 {
+  color: var(--primary);
+  font-size: 15px;
+  margin: 0 0 6px;
+  letter-spacing: 0.2px;
+}
+.feature-grid p {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin: 0;
+  line-height: 1.55;
+}
+
+/* CTA block */
+.cta-block {
+  padding: 64px 0 72px;
+  text-align: center;
+}
+.cta-block h2 {
+  margin-bottom: 24px;
+}
+
+/* Footer */
+footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 28px 36px;
+  color: var(--text-muted);
+  font-size: 13px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Responsive */
+@media (max-width: 680px) {
+  header.nav { padding: 16px 0; }
+  header.nav nav a { margin-left: 14px; font-size: 13px; }
+  .brand-name { font-size: 16px; }
+  .hero { padding: 40px 0 32px; }
+  .stat-row { gap: 20px; margin-top: 40px; }
+  .stat { min-width: 130px; }
+  .stat-num { font-size: 34px; }
+  .layers, .install, .features, .cta-block { padding: 40px 0; }
+  footer { flex-direction: column; text-align: center; }
+}

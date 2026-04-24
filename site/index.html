@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>PlanckBot — tiny-model layer for LLM token optimization</title>
+  <meta name="description" content="PlanckBot sits between your LLM and its tools. Observes every call, trains a per-tool LoRA, compresses verbose output like list_directory by up to 97% at runtime. Apache 2.0.">
+  <meta property="og:title" content="PlanckBot — tiny-model layer for LLM token optimization">
+  <meta property="og:description" content="MCP proxy that trains a 135M per-tool LoRA on your tool calls and silently compresses the noisy parts at runtime.">
+  <meta property="og:image" content="https://planckbot.com/dashboard.png">
+  <meta property="og:url" content="https://planckbot.com">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="bg-orb bg-orb--1"></div>
+  <div class="bg-orb bg-orb--2"></div>
+
+  <header class="nav">
+    <a class="brand" href="/">
+      <img src="/planckbots-mark.png" alt="" class="brand-mark">
+      <span class="brand-name">PlanckBot<span class="brand-plural">s</span></span>
+    </a>
+    <nav>
+      <a href="#how">How it works</a>
+      <a href="#install">Install</a>
+      <a href="https://github.com/opcastil11/planckbot" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <p class="eyebrow">Adaptive tiny-model layer · Apache 2.0</p>
+      <h1>
+        90% of your LLM's tool output<br>
+        is noise it never cites.
+      </h1>
+      <p class="lead">
+        PlanckBot sits between a host LLM and its tools. Observes every call, trains a per-tool LoRA on what the model actually quotes in its next turn, then silently compresses the noisy parts at runtime.
+      </p>
+      <div class="cta">
+        <a class="btn btn-primary" href="#install">Get started</a>
+        <a class="btn btn-ghost" href="https://github.com/opcastil11/planckbot" target="_blank" rel="noopener">View on GitHub →</a>
+      </div>
+      <div class="stat-row">
+        <div class="stat">
+          <span class="stat-num">97<span class="stat-unit">%</span></span>
+          <span class="stat-label">token reduction<br>on <code>list_directory</code></span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">1.86<span class="stat-unit">MB</span></span>
+          <span class="stat-label">adapter size<br>per tool</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">~10<span class="stat-unit">min</span></span>
+          <span class="stat-label">CPU training<br>from 200 triples</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="shot">
+      <img src="/dashboard.png" alt="PlanckBot workbench dashboard with live activity feed" loading="lazy">
+    </section>
+
+    <section id="how" class="layers">
+      <h2>Four layers of adaptation</h2>
+      <p class="section-lead">Each layer is a separate switch you can flip on its own. Start at A, keep adding as you trust the data.</p>
+
+      <div class="layer-grid">
+        <article>
+          <span class="layer-tag">A</span>
+          <h3>Observe</h3>
+          <p>Every MCP tool call gets logged as a triple (input, raw output, what the host LLM quoted in its next turn). No interference, no swapping. Just data.</p>
+        </article>
+        <article>
+          <span class="layer-tag">B</span>
+          <h3>Compress</h3>
+          <p>A per-tool LoRA (SmolLM2-135M base) is trained on those triples. At inference, the proxy swaps raw→filtered when the adapter's confidence clears threshold. Claude doesn't know.</p>
+        </article>
+        <article>
+          <span class="layer-tag">C</span>
+          <h3>Edit</h3>
+          <p>The host LLM can propose source-level edits to tool code through a meta-tool that's AST-whitelisted. Every edit bumps the tool's version and invalidates the adapter trained against the old one.</p>
+        </article>
+        <article>
+          <span class="layer-tag">D</span>
+          <h3>Synthesize</h3>
+          <p>A pattern detector watches for repeating tool sequences and proposes merged synthesized tools. AST-gated generation, hot-reloaded through a second MCP server.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="install" class="install">
+      <h2>60-second quickstart</h2>
+      <pre><code>git clone https://github.com/opcastil11/planckbot && cd planckbot
+uv venv .venv &amp;&amp; source .venv/bin/activate
+uv pip install -e ".[dev]"
+
+# First-run setup: creates data dir, migrates DB, registers MCP with Claude Code
+planckbot init --upstream-path /path/to/your/project --claude-config
+
+# Launch the workbench
+planckbot ui        # http://localhost:8080</code></pre>
+      <p class="section-lead">
+        Restart Claude Code in that folder. Every filesystem call becomes a triple. After ~200 calls per tool, train the first adapter with <code>planckbot train --tool X --fixture Y.json</code>.
+      </p>
+    </section>
+
+    <section class="features">
+      <h2>What else is in the box</h2>
+      <ul class="feature-grid">
+        <li>
+          <h3>.mcpignore</h3>
+          <p>Proxy-level secret filtering. Blocks <code>.env</code>, SSH keys, cloud creds before they ever reach the LLM — regardless of what you explicitly tell Claude not to read.</p>
+        </li>
+        <li>
+          <h3>Live activity feed</h3>
+          <p>SQLite-backed event bus. Every proxy interception, cron run, synth lifecycle, training event streams into a 500 ms-polled log you can watch.</p>
+        </li>
+        <li>
+          <h3>Per-project scoping</h3>
+          <p>Switch which folder Claude Code is watching without losing the triples and adapters from the previous one.</p>
+        </li>
+        <li>
+          <h3>Blessed-checkpoint safety gate</h3>
+          <p>Adapters don't serve in production until a human explicitly blesses them. Unbless = one command revert when an adapter regresses.</p>
+        </li>
+        <li>
+          <h3>Tool-routing modes</h3>
+          <p>Off / Soft / Hard per project. Soft nudges Claude via CLAUDE.md; Hard denies native <code>Read</code>/<code>Glob</code>/<code>Grep</code> so everything flows through the MCP.</p>
+        </li>
+        <li>
+          <h3>Cron scheduler</h3>
+          <p>Built-in job types (autolabel, retrain signal, conversation scanner, gap detection). systemd user unit included.</p>
+        </li>
+      </ul>
+    </section>
+
+    <section class="cta-block">
+      <h2>Run it locally in under a minute</h2>
+      <a class="btn btn-primary btn-lg" href="https://github.com/opcastil11/planckbot" target="_blank" rel="noopener">github.com/opcastil11/planckbot</a>
+    </section>
+  </main>
+
+  <footer>
+    <span>PlanckBot · Apache 2.0</span>
+    <span>
+      <a href="https://github.com/opcastil11/planckbot" target="_blank" rel="noopener">GitHub</a>
+      ·
+      <a href="https://github.com/opcastil11/planckbot/issues" target="_blank" rel="noopener">Issues</a>
+    </span>
+  </footer>
+</body>
+</html>
