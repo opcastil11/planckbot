@@ -1,0 +1,32 @@
+[
+  {
+    "tool_name": "read_text_file",
+    "input_data": {"path": "/repo/package.json"},
+    "output_data": "{\n  \"name\": \"demo-app\",\n  \"version\": \"1.0.0\",\n  \"description\": \"Internal demo project\",\n  \"main\": \"dist/index.js\",\n  \"scripts\": {\n    \"start\": \"node dist/index.js\",\n    \"build\": \"tsc\",\n    \"test\": \"jest\",\n    \"lint\": \"eslint src\"\n  },\n  \"dependencies\": {\n    \"react\": \"^18.0\",\n    \"next\": \"^14.0\",\n    \"zod\": \"^3.22\"\n  },\n  \"devDependencies\": {\n    \"typescript\": \"^5.0\",\n    \"jest\": \"^29.0\",\n    \"eslint\": \"^8.0\"\n  },\n  \"author\": \"Dev Team\",\n  \"license\": \"MIT\"\n}",
+    "filtered_output": "\"name\": \"demo-app\"\n\"version\": \"1.0.0\"\n\"dependencies\": { \"react\": \"^18.0\", \"next\": \"^14.0\", \"zod\": \"^3.22\" }"
+  },
+  {
+    "tool_name": "read_text_file",
+    "input_data": {"path": "/repo/pyproject.toml"},
+    "output_data": "[build-system]\nrequires = [\"hatchling\"]\nbuild-backend = \"hatchling.build\"\n\n[project]\nname = \"myapp\"\nversion = \"0.3.0\"\nrequires-python = \">=3.10\"\ndependencies = [\"fastapi\", \"pydantic>=2\", \"sqlalchemy\", \"uvicorn\"]\n\n[project.optional-dependencies]\ndev = [\"pytest\", \"ruff\", \"mypy\"]\n\n[tool.pytest.ini_options]\ntestpaths = [\"tests\"]\n\n[tool.ruff]\nline-length = 100",
+    "filtered_output": "name = \"myapp\"\nversion = \"0.3.0\"\ndependencies = [\"fastapi\", \"pydantic>=2\", \"sqlalchemy\", \"uvicorn\"]"
+  },
+  {
+    "tool_name": "read_text_file",
+    "input_data": {"path": "/repo/Dockerfile"},
+    "output_data": "FROM python:3.12-slim AS builder\nWORKDIR /app\nCOPY pyproject.toml uv.lock ./\nRUN pip install uv && uv pip install --system .\n\nFROM python:3.12-slim AS runtime\nWORKDIR /app\nCOPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages\nCOPY src/ ./src/\nEXPOSE 8000\nCMD [\"uvicorn\", \"src.main:app\", \"--host\", \"0.0.0.0\", \"--port\", \"8000\"]",
+    "filtered_output": "FROM python:3.12-slim\nEXPOSE 8000\nCMD [\"uvicorn\", \"src.main:app\", \"--host\", \"0.0.0.0\", \"--port\", \"8000\"]"
+  },
+  {
+    "tool_name": "read_text_file",
+    "input_data": {"path": "/repo/Cargo.toml"},
+    "output_data": "[package]\nname = \"myservice\"\nversion = \"0.2.1\"\nedition = \"2021\"\n\n[dependencies]\ntokio = { version = \"1\", features = [\"full\"] }\nserde = { version = \"1\", features = [\"derive\"] }\nreqwest = \"0.11\"\nclap = \"4.0\"\n\n[dev-dependencies]\ncriterion = \"0.5\"\n\n[profile.release]\nopt-level = 3\nlto = true",
+    "filtered_output": "name = \"myservice\"\nversion = \"0.2.1\"\ntokio = \"1\" (features: full)\nserde = \"1\" (features: derive)\nreqwest = \"0.11\"\nclap = \"4.0\""
+  },
+  {
+    "tool_name": "read_text_file",
+    "input_data": {"path": "/repo/.env.example"},
+    "output_data": "# Database\nDATABASE_URL=postgresql://localhost:5432/myapp\nREDIS_URL=redis://localhost:6379\n\n# Auth\nJWT_SECRET=change-me\nOAUTH_CLIENT_ID=\nOAUTH_CLIENT_SECRET=\n\n# Feature flags\nENABLE_BILLING=false\nENABLE_ANALYTICS=true\n\n# External APIs\nSENDGRID_API_KEY=\nSTRIPE_SECRET_KEY=",
+    "filtered_output": "DATABASE_URL=postgresql://localhost:5432/myapp\nREDIS_URL=redis://localhost:6379\nJWT_SECRET=change-me\nENABLE_BILLING=false\nENABLE_ANALYTICS=true"
+  }
+]

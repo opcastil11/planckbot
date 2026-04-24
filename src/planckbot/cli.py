@@ -905,6 +905,97 @@ def cmd_unbless(args) -> int:
     return 0
 
 
+def cmd_uninstall(args) -> int:
+    """Remove PlanckBot from the system. The Python package itself (pip)
+    is NOT uninstalled — this removes PlanckBot's runtime state:
+    ~/.claude.json entries, systemd user unit, and optionally the data
+    directory. Always prompts before removing unless --yes is passed."""
+    import shutil
+    import subprocess
+    from planckbot.config import config
+
+    def _confirm(msg: str) -> bool:
+        if args.yes:
+            return True
+        return input(f"{msg} [y/N] ").strip().lower() == "y"
+
+    claude_json = Path.home() / ".claude.json"
+    unit_file = Path.home() / ".config/systemd/user/planckbot-cron.service"
+
+    print("PlanckBot uninstall — what will be removed:")
+    if claude_json.exists():
+        print(f"  ~/.claude.json MCP entries (planckbot-fs, planckbot-synth)")
+    if unit_file.exists():
+        print(f"  systemd user unit: {unit_file}")
+    if config.data_dir.exists() and args.purge_data:
+        print(f"  data dir: {config.data_dir} ({_dir_size_mb(config.data_dir):.1f} MB)")
+    print()
+    if not _confirm("Proceed?"):
+        print("aborted")
+        return 0
+
+    # 1. Remove MCP entries from claude.json
+    if claude_json.exists():
+        try:
+            cfg = json.loads(claude_json.read_text())
+            servers = cfg.get("mcpServers", {}) or {}
+            removed = []
+            for name in ("planckbot-fs", "planckbot-synth"):
+                if name in servers:
+                    del servers[name]
+                    removed.append(name)
+            if removed:
+                backup = claude_json.with_suffix(
+                    f".json.bak-{int(datetime.now().timestamp())}"
+                )
+                backup.write_text(claude_json.read_text())
+                claude_json.write_text(json.dumps(cfg, indent=2))
+                print(f"[uninstall] removed from claude.json: {removed} "
+                      f"(backup at {backup.name})")
+        except json.JSONDecodeError:
+            print("[uninstall] claude.json is malformed — leaving alone")
+
+    # 2. systemd unit
+    if shutil.which("systemctl"):
+        subprocess.run(
+            ["systemctl", "--user", "disable", "--now",
+             "planckbot-cron.service"],
+            capture_output=True,
+        )
+    if unit_file.exists():
+        unit_file.unlink()
+        print(f"[uninstall] removed {unit_file}")
+        if shutil.which("systemctl"):
+            subprocess.run(
+                ["systemctl", "--user", "daemon-reload"],
+                capture_output=True,
+            )
+
+    # 3. Data dir (destructive — only with --purge-data)
+    if args.purge_data and config.data_dir.exists():
+        if _confirm(f"REALLY delete {config.data_dir}? This is irreversible."):
+            shutil.rmtree(config.data_dir)
+            print(f"[uninstall] removed {config.data_dir}")
+
+    # 4. Tell user how to finish
+    print()
+    print("[uninstall] done. To finish removing PlanckBot:")
+    print("  pip uninstall planckbot")
+    print("  rm -rf .venv   # if you want to drop the venv entirely")
+    return 0
+
+
+def _dir_size_mb(path: Path) -> float:
+    total = 0
+    for p in path.rglob("*"):
+        if p.is_file():
+            try:
+                total += p.stat().st_size
+            except OSError:
+                pass
+    return total / (1024 * 1024)
+
+
 def cmd_systemd_uninstall(_args) -> int:
     import shutil
     import subprocess
@@ -1140,6 +1231,19 @@ def _build_parser() -> argparse.ArgumentParser:
                     help="'load' inserts synthetic triples; "
                          "'clear' removes rows tagged source=demo.")
     sp.set_defaults(func=cmd_demo)
+
+    # uninstall
+    sp = sub.add_parser(
+        "uninstall",
+        help="Remove MCP entries from ~/.claude.json + systemd unit. "
+             "Does NOT touch the pip-installed package.",
+    )
+    sp.add_argument("--yes", "-y", action="store_true",
+                    help="Skip confirmation prompts.")
+    sp.add_argument("--purge-data", action="store_true",
+                    help="Also delete the data/ directory (DB, adapters, "
+                         "everything). Irreversible.")
+    sp.set_defaults(func=cmd_uninstall)
 
     # systemd
     sy = sub.add_parser(

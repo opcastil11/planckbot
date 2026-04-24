@@ -358,7 +358,8 @@ def _head_css() -> str:
             50%      {{ opacity: 0.5; transform: scale(0.88); }}
         }}
 
-        /* Responsive: collapse sidebar on narrow screens */
+        /* Responsive: collapse sidebar on narrow screens. Desktop first,
+           then progressively adapt down to mobile. */
         @media (max-width: 900px) {{
             .planck-sidebar {{
                 position: static !important;
@@ -366,6 +367,7 @@ def _head_css() -> str:
                 height: auto !important;
                 border-right: none !important;
                 border-bottom: 1px solid {c['border']} !important;
+                flex-direction: column !important;
             }}
             .planck-sidebar-brand {{ padding-bottom: 12px !important; }}
             .q-page > div[style*="margin-left: 240px"] {{
@@ -373,6 +375,15 @@ def _head_css() -> str:
                 padding-left: 20px !important;
                 padding-right: 20px !important;
             }}
+            /* Stack the in-sidebar nav items into a grid on wide phones */
+            .planck-nav-item {{ flex: 1 1 160px; max-width: 220px; }}
+        }}
+        @media (max-width: 600px) {{
+            /* Tighten padding and headings on small phones. */
+            .q-page > div[style*="margin-left: 240px"] {{
+                padding: 16px 14px 0 14px !important;
+            }}
+            h1, h2, h3 {{ letter-spacing: -0.2px !important; }}
         }}
 
         /* Links */
