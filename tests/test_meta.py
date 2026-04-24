@@ -112,9 +112,44 @@ def test_validate_rejects_new_imports():
 
 
 def test_validate_rejects_os_system():
-    original = "import os\ndef f():\n    return 1\n"
+    # `os` is now a forbidden import outright, so either the import gate
+    # or the attribute gate must fire; the key invariant is that a patch
+    # that calls `os.system(...)` is rejected with a ValueError.
+    original = "def f():\n    return 1\n"
     new = "import os\ndef f():\n    os.system('rm -rf /')\n    return 1\n"
-    with pytest.raises(ValueError, match="os.system"):
+    with pytest.raises(ValueError):
+        _validate(original, new)
+
+
+def test_validate_rejects_os_import():
+    original = "def f():\n    return 1\n"
+    new = "import os\ndef f():\n    return 1\n"
+    with pytest.raises(ValueError, match="forbidden"):
+        _validate(original, new)
+
+
+def test_validate_rejects_getattr_escape():
+    # `getattr(os, "system")(...)` would defeat a static (os, system) match,
+    # so `getattr` itself must be forbidden.
+    original = "def f():\n    return 1\n"
+    new = "def f():\n    return getattr(__builtins__, 'eval')('1+1')\n"
+    with pytest.raises(ValueError, match="getattr"):
+        _validate(original, new)
+
+
+def test_validate_rejects_dunder_class_escape():
+    # Classic `().__class__.__base__.__subclasses__()` reflection chain —
+    # no imports, no forbidden names, but reaches arbitrary classes.
+    original = "def f():\n    return 1\n"
+    new = "def f():\n    return ().__class__.__base__.__subclasses__()\n"
+    with pytest.raises(ValueError, match="dunder"):
+        _validate(original, new)
+
+
+def test_validate_rejects_importlib():
+    original = "def f():\n    return 1\n"
+    new = "import importlib\ndef f():\n    return importlib.import_module('os')\n"
+    with pytest.raises(ValueError, match="forbidden"):
         _validate(original, new)
 
 

@@ -22,12 +22,24 @@ from planckbot.tools.registry import ToolRegistry
 from planckbot.tools.versions import ToolVersionStore
 
 
-# Names that may never appear in a patched tool body.
+# Names that may never appear in a patched tool body. This includes the
+# obvious code-execution builtins AND the reflection primitives that
+# would otherwise let a patch resolve a forbidden callable by string
+# (`getattr(os, "system")(...)` bypasses a static attribute match).
 FORBIDDEN_NAMES: set[str] = {
     "eval",
     "exec",
     "compile",
     "__import__",
+    # Reflection — string-based attribute resolution is the canonical
+    # sandbox-escape primitive. Block it outright.
+    "getattr",
+    "setattr",
+    "delattr",
+    "globals",
+    "locals",
+    "vars",
+    "__builtins__",
 }
 
 # (module, attribute) pairs that may never be accessed via attribute.
@@ -46,12 +58,38 @@ FORBIDDEN_ATTRS: set[tuple[str, str]] = {
     ("pickle", "load"),
 }
 
+# Dunder attribute names that are forbidden regardless of the receiver.
+# `().__class__.__base__.__subclasses__()` is a classic way to reach
+# arbitrary classes (including subprocess.Popen) without importing
+# anything; blocking the dunder attrs themselves shuts that door.
+FORBIDDEN_DUNDERS: set[str] = {
+    "__class__",
+    "__bases__",
+    "__base__",
+    "__subclasses__",
+    "__mro__",
+    "__globals__",
+    "__builtins__",
+    "__getattribute__",
+    "__dict__",
+    "__code__",
+    "__closure__",
+    "__import__",
+}
+
 # Module names that, if imported, are outright forbidden regardless of how used.
+# `os` / `importlib` / `sys` / `builtins` are all routes to arbitrary
+# code and filesystem; tool bodies that need filesystem access should
+# go through the registered file tools, not raw `os`.
 FORBIDDEN_IMPORTS: set[str] = {
     "subprocess",
     "socket",
     "pickle",
     "ctypes",
+    "os",
+    "sys",
+    "importlib",
+    "builtins",
 }
 
 
@@ -280,12 +318,17 @@ def _validate(original: str, new_src: str, *, forbid_new_imports: bool = True) -
     for node in ast.walk(new_tree):
         if isinstance(node, ast.Name) and node.id in FORBIDDEN_NAMES:
             raise ValueError(f"patch uses forbidden name: {node.id}")
-        if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name):
-            pair = (node.value.id, node.attr)
-            if pair in FORBIDDEN_ATTRS:
+        if isinstance(node, ast.Attribute):
+            if node.attr in FORBIDDEN_DUNDERS:
                 raise ValueError(
-                    f"patch uses forbidden attribute: {pair[0]}.{pair[1]}"
+                    f"patch uses forbidden dunder attribute: {node.attr}"
                 )
+            if isinstance(node.value, ast.Name):
+                pair = (node.value.id, node.attr)
+                if pair in FORBIDDEN_ATTRS:
+                    raise ValueError(
+                        f"patch uses forbidden attribute: {pair[0]}.{pair[1]}"
+                    )
 
 
 def _collect_imports(tree: ast.AST) -> set[str]:
