@@ -51,7 +51,6 @@ dev = ["pytest", "pytest-asyncio", "ruff"]
 Homepage = "https://github.com/opcastil11/planckbot"
 Repository = "https://github.com/opcastil11/planckbot"
 Issues = "https://github.com/opcastil11/planckbot/issues"
-Paper = "https://github.com/opcastil11/planckbot/blob/main/docs/PLANCKBOT_PAPER.md"
 
 [project.scripts]
 planckbot = "planckbot.__main__:main"

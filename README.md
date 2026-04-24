@@ -13,8 +13,10 @@
 
 PlanckBot sits between a host LLM (Claude, GPT-4, any MCP-capable agent) and its tools. It observes every tool call, trains a per-tool LoRA adapter on the observed I/O, and at runtime filters tool output down to the fragments the LLM actually cites — cutting context tokens by up to two orders of magnitude on verbose tools like `list_directory`, `read_file`, and `search_files`.
 
-**Paper**: [docs/PLANCKBOT_PAPER.pdf](docs/PLANCKBOT_PAPER.pdf) · [markdown](docs/PLANCKBOT_PAPER.md)
-**Concept doc**: [docs/PLANCKBOT_CONCEPT.md](docs/PLANCKBOT_CONCEPT.md)
+<p align="center">
+  <img src="docs/screenshots/dashboard.png" alt="PlanckBot workbench dashboard" width="820">
+</p>
+
 **In-app docs** (after `planckbot ui`): [localhost:8080/how-it-works](http://localhost:8080/how-it-works)
 
 ---
@@ -232,7 +234,7 @@ When in doubt, `planckbot doctor` plus the Connection card on the dashboard will
 ## What's honest work-in-progress
 
 - Preliminary adapters underfit at 16 training triples — expect ~200–500 per tool for net savings.
-- Token-savings accounting is currently negative (–55% across 6 historical intervene calls) because the early adapters regressed. See the paper §5.2.
+- Token-savings accounting is currently negative (–55% across 6 historical intervene calls) because the early adapters regressed — expected at this training scale.
 - Layer D currently requires a human (or external LLM call) to write the synthesized tool's code body. The framework, AST gate, MCP hot-serve, and gap detector are all live.
 
 ## Project layout
@@ -250,9 +252,8 @@ src/planckbot/
   cron/        — CronStore, JobRegistry, Daemon, scanner
   cli.py       — unified planckbot CLI
   ui/          — NiceGUI workbench (10 pages)
-scripts/       — train_tool, auto_label, proxy_demo, mcp_preflight, md_to_pdf
+scripts/       — train_tool, auto_label, proxy_demo, mcp_preflight
 tests/         — 195 tests, ~10s
-docs/          — concept doc + paper (markdown + PDF)
 data/          — SQLite DB + LoRA checkpoints (gitignored except fixtures/)
 static/        — branding + UI assets
 ```
@@ -262,25 +263,11 @@ static/        — branding + UI assets
 ```bash
 python -m pytest         # test suite
 planckbot ui             # restart UI after code changes (reload=False)
-python scripts/md_to_pdf.py docs/X.md docs/X.pdf   # regen PDFs when concept/paper change
 ```
 
 ## License
 
 Apache 2.0. See [LICENSE](LICENSE).
-
-## Citation
-
-If you use PlanckBot or build on its framework, please cite:
-
-```
-@misc{castillo2026planckbot,
-  title  = {PlanckBot: An Adaptive Tiny-Model Layer for Tool-Use Token Optimization},
-  author = {Castillo, Oscar},
-  year   = {2026},
-  url    = {https://github.com/opcastil11/planckbot}
-}
-```
 
 ## Acknowledgments
 

@@ -4,7 +4,7 @@ Thanks for your interest. PlanckBot is a research system with a production-inten
 
 ## Before you start
 
-Read [`docs/PLANCKBOT_PAPER.md`](docs/PLANCKBOT_PAPER.md) (or the PDF) and [`docs/PLANCKBOT_CONCEPT.md`](docs/PLANCKBOT_CONCEPT.md). The four-layer framework is the load-bearing abstraction; most changes touch one layer, and being explicit about which one keeps review fast.
+Skim the `/how-it-works` page in the workbench (`planckbot ui`). The four-layer framework is the load-bearing abstraction; most changes touch one layer, and being explicit about which one keeps review fast.
 
 ## Dev setup
 
@@ -44,7 +44,7 @@ A new cron job type is a single function of signature `(ctx: JobContext) -> str`
 
 ## Synthesized tools
 
-Code that runs as a synthesized tool goes through the same AST whitelist used by `edit_tool`. Do **not** weaken the gate casually. If you have a legitimate need for a new import, open an issue first — the gate is part of the threat model described in `docs/PLANCKBOT_PAPER.md §6.3`.
+Code that runs as a synthesized tool goes through the same AST whitelist used by `edit_tool` (see `src/planckbot/tools/meta.py`). Do **not** weaken the gate casually. If you have a legitimate need for a new import, open an issue first.
 
 ## PR checklist
 
@@ -56,7 +56,7 @@ Code that runs as a synthesized tool goes through the same AST whitelist used by
 
 ## Reporting bugs / feature requests
 
-Use the GitHub issue templates. For security concerns (e.g., a way to escape the AST gate), please email the contact in the paper rather than opening a public issue.
+Use the GitHub issue templates. For security concerns (e.g., a way to escape the AST gate), please open a security advisory on GitHub rather than a public issue.
 
 ## License
 

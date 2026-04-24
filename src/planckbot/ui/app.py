@@ -27,7 +27,6 @@ NAV_GROUPS = [
         ("Dashboard", "/", "dashboard"),
         ("Projects", "/projects", "folder_special"),
         ("How it works", "/how-it-works", "school"),
-        ("Paper", "/paper", "description"),
     ]),
     ("Observe", [
         ("Tools", "/tools", "build"),
@@ -456,7 +455,7 @@ def _nav_item(
 
 
 def _footer() -> None:
-    """Compact branding footer with version + repo + paper links."""
+    """Compact branding footer with version + repo links."""
     from planckbot import __version__
     with ui.row().classes(
         "w-full items-center justify-between no-wrap flex-wrap"
@@ -471,7 +470,6 @@ def _footer() -> None:
         with ui.row().classes("items-center gap-4"):
             for text, url, new_tab in [
                 ("How it works", "/how-it-works", False),
-                ("Paper", "/paper", False),
                 ("GitHub", "https://github.com/opcastil11/planckbot", True),
             ]:
                 ui.link(text, url, new_tab=new_tab).classes(
@@ -610,12 +608,6 @@ def how_it_works():
     _page_wrapper(how_it_works_page, current_path="/how-it-works")
 
 
-@ui.page("/paper")
-def paper():
-    from planckbot.ui.pages.paper import paper_page
-    _page_wrapper(paper_page, current_path="/paper")
-
-
 @ui.page("/paper-log")
 def paper_log():
     # Kept alive but not shown in the sidebar — internal research notes.
@@ -751,7 +743,7 @@ def start_app():
     if BRANDING_DIR.exists():
         app.add_static_files("/branding", str(BRANDING_DIR))
 
-    # Serve docs/ so the paper page can link to its PDF.
+    # Serve docs/ so in-app pages can link to user-facing docs.
     docs_dir = REPO_ROOT / "docs"
     if docs_dir.exists():
         app.add_static_files("/docs", str(docs_dir))

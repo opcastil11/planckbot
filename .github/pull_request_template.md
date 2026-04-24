@@ -16,7 +16,7 @@ Thanks for opening a PR. A brief summary below is enough for most changes.
 - [ ] Cron / scheduling
 - [ ] UI (NiceGUI)
 - [ ] CLI / distribution
-- [ ] Docs / paper
+- [ ] Docs
 - [ ] Other
 
 ## Testing

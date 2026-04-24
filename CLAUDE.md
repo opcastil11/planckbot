@@ -1,6 +1,6 @@
 # PlanckBot
 
-**Adaptive tiny-model layer for LLM token optimization.** Sits between a host LLM (Claude, GPT-4, etc.) and its tools. Observes every tool call, trains a per-tool LoRA adapter (<1B params, SmolLM2 base), and at runtime filters / compresses / short-circuits tool I/O to save tokens. Concept doc: `docs/PLANCKBOT_CONCEPT.md` (PDF in the same dir).
+**Adaptive tiny-model layer for LLM token optimization.** Sits between a host LLM (Claude, GPT-4, etc.) and its tools. Observes every tool call, trains a per-tool LoRA adapter (<1B params, SmolLM2 base), and at runtime filters / compresses / short-circuits tool I/O to save tokens.
 
 Standalone product — not a dependency of Orquesta. Orquesta is only *one* ingest source among several.
 
@@ -18,9 +18,9 @@ src/planckbot/
   cron/        — background scheduler (CronStore, JobRegistry, Daemon, scanner)
   synth/       — Layer D: pattern detector, synthesize_tool, `planckbot-synth` MCP server
   cli.py       — `planckbot` entry point with subcommands (ui, status, train, label, cron, synth …)
-  ui/          — NiceGUI workbench (10 pages: dashboard, how-it-works, tools, experiments, training, models, cron, synth, mascots, paper-log)
-  paper/       — research log + markdown export
-scripts/       — train_smoke.py, train_tool.py, proxy_demo.py, mcp_preflight.py, md_to_pdf.py, auto_label.py
+  ui/          — NiceGUI workbench (dashboard, how-it-works, tools, activity, experiments, training, models, cron, synth, mascots, projects)
+  paper/       — internal research-log module (paper_log table + export helper; not user-facing)
+scripts/       — train_smoke.py, train_tool.py, proxy_demo.py, mcp_preflight.py, auto_label.py
 static/branding/ — PlanckBots logo + favicon (used by UI + empty states)
 tests/         — 94 tests; full suite runs in ~5s (no torch needed for most)
 data/          — SQLite DB + LoRA checkpoints (gitignored except data/fixtures/)
@@ -58,7 +58,6 @@ data/          — SQLite DB + LoRA checkpoints (gitignored except data/fixtures
 | `.venv/bin/python scripts/proxy_demo.py` | Exercise intercept path with trained adapter |
 | `.venv/bin/python scripts/mcp_preflight.py` | Verify planckbot-mcp wraps filesystem MCP |
 | `cat msg.txt \| .venv/bin/python scripts/auto_label.py --tool X --recent N` | Back-fill `filtered_output` on unlabeled triples from a reference text |
-| `.venv/bin/python scripts/md_to_pdf.py <in.md> <out.pdf>` | Regenerate concept-doc PDF |
 | `.venv/bin/planckbot-mcp --mode observe -- CMD ARGS` | Run the MCP stdio proxy |
 
 Dev deps: `uv pip install -e ".[dev]"` (inside the venv).
@@ -189,10 +188,10 @@ End-to-end: triples → pattern detector → gap report → human (or LLM) appro
 ## Not yet built (next plausible work)
 
 - **Cold-start window** after a tool edit — force observe mode until N new-version triples accumulate (Layer C hand-off gap).
-- **Semantic matcher** for auto-label — replace the word-level matcher in `reference_tracker` with a sentence-embedding cosine similarity (paper §6.1).
-- **LLM-authored Layer D** — `synthesize_tool --from-gap <report_id>` that calls Claude API with the example triple IDs as context and gets a Python body back (paper §7).
-- **Confidence calibration** per tool — tune the intervene threshold against a held-out eval set instead of using the global default of 0.9 (paper §6.2). Schema v5 already has `tuned_threshold` per-checkpoint; the tuning command is not built.
-- **Multi-adapter LRU** — shared base model with swappable LoRA adapters, needed above ~20 tools (paper §7).
-- **Sandboxed execution of synthesized tools** — Firecracker microVM or seccomp-filtered subprocess (paper §6.4).
+- **Semantic matcher** for auto-label — replace the word-level matcher in `reference_tracker` with a sentence-embedding cosine similarity.
+- **LLM-authored Layer D** — `synthesize_tool --from-gap <report_id>` that calls Claude API with the example triple IDs as context and gets a Python body back.
+- **Confidence calibration** per tool — tune the intervene threshold against a held-out eval set instead of using the global default of 0.9. Schema v5 already has `tuned_threshold` per-checkpoint; the tuning command is not built.
+- **Multi-adapter LRU** — shared base model with swappable LoRA adapters, needed above ~20 tools.
+- **Sandboxed execution of synthesized tools** — Firecracker microVM or seccomp-filtered subprocess.
 - **Multi-adapter memory management** — at >20 tools, we can't load every adapter simultaneously. LRU eviction + shared base model with swappable LoRA adapters.
 - **Workbench features**: scheduled retrain cadence, A/B comparison of adapter versions, adapter promotion flow (eval beats active → activate).
