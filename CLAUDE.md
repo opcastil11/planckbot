@@ -18,7 +18,7 @@ src/planckbot/
   cron/        — background scheduler (CronStore, JobRegistry, Daemon, scanner)
   synth/       — Layer D: pattern detector, synthesize_tool, `planckbot-synth` MCP server
   cli.py       — `planckbot` entry point with subcommands (ui, status, train, label, cron, synth …)
-  ui/          — NiceGUI workbench (9 pages: dashboard, tools, experiments, training, models, cron, synth, mascots, paper-log)
+  ui/          — NiceGUI workbench (10 pages: dashboard, how-it-works, tools, experiments, training, models, cron, synth, mascots, paper-log)
   paper/       — research log + markdown export
 scripts/       — train_smoke.py, train_tool.py, proxy_demo.py, mcp_preflight.py, md_to_pdf.py, auto_label.py
 static/branding/ — PlanckBots logo + favicon (used by UI + empty states)

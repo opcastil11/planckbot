@@ -43,6 +43,7 @@ def _header():
             with ui.row().classes("gap-1 items-center"):
                 for label, path in [
                     ("Dashboard", "/"),
+                    ("How it works", "/how-it-works"),
                     ("Experiments", "/experiments"),
                     ("Tools", "/tools"),
                     ("Training", "/training"),
@@ -140,6 +141,12 @@ def cron():
 def synth():
     from planckbot.ui.pages.synth import synth_page
     _page_wrapper(synth_page, live_seconds=3.0)
+
+
+@ui.page("/how-it-works")
+def how_it_works():
+    from planckbot.ui.pages.how_it_works import how_it_works_page
+    _page_wrapper(how_it_works_page)
 
 
 @ui.page("/paper-log")
