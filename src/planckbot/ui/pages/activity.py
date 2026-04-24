@@ -62,6 +62,12 @@ MAX_RENDERED = 400
 def activity_page():
     state = get_state()
 
+    # Mark everything up to now as "seen" so the sidebar badge clears.
+    # The poller below will update this value as new events stream in,
+    # so leaving the page and coming back doesn't re-flag what you
+    # already watched scroll past.
+    _mark_seen(state)
+
     page_header(
         "Activity",
         "Live feed of proxy interceptions, cron runs, synth lifecycle, "
@@ -162,9 +168,26 @@ def activity_page():
             for ev in new_events:
                 _render_event_row(ev)
         last_id["value"] = new_events[-1].id
+        # Keep the sidebar badge in sync with what's on screen; as long
+        # as the user is parked on /activity, nothing is "unread".
+        _mark_seen(state, up_to=last_id["value"])
         _trim_dom(log_column)
 
-    ui.timer(2.0, _poll)
+    # 500 ms poll: at this cadence the feed feels push-based without
+    # actually moving to websocket+pub/sub infra. Still an indexed
+    # `WHERE id > ?` lookup — microseconds of DB work per tick.
+    ui.timer(0.5, _poll)
+
+
+def _mark_seen(state, *, up_to: int | None = None) -> None:
+    """Advance `last_seen_activity_id` to `up_to` (or MAX(id) if omitted)."""
+    if up_to is None:
+        row = state.conn.execute(
+            "SELECT MAX(id) FROM activity_events"
+        ).fetchone()
+        up_to = int(row[0]) if row and row[0] else 0
+    if up_to > state.last_seen_activity_id:
+        state.last_seen_activity_id = up_to
 
 
 def _latest_id(state) -> int:

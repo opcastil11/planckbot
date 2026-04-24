@@ -59,6 +59,13 @@ class AppState:
         self.projects = ProjectStore(self.conn)
         self._lens_override: str | None = None
 
+        # Activity feed: how far the user has read. We compare this
+        # against `SELECT MAX(id) FROM activity_events` to render an
+        # "unseen" badge on the sidebar. Reset every time the user
+        # visits the /activity page. In-memory is fine — a UI restart
+        # is rare and the cost of a freshly-zeroed badge is low.
+        self.last_seen_activity_id: int = 0
+
     def active_project(self) -> Project | None:
         """The project whose id should scope queries on every page.
 

@@ -98,6 +98,9 @@ def _sidebar(current_path: str) -> None:
         # the projects page with a "Create one" CTA.
         _sidebar_project_switcher()
 
+        # Unseen-activity badge for /activity. Cheap MAX(id) query.
+        activity_unseen = _activity_unseen_count()
+
         # Groups
         for group_label, items in NAV_GROUPS:
             ui.label(group_label).style(
@@ -107,7 +110,101 @@ def _sidebar(current_path: str) -> None:
                 "padding: 12px 8px 4px 8px;"
             )
             for page_label, path, icon in items:
-                _nav_item(page_label, path, icon, current_path)
+                badge = activity_unseen if path == "/activity" else 0
+                _nav_item(
+                    page_label, path, icon, current_path, badge=badge,
+                )
+
+
+# Events that warrant a cross-page toast. The rest (rx, upstream,
+# redact, job_start, job_end) still show up on /activity but are too
+# frequent to surface as popups.
+_TOAST_KINDS: dict[str, str] = {
+    "store":     "positive",
+    "intervene": "positive",
+    "block":     "warning",
+    "activate":  "info",
+    "bless":     "positive",
+    "job_error": "negative",
+    "unbless":   "warning",
+}
+
+
+def _setup_realtime_notifications(current_path: str) -> None:
+    """Global cross-page realtime surface.
+
+    500 ms poll on `activity_events`: for each new row whose `kind` is
+    in `_TOAST_KINDS`, fire a `ui.notify()`. Skipped on /activity —
+    that page is the feed, so duplicating every event as a toast is
+    just noise. The sidebar badge also updates on the same tick so it
+    feels live on idle pages.
+    """
+    # The /activity page owns the feed + its own badge-mark logic.
+    # Elsewhere, toasts are the reactive signal.
+    if current_path == "/activity":
+        return
+    from planckbot.ui.state import get_state
+    from planckbot import activity as activity_mod
+
+    state = get_state()
+    # Seed at the current MAX so we don't toast the entire backlog
+    # the first time a user lands on a page.
+    row = state.conn.execute(
+        "SELECT MAX(id) FROM activity_events"
+    ).fetchone()
+    last = {"id": int(row[0]) if row and row[0] else 0}
+
+    def _tick():
+        try:
+            new_events = activity_mod.list_events(
+                state.conn, since_id=last["id"], limit=20,
+            )
+        except Exception:
+            return
+        if not new_events:
+            return
+        for ev in new_events:
+            ntype = _TOAST_KINDS.get(ev.kind)
+            if ntype is None:
+                continue
+            # Short, scannable label. Message is already compact from
+            # the emitters; just prefix with the source icon so the
+            # toast reads independently of context.
+            icon = {
+                "proxy": "📡", "cron": "⏱️", "synth": "🧪",
+                "training": "🎓", "ui": "🖥️",
+            }.get(ev.source, "•")
+            ui.notify(
+                f"{icon} {ev.message}",
+                type=ntype,
+                position="bottom-right",
+                timeout=3500,
+            )
+        last["id"] = new_events[-1].id
+
+    ui.timer(0.5, _tick)
+
+
+def _activity_unseen_count() -> int:
+    """Number of activity_events rows newer than what the user saw last
+    time they visited /activity. Returns 0 if the table is missing or
+    the query fails — the badge should never take down the sidebar."""
+    from planckbot.ui.state import get_state
+    state = get_state()
+    try:
+        row = state.conn.execute(
+            "SELECT MAX(id) FROM activity_events WHERE id > ?",
+            (state.last_seen_activity_id,),
+        ).fetchone()
+        if not row or row[0] is None:
+            return 0
+        count_row = state.conn.execute(
+            "SELECT COUNT(*) FROM activity_events WHERE id > ?",
+            (state.last_seen_activity_id,),
+        ).fetchone()
+        return int(count_row[0]) if count_row else 0
+    except Exception:
+        return 0
 
 
 def _sidebar_status() -> None:
@@ -236,7 +333,10 @@ def _sidebar_project_switcher() -> None:
         sel.classes("planck-project-switcher")
 
 
-def _nav_item(label: str, path: str, icon: str, current_path: str) -> None:
+def _nav_item(
+    label: str, path: str, icon: str, current_path: str,
+    *, badge: int = 0,
+) -> None:
     active = (current_path == path) or (
         path != "/" and current_path.startswith(path)
     )
@@ -248,7 +348,9 @@ def _nav_item(label: str, path: str, icon: str, current_path: str) -> None:
     )
 
     with ui.link(target=path).classes("no-underline planck-nav-item"):
-        with ui.row().classes("items-center gap-2 no-wrap").style(
+        with ui.row().classes(
+            "items-center gap-2 no-wrap w-full"
+        ).style(
             f"padding: 8px 10px; border-radius: 8px; "
             f"background: {bg}; "
             f"border-left: {border}; "
@@ -257,8 +359,20 @@ def _nav_item(label: str, path: str, icon: str, current_path: str) -> None:
             ui.icon(icon).style(f"color: {icon_color}; font-size: 17px;")
             ui.label(label).style(
                 f"color: {text}; font-size: 13px; "
-                f"font-weight: {'600' if active else '500'};"
+                f"font-weight: {'600' if active else '500'}; "
+                "flex: 1;"
             )
+            if badge > 0:
+                display = str(badge) if badge < 100 else "99+"
+                ui.label(display).style(
+                    f"background: {COLORS['primary']}; "
+                    f"color: {COLORS['bg']}; "
+                    "font-size: 10px; font-weight: 700; "
+                    "padding: 1px 6px; border-radius: 8px; "
+                    "min-width: 16px; text-align: center; "
+                    "font-variant-numeric: tabular-nums; "
+                    f"box-shadow: 0 0 8px {COLORS['primary']}88;"
+                )
 
 
 def _footer() -> None:
@@ -321,6 +435,10 @@ def _page_wrapper(
             _live()
             ui.timer(live_seconds, _live.refresh)
         _footer()
+
+    # Toasts + live sidebar badge run on every page. Suppressed on
+    # /activity because the feed itself is already the surface.
+    _setup_realtime_notifications(current_path)
 
 
 # --- routes ----------------------------------------------------------------
