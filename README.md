@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="static/branding/planckbots-mark-512.png" alt="PlanckBots" width="180">
+</p>
+
 # PlanckBot
 
 [![tests](https://github.com/opcastil11/planckbot/actions/workflows/test.yml/badge.svg)](https://github.com/opcastil11/planckbot/actions/workflows/test.yml)
