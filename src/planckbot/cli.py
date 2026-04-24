@@ -105,7 +105,24 @@ def cmd_ui(_args) -> int:
     return 0
 
 
-def cmd_status(_args) -> int:
+def cmd_status(args) -> int:
+    """One-shot summary. `--watch N` polls every N seconds until Ctrl-C."""
+    watch = getattr(args, "watch", None)
+    if watch:
+        import time
+        try:
+            while True:
+                # Clear screen between ticks; simple ANSI to avoid curses.
+                print("\033[2J\033[H", end="")
+                _render_status()
+                print(f"\n  (watching — refresh every {watch}s; Ctrl-C to stop)")
+                time.sleep(watch)
+        except KeyboardInterrupt:
+            return 0
+    return _render_status()
+
+
+def _render_status() -> int:
     s = _load_stores()
     config = s["config"]
     triples = s["triples"]
@@ -870,6 +887,10 @@ def _build_parser() -> argparse.ArgumentParser:
 
     # status
     sp = sub.add_parser("status", help="Summarize the current DB state.")
+    sp.add_argument(
+        "--watch", type=float, default=None, metavar="SECONDS",
+        help="Refresh every N seconds until Ctrl-C (a terminal dashboard).",
+    )
     sp.set_defaults(func=cmd_status)
 
     # train

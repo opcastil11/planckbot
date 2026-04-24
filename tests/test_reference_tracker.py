@@ -135,3 +135,34 @@ def test_list_unlabeled_respects_tool_filter(triples_store):
     tb = triples_store.add(tool_name="b", input_data="i", output_data="o")
     rows = triples_store.list_unlabeled(tool_name="a")
     assert [r.id for r in rows] == [ta.id]
+
+
+# --- match_mode: semantic -------------------------------------------------
+
+
+def test_semantic_mode_falls_back_when_dep_missing(monkeypatch):
+    """If sentence-transformers isn't installed, semantic mode must
+    degrade gracefully to token matching — never crash."""
+    # Simulate missing dep by making the import raise
+    import builtins
+    real_import = builtins.__import__
+
+    def fake_import(name, *args, **kwargs):
+        if name == "sentence_transformers":
+            raise ImportError("faked")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+
+    out = extract_referenced_lines(
+        "keep_this\ndrop_that", "keep_this is useful",
+        match_mode="semantic",
+    )
+    # Should have matched via the token fallback
+    assert out == "keep_this"
+
+
+def test_unknown_match_mode_raises():
+    import pytest
+    with pytest.raises(ValueError, match="unknown match_mode"):
+        extract_referenced_lines("a\nb", "c", match_mode="not-a-real-mode")

@@ -188,6 +188,7 @@ def _autolabel_precise_job(ctx: JobContext) -> str:
     recent = int(ctx.params.get("recent", 20))
     min_line_len = int(ctx.params.get("min_line_len", 3))
     max_drift = float(ctx.params.get("max_drift_seconds", 180))
+    match_mode = ctx.params.get("match_mode", "token")  # 'token' | 'semantic'
     claude_root = ctx.params.get("claude_root")
     project_dir = (
         Path(claude_root) if claude_root
@@ -230,7 +231,8 @@ def _autolabel_precise_job(ctx: JobContext) -> str:
             continue
 
         kept = label_triple_from_reference(
-            store, t.id, reference, min_line_len=min_line_len,
+            store, t.id, reference,
+            min_line_len=min_line_len, match_mode=match_mode,
         )
         if kept is None:
             skipped += 1

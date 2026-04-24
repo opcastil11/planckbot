@@ -79,7 +79,79 @@ def extract_referenced_lines(
                 kept.append(line)
         return "\n".join(kept) if kept else None
 
+    if match_mode == "semantic":
+        return _extract_semantic(output, reference, min_line_len=min_line_len)
+
     raise ValueError(f"unknown match_mode: {match_mode!r}")
+
+
+def _extract_semantic(
+    output: str,
+    reference: str,
+    *,
+    min_line_len: int = 3,
+    cosine_threshold: float = 0.55,
+) -> str | None:
+    """Semantic line-match using sentence-transformers.
+
+    Falls back to token matching when the optional dependency isn't
+    installed so the pipeline never breaks on a fresh install that
+    hasn't run `uv pip install sentence-transformers`.
+
+    Keeps each output line whose embedding has cosine similarity ≥
+    `cosine_threshold` with ANY sentence in the reference. This picks
+    up paraphrases the token matcher misses — e.g. reference says
+    "the notifications module", output has `[FILE] notifications.py`.
+    """
+    try:
+        from sentence_transformers import SentenceTransformer
+    except ImportError:
+        # Graceful degrade — user asked for semantic but hasn't installed
+        # the dep. Fall back to token, which is always available.
+        return extract_referenced_lines(
+            output, reference, min_line_len=min_line_len, match_mode="token",
+        )
+
+    import numpy as np
+
+    # Cache the model across calls in the same process. `all-MiniLM-L6-v2`
+    # is ~90 MB, loads in ~1s, and is appropriate for the sentence-level
+    # similarity we need here.
+    global _SEMANTIC_MODEL
+    if "_SEMANTIC_MODEL" not in globals():
+        _SEMANTIC_MODEL = None  # type: ignore[assignment]
+    if _SEMANTIC_MODEL is None:
+        _SEMANTIC_MODEL = SentenceTransformer("all-MiniLM-L6-v2")  # type: ignore[assignment]
+
+    # Build embedding sets.
+    out_lines = [
+        ln for ln in output.splitlines()
+        if len(ln.strip()) >= min_line_len
+    ]
+    if not out_lines:
+        return None
+    # Split reference by common sentence boundaries; keep non-trivial chunks.
+    import re as _re
+    ref_sentences = [
+        s.strip() for s in _re.split(r"(?<=[.!?])\s+|\n+", reference)
+        if len(s.strip()) >= min_line_len
+    ]
+    if not ref_sentences:
+        return None
+
+    out_emb = _SEMANTIC_MODEL.encode(out_lines, convert_to_numpy=True,
+                                      normalize_embeddings=True)
+    ref_emb = _SEMANTIC_MODEL.encode(ref_sentences, convert_to_numpy=True,
+                                      normalize_embeddings=True)
+    # Cosine similarity since both sides are normalized.
+    sims = out_emb @ ref_emb.T
+    best_per_line = sims.max(axis=1)
+
+    kept = [
+        line for line, score in zip(out_lines, best_per_line)
+        if float(score) >= cosine_threshold
+    ]
+    return "\n".join(kept) if kept else None
 
 
 def label_triple_from_reference(
