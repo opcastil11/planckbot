@@ -116,6 +116,82 @@ def _tools_section(state) -> None:
                         ).tooltip("activate")
 
 
+def _empty_gaps_state(state) -> None:
+    """State-aware empty state for gap reports. Diagnoses the REAL reason
+    the table is empty so the user knows what to do next — instead of a
+    generic 'add a cron job' message that's often already done."""
+    conn = state.conn
+
+    # Does a detect_tool_gaps cron job exist?
+    job_row = conn.execute(
+        "SELECT name, last_status, last_run_at, last_output "
+        "FROM cron_jobs WHERE job_type = 'detect_tool_gaps' "
+        "ORDER BY created_at DESC LIMIT 1"
+    ).fetchone()
+
+    # Tool-name diversity in proxy triples
+    proxy_counts = dict(conn.execute(
+        "SELECT tool_name, COUNT(*) FROM triples "
+        "WHERE source LIKE 'proxy:%' GROUP BY tool_name"
+    ).fetchall())
+    n_distinct = len(proxy_counts)
+    total_proxy = sum(proxy_counts.values())
+    top_tool = max(proxy_counts.items(), key=lambda kv: kv[1])[0] if proxy_counts else None
+
+    if job_row is None:
+        # Case 1: no job scheduled yet.
+        empty_state(
+            title="No gap reports yet",
+            hint=(
+                "Gap reports come from the `detect_tool_gaps` cron job — it "
+                "scans your triples for sequences of different tools that "
+                "repeat often, and proposes merged tools. You haven't "
+                "scheduled it yet. From terminal:\n"
+                "\n"
+                "  planckbot cron add --name gap-scan "
+                "--type detect_tool_gaps --interval 3600 "
+                "--params '{\"window_seconds\":60,\"min_occurrences\":3}'"
+            ),
+            icon="insights",
+        )
+        return
+
+    # Job exists. What's going on?
+    if n_distinct < 2:
+        reason = (
+            f"Your {total_proxy} proxy triple(s) are all from "
+            f"`{top_tool or 'a single tool'}`. The detector ignores "
+            "single-tool sequences by design — a gap is a repeated pattern "
+            "of DIFFERENT tools. Use prompts that combine several "
+            "`mcp__planckbot-fs__*` tools (for example list_directory + "
+            "read_text_file on the same request) and re-run the job."
+        )
+    elif total_proxy < 10:
+        reason = (
+            f"You only have {total_proxy} proxy triples across "
+            f"{n_distinct} distinct tools. The detector needs a few "
+            "repeats of the same sequence to register a gap. Keep using "
+            "Claude — the job will pick up patterns automatically when "
+            "they appear."
+        )
+    else:
+        last = job_row[3] or "(no output yet)"
+        reason = (
+            f"The job `{job_row[0]}` last reported: \"{last}\". You have "
+            f"{total_proxy} proxy triples across {n_distinct} distinct "
+            "tools, so the detector IS looking — it just hasn't found a "
+            "sequence repeating at least `min_occurrences` times inside "
+            "its time window. Either wait for usage to accumulate, or "
+            "lower `min_occurrences` in the job's params."
+        )
+
+    empty_state(
+        title="No gap reports yet",
+        hint=reason,
+        icon="insights",
+    )
+
+
 def _gaps_section(state) -> None:
     ui.label("Gap reports").style(
         heading_style(size=TEXT_MD) + f" margin-top: {SPACE_LG}px;"
@@ -133,14 +209,7 @@ def _gaps_section(state) -> None:
     )
     with container:
         if not reports:
-            empty_state(
-                title="No gap reports yet",
-                hint=(
-                    "Add a `detect_tool_gaps` cron job — it populates this table "
-                    "from the triples you've already recorded."
-                ),
-                icon="insights",
-            )
+            _empty_gaps_state(state)
             return
         with ui.row().classes("w-full items-center no-wrap gap-3").style(
             f"padding: {SPACE_MD}px {SPACE_LG}px; "
