@@ -29,11 +29,16 @@ v6 — adds `projects` table + nullable `project_id` columns on
      from the others. Existing rows get NULL `project_id` (treated as
      "legacy / unscoped" — visible in All-Projects views, invisible in
      any per-project filter) so the upgrade is lossless.
+v7 — adds `activity_events` table for the cross-process live-activity
+     feed. Proxy, cron daemon, synth, and training all INSERT rows
+     when they do something notable; the UI's /activity page polls
+     this table as a SQLite-backed event bus. Rotation is app-side
+     (src/planckbot/activity.py :: trim_events).
 """
 
 import sqlite3
 
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 
 TABLES = """
 CREATE TABLE IF NOT EXISTS schema_version (
@@ -249,6 +254,22 @@ CREATE TABLE IF NOT EXISTS gap_reports (
 
 CREATE INDEX IF NOT EXISTS idx_gap_status ON gap_reports(status);
 CREATE INDEX IF NOT EXISTS idx_gap_project ON gap_reports(project_id);
+
+-- v7: cross-process event bus for the /activity live-log page.
+-- Proxy, cron daemon, synth, and training all INSERT rows when they do
+-- something notable; the UI polls `id > last_seen` every few seconds.
+CREATE TABLE IF NOT EXISTS activity_events (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    ts           TEXT NOT NULL,
+    source       TEXT NOT NULL,      -- proxy | cron | synth | training | ui
+    kind         TEXT NOT NULL,      -- rx, upstream, redact, store, job_start, …
+    message      TEXT NOT NULL,
+    meta         TEXT,               -- optional JSON blob
+    project_id   TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_activity_ts ON activity_events(ts DESC);
+CREATE INDEX IF NOT EXISTS idx_activity_id ON activity_events(id);
 """
 
 
@@ -447,6 +468,30 @@ def _upgrade_to_v6(conn: sqlite3.Connection) -> None:
         conn.execute(stmt)
 
 
+V7_UPGRADE_STATEMENTS = [
+    """
+    CREATE TABLE IF NOT EXISTS activity_events (
+        id           INTEGER PRIMARY KEY AUTOINCREMENT,
+        ts           TEXT NOT NULL,
+        source       TEXT NOT NULL,      -- proxy | cron | synth | training | ui
+        kind         TEXT NOT NULL,      -- rx, upstream, redact, store, job_start, …
+        message      TEXT NOT NULL,
+        meta         TEXT,               -- optional JSON blob
+        project_id   TEXT                -- optional, for scoping in the UI
+    )
+    """,
+    # Newest-first scans dominate the /activity page; index the timestamp
+    # for cheap `ORDER BY ts DESC LIMIT N` and `WHERE id > ?` polling.
+    "CREATE INDEX IF NOT EXISTS idx_activity_ts ON activity_events(ts DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_activity_id ON activity_events(id)",
+]
+
+
+def _upgrade_to_v7(conn: sqlite3.Connection) -> None:
+    for stmt in V7_UPGRADE_STATEMENTS:
+        conn.execute(stmt)
+
+
 def migrate(conn: sqlite3.Connection):
     """Apply pending migrations. Safe to call repeatedly."""
     cur = conn.execute(
@@ -474,6 +519,8 @@ def migrate(conn: sqlite3.Connection):
         _upgrade_to_v5(conn)
     if current < 6:
         _upgrade_to_v6(conn)
+    if current < 7:
+        _upgrade_to_v7(conn)
 
     # Hygiene: store the version as a SINGLE row that we UPDATE in place.
     # Pre-v5 DBs have one row per migration (accumulating cruft); we

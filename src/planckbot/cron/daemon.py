@@ -108,6 +108,9 @@ class Daemon:
 
     def run_job(self, job_id: str) -> tuple[str, str]:
         """Dispatch a single job by id. Returns (status, output)."""
+        from planckbot import activity
+        import time
+
         job = self.store.get(job_id)
         if job is None:
             return ("error", f"job {job_id} not found")
@@ -115,17 +118,47 @@ class Daemon:
         if fn is None:
             output = f"unknown job_type={job.job_type!r}"
             self.store.mark_run(job.id, status="error", output=output)
+            activity.log_event(
+                self.conn, "cron", "job_error",
+                f"{job.name}: unknown job_type {job.job_type!r}",
+                project_id=job.project_id,
+                meta={"job": job.name, "job_type": job.job_type},
+            )
             return ("error", output)
 
+        activity.log_event(
+            self.conn, "cron", "job_start",
+            f"{job.name} ({job.job_type}) starting",
+            project_id=job.project_id,
+            meta={"job": job.name, "job_type": job.job_type},
+        )
         ctx = JobContext(
             conn=self.conn, params=job.params, project_id=job.project_id,
         )
+        t0 = time.time()
         try:
             output = fn(ctx)
+            duration_ms = round((time.time() - t0) * 1000, 1)
             self.store.mark_run(job.id, status="ok", output=output or "")
+            activity.log_event(
+                self.conn, "cron", "job_end",
+                f"{job.name} ok in {duration_ms} ms",
+                project_id=job.project_id,
+                meta={"job": job.name, "job_type": job.job_type,
+                      "duration_ms": duration_ms},
+            )
             return ("ok", output or "")
         except Exception as e:
+            duration_ms = round((time.time() - t0) * 1000, 1)
             output = f"{type(e).__name__}: {e}\n{traceback.format_exc()}"
             logger.warning("job %s (%s) failed: %s", job.name, job.job_type, e)
             self.store.mark_run(job.id, status="error", output=output)
+            activity.log_event(
+                self.conn, "cron", "job_error",
+                f"{job.name} failed: {type(e).__name__}: {e}",
+                project_id=job.project_id,
+                meta={"job": job.name, "job_type": job.job_type,
+                      "duration_ms": duration_ms,
+                      "exception": type(e).__name__},
+            )
             return ("error", output)

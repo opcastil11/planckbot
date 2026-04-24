@@ -188,15 +188,32 @@ class PlanckProxy:
         *args,
         **kwargs,
     ) -> ProxyResult:
+        from planckbot import activity
+
         # Capture the input before we mutate anything.
         input_payload: Any = kwargs if kwargs else (args if len(args) > 1 else (args[0] if args else None))
         input_str = _to_str(input_payload)
+
+        activity.log_event(
+            self.store.conn, "proxy", "rx",
+            f"{tool_name} call received",
+            project_id=self.project_id,
+            meta={"tool": tool_name, "mode": self.mode.name},
+        )
 
         # Run the real tool.
         t0 = time.time()
         raw = fn(*args, **kwargs)
         latency_ms = round((time.time() - t0) * 1000, 2)
         raw_str = _to_str(raw)
+
+        activity.log_event(
+            self.store.conn, "proxy", "upstream",
+            f"{tool_name} → {len(raw_str)} chars in {latency_ms} ms",
+            project_id=self.project_id,
+            meta={"tool": tool_name, "latency_ms": latency_ms,
+                  "chars": len(raw_str)},
+        )
 
         # Decide what to return.
         if tool_name in SIDE_EFFECT_TOOLS:
@@ -213,6 +230,17 @@ class PlanckProxy:
                 predictor=self.predictor,
                 strategy=self.strategy,
             )
+            if decision.intervened:
+                activity.log_event(
+                    self.store.conn, "proxy", "intervene",
+                    f"{tool_name} swapped raw→filtered "
+                    f"(conf={decision.confidence:.2f})"
+                    if decision.confidence is not None else
+                    f"{tool_name} swapped raw→filtered",
+                    project_id=self.project_id,
+                    meta={"tool": tool_name,
+                          "confidence": decision.confidence},
+                )
 
         # Record the triple.
         triple = self.store.add(
@@ -222,6 +250,16 @@ class PlanckProxy:
             source=f"proxy:{self.mode.name}",
             filtered_output=decision.predicted_output,
             project_id=self.project_id,
+        )
+
+        activity.log_event(
+            self.store.conn, "proxy", "store",
+            f"saved triple {triple.id[:8]} ({triple.input_tokens}/"
+            f"{triple.output_tokens} tok)",
+            project_id=self.project_id,
+            meta={"triple_id": triple.id, "tool": tool_name,
+                  "input_tokens": triple.input_tokens,
+                  "output_tokens": triple.output_tokens},
         )
 
         return ProxyResult(

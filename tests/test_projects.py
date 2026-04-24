@@ -34,11 +34,14 @@ from planckbot.tools.triples import TriplesStore
 # --- schema / migration ----------------------------------------------------
 
 
-def test_schema_version_is_v6(conn):
+def test_schema_version_at_least_v6(conn):
     row = conn.execute(
         "SELECT MAX(version) FROM schema_version"
     ).fetchone()
-    assert row[0] == SCHEMA_VERSION == 6
+    # v6 added projects. Later migrations are additive; this test just
+    # asserts projects-era invariants hold at SCHEMA_VERSION >= 6.
+    assert row[0] == SCHEMA_VERSION
+    assert SCHEMA_VERSION >= 6
 
 
 def test_projects_table_exists(conn):

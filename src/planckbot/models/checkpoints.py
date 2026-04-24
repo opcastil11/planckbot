@@ -147,16 +147,37 @@ class CheckpointManager:
                 (tuned_threshold, ckpt_id),
             )
         self.conn.commit()
+        from planckbot import activity
+        ckpt = self.get(ckpt_id)
+        activity.log_event(
+            self.conn, "training", "bless",
+            f"checkpoint {ckpt_id[:8]} blessed"
+            + (f" (threshold={tuned_threshold})"
+               if tuned_threshold is not None else ""),
+            project_id=getattr(ckpt, "project_id", None),
+            meta={"checkpoint_id": ckpt_id,
+                  "tuned_threshold": tuned_threshold,
+                  "tool": getattr(ckpt, "tool_name", None)},
+        )
 
     def unbless(self, ckpt_id: str) -> None:
         """Revoke the blessed flag and deactivate the checkpoint. Used
         after an adapter is found to regress in production."""
+        ckpt = self.get(ckpt_id)
         self.conn.execute(
             "UPDATE model_checkpoints SET blessed = 0, is_active = 0 "
             "WHERE id = ?",
             (ckpt_id,),
         )
         self.conn.commit()
+        from planckbot import activity
+        activity.log_event(
+            self.conn, "training", "unbless",
+            f"checkpoint {ckpt_id[:8]} unblessed + deactivated",
+            project_id=getattr(ckpt, "project_id", None),
+            meta={"checkpoint_id": ckpt_id,
+                  "tool": getattr(ckpt, "tool_name", None)},
+        )
 
     def delete(self, ckpt_id: str, delete_files: bool = False):
         if delete_files:

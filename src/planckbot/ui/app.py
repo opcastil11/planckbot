@@ -31,6 +31,7 @@ NAV_GROUPS = [
     ]),
     ("Observe", [
         ("Tools", "/tools", "build"),
+        ("Activity", "/activity", "bolt"),
         ("Experiments", "/experiments", "science"),
     ]),
     ("Train", [
@@ -356,6 +357,16 @@ def experiment_detail(exp_id: str):
 def tools():
     from planckbot.ui.pages.tools import tools_page
     _page_wrapper(tools_page, current_path="/tools")
+
+
+@ui.page("/activity")
+def activity_route():
+    from planckbot.ui.pages.activity import activity_page
+    # Not wrapped in `live_seconds` because the page has its own
+    # surgical ui.timer that only touches the log column — the filter
+    # controls (source + project dropdowns + pause button) must keep
+    # their state across ticks.
+    _page_wrapper(activity_page, current_path="/activity")
 
 
 @ui.page("/training")

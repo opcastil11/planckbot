@@ -167,6 +167,14 @@ def synthesize_tool(
         project_id=project_id,
     )
     store.insert(tool)
+    from planckbot import activity
+    activity.log_event(
+        conn, "synth", "draft",
+        f"new synthesized tool {name!r} drafted",
+        project_id=project_id,
+        meta={"tool": name, "source": str(source_path),
+              "gap_report_id": gap_report_id},
+    )
     return SynthesisResult(tool=tool, source_path=source_path)
 
 
@@ -187,6 +195,13 @@ def activate_tool(
     tool.status = "active"
     if hot_reload:
         _signal_synth_server(pid_file)
+    from planckbot import activity
+    activity.log_event(
+        conn, "synth", "activate",
+        f"synthesized tool {name!r} activated",
+        project_id=tool.project_id,
+        meta={"tool": name},
+    )
     return tool
 
 
@@ -205,6 +220,13 @@ def deactivate_tool(
     tool.status = "retired"
     if hot_reload:
         _signal_synth_server(pid_file)
+    from planckbot import activity
+    activity.log_event(
+        conn, "synth", "deactivate",
+        f"synthesized tool {name!r} retired",
+        project_id=tool.project_id,
+        meta={"tool": name},
+    )
     return tool
 
 

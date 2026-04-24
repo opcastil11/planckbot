@@ -258,6 +258,14 @@ async def run_proxy(
                         f"(pattern: {match!r})",
                         file=sys.stderr, flush=True,
                     )
+                    from planckbot import activity
+                    activity.log_event(
+                        conn, "proxy", "block",
+                        f"{name} refused: {tgt_path} matches {match!r}",
+                        project_id=active_project_id,
+                        meta={"tool": name, "path": tgt_path,
+                              "pattern": match},
+                    )
                     return _text_to_content(
                         f"Refused by PlanckBot .mcpignore policy: path "
                         f"matches pattern {match!r}. If this was a "
@@ -284,6 +292,15 @@ async def run_proxy(
                         f"[planckbot-mcp] redacted {n_redacted} entries "
                         f"from {name}({base!r})",
                         file=sys.stderr, flush=True,
+                    )
+                    from planckbot import activity
+                    activity.log_event(
+                        conn, "proxy", "redact",
+                        f"{name} redacted {n_redacted} entries "
+                        f"matching .mcpignore",
+                        project_id=active_project_id,
+                        meta={"tool": name, "base": base,
+                              "redacted": n_redacted},
                     )
                 raw_text = redacted_text
 
