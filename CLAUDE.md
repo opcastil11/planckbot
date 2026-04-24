@@ -73,7 +73,7 @@ Dev deps: `uv pip install -e ".[dev]"` (inside the venv).
   - A = host LLM picks the tool
   - B = Planck model filters I/O at runtime ← what PlanckBot does
   - C = host LLM edits tool source code → triggers version bump + adapter invalidation
-  Schema v2 added `tool_versions` table + `tool_version_id` columns on `triples` and `model_checkpoints` to support this. The meta-tool `edit_tool(name, patch)` is **not yet implemented** — only the data model.
+  Schema v2 added `tool_versions` table + `tool_version_id` columns on `triples` and `model_checkpoints`. The meta-tool `edit_tool(name, patch)` IS implemented in `src/planckbot/tools/meta.py` (Layer C) — 15 tests cover AST whitelist + version bump + adapter invalidation + module hot-reload.
 - **MCP integration** — `planckbot-mcp` wraps an upstream MCP server. CLI uses `-- cmd args...` positional for upstream (argparse rejects dash-prefixed values otherwise). Three modes: `observe` (log only), `suggest` (log + predict), `intervene` (apply when confidence ≥ threshold). Side-effect tools (`Write`, `Edit`, `Bash`) never get their output swapped regardless of mode.
 - **Training**: SmolLM2-135M-Instruct + LoRA r=8 targeting q_proj/v_proj. ~460K trainable params (0.34%). CPU-feasible but slow (~10 min for 16 triples × 1 epoch).
 - **Confidence**: geometric mean of per-token top probability (`exp(mean(log p_i))`) from `models/inference.predict()`. Not calibrated yet — needs the evaluator to tune thresholds.
@@ -151,7 +151,11 @@ End-to-end: triples → pattern detector → gap report → human (or LLM) appro
 
 ## Not yet built (next plausible work)
 
-- **Cold-start window** after a tool edit — force observe mode until N new-version triples accumulate.
-- **Automated reference-tracking** from Claude Code conversation logs on a cron — so triples self-label as conversations happen.
+- **Cold-start window** after a tool edit — force observe mode until N new-version triples accumulate (Layer C hand-off gap).
+- **Semantic matcher** for auto-label — replace the word-level matcher in `reference_tracker` with a sentence-embedding cosine similarity (paper §6.1).
+- **LLM-authored Layer D** — `synthesize_tool --from-gap <report_id>` that calls Claude API with the example triple IDs as context and gets a Python body back (paper §7).
+- **Confidence calibration** per tool — tune the intervene threshold against a held-out eval set instead of using the global default of 0.9 (paper §6.2). Schema v5 already has `tuned_threshold` per-checkpoint; the tuning command is not built.
+- **Multi-adapter LRU** — shared base model with swappable LoRA adapters, needed above ~20 tools (paper §7).
+- **Sandboxed execution of synthesized tools** — Firecracker microVM or seccomp-filtered subprocess (paper §6.4).
 - **Multi-adapter memory management** — at >20 tools, we can't load every adapter simultaneously. LRU eviction + shared base model with swappable LoRA adapters.
 - **Workbench features**: scheduled retrain cadence, A/B comparison of adapter versions, adapter promotion flow (eval beats active → activate).

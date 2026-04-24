@@ -88,6 +88,8 @@ class ModelCheckpoint:
     num_triples: int | None = None
     eval_metrics: dict | None = None
     is_active: int = 0
+    blessed: int = 0                  # v5: safety gate — set with `planckbot bless`
+    tuned_threshold: float | None = None  # v5: per-ckpt confidence override
     created_at: str = field(default_factory=_now)
 
     def to_row(self) -> dict:

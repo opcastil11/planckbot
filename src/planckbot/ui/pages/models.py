@@ -117,9 +117,31 @@ def models_page():
                 with ui.row().classes("gap-2"):
                     if not ckpt.is_active:
                         def activate(cid=ckpt.id):
-                            state.checkpoints.activate(cid)
-                            ui.navigate.to("/models")
+                            try:
+                                state.checkpoints.activate(cid)
+                                ui.navigate.to("/models")
+                            except ValueError as e:
+                                ui.notify(
+                                    str(e), type="warning", multi_line=True,
+                                    timeout=8000,
+                                )
                         ui.button("Activate", on_click=activate, icon="check").props("flat dense")
+                        if not ckpt.blessed:
+                            def bless(cid=ckpt.id):
+                                state.checkpoints.bless(cid)
+                                ui.notify(
+                                    "Blessed. You asserted this adapter "
+                                    "compresses — verify with proxy_demo "
+                                    "before flipping the MCP to intervene.",
+                                    type="positive",
+                                )
+                                ui.navigate.to("/models")
+                            ui.button("Bless", on_click=bless, icon="verified").props(
+                                "flat dense color=warning"
+                            ).tooltip(
+                                "Mark this checkpoint safe to serve in "
+                                "intervene mode. Required before Activate."
+                            )
                     else:
                         def deactivate(cid=ckpt.id):
                             state.checkpoints.deactivate(cid)

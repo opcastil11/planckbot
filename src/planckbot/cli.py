@@ -639,31 +639,50 @@ WantedBy=default.target
     return 0
 
 
-def cmd_doctor(_args) -> int:
+def cmd_doctor(args) -> int:
     """Run every health check and print a report. Exit code = worst status."""
     from planckbot.doctor import (
         CHECK_FAIL, CHECK_OK, CHECK_WARN, run_checks, worst,
     )
 
-    ICON = {
-        CHECK_OK: "\033[32m✓\033[0m",
-        CHECK_WARN: "\033[33m⚠\033[0m",
-        CHECK_FAIL: "\033[31m✗\033[0m",
-    }
-
     results = run_checks()
-    print("PlanckBot — health check\n")
-    for r in results:
-        print(f"  {ICON[r.status]} {r.title}")
-        print(f"      {r.detail}")
-        if r.fix:
-            print(f"      → \033[36m{r.fix}\033[0m")
-    print()
-    ok = sum(1 for r in results if r.status == CHECK_OK)
-    warn = sum(1 for r in results if r.status == CHECK_WARN)
-    fail = sum(1 for r in results if r.status == CHECK_FAIL)
-    print(f"  {ok} ok, {warn} warn, {fail} fail")
-    w = worst(results)
+
+    if getattr(args, "json", False):
+        import json as _json
+        out = {
+            "checks": [
+                {"title": r.title, "status": r.status,
+                 "detail": r.detail, "fix": r.fix}
+                for r in results
+            ],
+            "summary": {
+                "ok":   sum(1 for r in results if r.status == CHECK_OK),
+                "warn": sum(1 for r in results if r.status == CHECK_WARN),
+                "fail": sum(1 for r in results if r.status == CHECK_FAIL),
+                "worst": worst(results),
+            },
+        }
+        print(_json.dumps(out, indent=2))
+        w = out["summary"]["worst"]
+    else:
+        ICON = {
+            CHECK_OK: "\033[32m✓\033[0m",
+            CHECK_WARN: "\033[33m⚠\033[0m",
+            CHECK_FAIL: "\033[31m✗\033[0m",
+        }
+        print("PlanckBot — health check\n")
+        for r in results:
+            print(f"  {ICON[r.status]} {r.title}")
+            print(f"      {r.detail}")
+            if r.fix:
+                print(f"      → \033[36m{r.fix}\033[0m")
+        print()
+        ok = sum(1 for r in results if r.status == CHECK_OK)
+        warn = sum(1 for r in results if r.status == CHECK_WARN)
+        fail = sum(1 for r in results if r.status == CHECK_FAIL)
+        print(f"  {ok} ok, {warn} warn, {fail} fail")
+        w = worst(results)
+
     if w == CHECK_FAIL:
         return 2
     if w == CHECK_WARN:
@@ -764,6 +783,45 @@ def cmd_demo(args) -> int:
     print(f"[demo] inserted {inserted} synthetic triple(s)")
     print("[demo] open the dashboard: planckbot ui")
     print("[demo] to undo: planckbot demo clear")
+    return 0
+
+
+def cmd_bless(args) -> int:
+    """Mark a checkpoint safe to serve. Requires explicit operator action
+    because the proxy refuses to serve un-blessed adapters in intervene
+    mode (a guard against accidentally activating a regressive adapter).
+    """
+    s = _load_stores()
+    ckpt = s["checkpoints"].get(args.ckpt_id)
+    if ckpt is None:
+        print(f"checkpoint not found: {args.ckpt_id}", file=sys.stderr)
+        return 1
+    try:
+        s["checkpoints"].bless(
+            ckpt.id, tuned_threshold=args.threshold,
+        )
+    except ValueError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
+    print(f"blessed {ckpt.name} ({ckpt.id[:8]})")
+    if args.threshold is not None:
+        print(f"  tuned_threshold = {args.threshold}")
+    if args.activate:
+        s["checkpoints"].activate(ckpt.id)
+        print(f"  activated — this is now the live adapter for {ckpt.tool_name}")
+    return 0
+
+
+def cmd_unbless(args) -> int:
+    """Revoke the blessed flag AND deactivate the checkpoint. Use when an
+    adapter is found to regress."""
+    s = _load_stores()
+    ckpt = s["checkpoints"].get(args.ckpt_id)
+    if ckpt is None:
+        print(f"checkpoint not found: {args.ckpt_id}", file=sys.stderr)
+        return 1
+    s["checkpoints"].unbless(ckpt.id)
+    print(f"unblessed + deactivated {ckpt.name}")
     return 0
 
 
@@ -948,7 +1006,29 @@ def _build_parser() -> argparse.ArgumentParser:
         "doctor",
         help="Run health checks on this install and print a report.",
     )
+    sp.add_argument("--json", action="store_true",
+                    help="Output structured JSON instead of pretty text.")
     sp.set_defaults(func=cmd_doctor)
+
+    # bless + unbless
+    sp = sub.add_parser(
+        "bless",
+        help="Mark a trained checkpoint safe to serve in intervene mode.",
+    )
+    sp.add_argument("ckpt_id", help="Checkpoint UUID (or 8-char prefix).")
+    sp.add_argument("--threshold", type=float,
+                    help="Per-checkpoint confidence threshold (0.0-1.0). "
+                         "Overrides the proxy's global default.")
+    sp.add_argument("--activate", action="store_true",
+                    help="Also activate this checkpoint for its tool.")
+    sp.set_defaults(func=cmd_bless)
+
+    sp = sub.add_parser(
+        "unbless",
+        help="Revoke `blessed` and deactivate — use after finding regression.",
+    )
+    sp.add_argument("ckpt_id")
+    sp.set_defaults(func=cmd_unbless)
 
     # demo
     sp = sub.add_parser(

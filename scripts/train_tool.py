@@ -158,8 +158,17 @@ def main():
     print(f"[ckpt] adapter_size_mb={ckpt.adapter_size_mb}")
 
     if args.activate:
+        # As of schema v5, a freshly-trained checkpoint is NOT automatically
+        # trustworthy. The training loop tells you nothing about whether the
+        # adapter compresses or regresses — you have to run proxy_demo and
+        # check. So we bless + activate ONLY when the operator explicitly
+        # asked for --activate, and we mark the event loud so they don't
+        # confuse "trained" with "safe to serve".
+        ckpt_mgr.bless(checkpoint_id)
         ckpt_mgr.activate(checkpoint_id)
-        print(f"[ckpt] activated {checkpoint_id} as the live adapter for {args.tool}")
+        print(f"[ckpt] ⚠ blessed + activated {checkpoint_id} — "
+              "YOU asserted it compresses. If proxy_demo shows regression, "
+              "run `planckbot unbless {checkpoint_id[:8]}` immediately.")
 
     mgr.update_status(exp.id, "completed")
     mgr.record_metrics(exp.id, {

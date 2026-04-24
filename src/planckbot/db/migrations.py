@@ -16,11 +16,16 @@ v4 — adds Layer D tables:
      exposed through the `planckbot-synth` MCP server), and
      `gap_reports` (outputs of the pattern detector — "sequence X→Y→Z
      repeats often enough to justify a merged tool").
+v5 — adds `blessed` (bool) and `tuned_threshold` (float) columns to
+     `model_checkpoints`. A checkpoint must be `blessed=1` before the
+     proxy will apply it in `intervene` mode, and its tuned threshold
+     (if set) overrides the global default. Both are additive nullable
+     columns.
 """
 
 import sqlite3
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 TABLES = """
 CREATE TABLE IF NOT EXISTS schema_version (
@@ -107,6 +112,8 @@ CREATE TABLE IF NOT EXISTS model_checkpoints (
     num_triples     INTEGER,
     eval_metrics    TEXT,
     is_active       INTEGER DEFAULT 0,
+    blessed         INTEGER NOT NULL DEFAULT 0,        -- v5: safety gate
+    tuned_threshold REAL,                              -- v5: per-ckpt θ
     created_at      TEXT NOT NULL,
     FOREIGN KEY (experiment_id) REFERENCES experiments(id),
     FOREIGN KEY (tool_version_id) REFERENCES tool_versions(id)
@@ -319,6 +326,25 @@ def _upgrade_to_v4(conn: sqlite3.Connection) -> None:
         conn.execute(stmt)
 
 
+def _upgrade_to_v5(conn: sqlite3.Connection) -> None:
+    """Add safety + calibration columns to model_checkpoints.
+
+    Additive only. Existing rows get blessed=0 (safe default — they must
+    be explicitly blessed before use) and tuned_threshold=NULL (falls back
+    to the proxy's default).
+    """
+    if not _column_exists(conn, "model_checkpoints", "blessed"):
+        conn.execute(
+            "ALTER TABLE model_checkpoints "
+            "ADD COLUMN blessed INTEGER NOT NULL DEFAULT 0"
+        )
+    if not _column_exists(conn, "model_checkpoints", "tuned_threshold"):
+        conn.execute(
+            "ALTER TABLE model_checkpoints "
+            "ADD COLUMN tuned_threshold REAL"
+        )
+
+
 def migrate(conn: sqlite3.Connection):
     """Apply pending migrations. Safe to call repeatedly."""
     cur = conn.execute(
@@ -342,6 +368,12 @@ def migrate(conn: sqlite3.Connection):
         _upgrade_to_v3(conn)
     if current < 4:
         _upgrade_to_v4(conn)
+    if current < 5:
+        _upgrade_to_v5(conn)
 
+    # Hygiene: store the version as a SINGLE row that we UPDATE in place.
+    # Pre-v5 DBs have one row per migration (accumulating cruft); we
+    # collapse them on migration.
+    conn.execute("DELETE FROM schema_version")
     conn.execute("INSERT INTO schema_version (version) VALUES (?)", (SCHEMA_VERSION,))
     conn.commit()

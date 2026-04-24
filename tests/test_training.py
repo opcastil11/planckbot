@@ -110,12 +110,58 @@ def test_checkpoint_activate(conn):
     c2 = ModelCheckpoint(name="c2", base_model="m", tool_name="tool_a")
     mgr.save(c1)
     mgr.save(c2)
-    mgr.activate(c1.id)
+    # v5: activate requires blessed=1 — opt out explicitly in tests.
+    mgr.activate(c1.id, require_blessed=False)
     assert mgr.get_active("tool_a").id == c1.id
-    mgr.activate(c2.id)
+    mgr.activate(c2.id, require_blessed=False)
     assert mgr.get_active("tool_a").id == c2.id
     # c1 should be deactivated
     assert mgr.get(c1.id).is_active == 0
+
+
+def test_activate_rejects_unblessed(conn):
+    """Default safety behavior: cannot activate a checkpoint without
+    explicitly blessing it first."""
+    mgr = CheckpointManager(conn)
+    ckpt = ModelCheckpoint(name="bad", base_model="m", tool_name="tool_a")
+    mgr.save(ckpt)
+    import pytest
+    with pytest.raises(ValueError, match="not blessed"):
+        mgr.activate(ckpt.id)
+
+
+def test_bless_then_activate(conn):
+    mgr = CheckpointManager(conn)
+    ckpt = ModelCheckpoint(name="c", base_model="m", tool_name="tool_a")
+    mgr.save(ckpt)
+    mgr.bless(ckpt.id, tuned_threshold=0.95)
+    loaded = mgr.get(ckpt.id)
+    assert loaded.blessed == 1
+    assert loaded.tuned_threshold == 0.95
+
+    mgr.activate(ckpt.id)  # should succeed now — no require_blessed=False
+    assert mgr.get_active("tool_a").id == ckpt.id
+
+
+def test_unbless_deactivates(conn):
+    mgr = CheckpointManager(conn)
+    ckpt = ModelCheckpoint(
+        name="c", base_model="m", tool_name="tool_a", is_active=1, blessed=1,
+    )
+    mgr.save(ckpt)
+    mgr.unbless(ckpt.id)
+    loaded = mgr.get(ckpt.id)
+    assert loaded.blessed == 0
+    assert loaded.is_active == 0
+
+
+def test_bless_rejects_out_of_range_threshold(conn):
+    mgr = CheckpointManager(conn)
+    ckpt = ModelCheckpoint(name="c", base_model="m")
+    mgr.save(ckpt)
+    import pytest
+    with pytest.raises(ValueError, match="out of range"):
+        mgr.bless(ckpt.id, tuned_threshold=1.5)
 
 
 def test_checkpoint_delete(conn):
