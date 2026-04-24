@@ -116,6 +116,86 @@ def _sidebar(current_path: str) -> None:
                 )
 
 
+_STRIP_SOURCE_ICONS: dict[str, str] = {
+    "proxy": "📡", "cron": "⏱️", "synth": "🧪",
+    "training": "🎓", "ui": "🖥️",
+}
+
+
+def _live_activity_strip(current_path: str) -> None:
+    """Sticky 1-line bar at the top of the main column showing the most
+    recent activity event, live-updated every 500 ms.
+
+    On pages with `live_seconds` the main body rebuilds periodically;
+    this strip lives outside that refresh root so it keeps its own
+    timer and latest-event state across rebuilds. The timer polls
+    `SELECT * FROM activity_events ORDER BY id DESC LIMIT 1` — trivial.
+    """
+    from planckbot.ui.state import get_state
+    from planckbot import activity as activity_mod
+
+    state = get_state()
+
+    @ui.refreshable
+    def _strip():
+        events = activity_mod.recent_events(state.conn, limit=1)
+        latest = events[-1] if events else None
+        with ui.row().classes("w-full items-center no-wrap").style(
+            f"background: linear-gradient(90deg, "
+            f"{COLORS['surface']} 0%, {COLORS['surface2']} 100%); "
+            f"border: 1px solid {COLORS['border']}; "
+            f"border-radius: 10px; "
+            f"padding: 6px 12px; margin-bottom: 12px; "
+            f"gap: 12px; font-size: 12px; "
+            f"box-shadow: 0 0 18px {COLORS['primary']}10;"
+        ):
+            # pulse dot
+            pulse_color = (
+                COLORS["primary"] if latest else COLORS["text_dim"]
+            )
+            ui.label("●").style(
+                f"color: {pulse_color}; font-size: 10px; "
+                "animation: planck-pulse 1.6s ease-in-out infinite;"
+            )
+            ui.label("LIVE").style(
+                f"color: {COLORS['text_muted']}; "
+                "font-weight: 700; letter-spacing: 1.2px; "
+                "font-size: 10px;"
+            )
+            if latest is None:
+                ui.label(
+                    "waiting for activity — trigger a tool call or "
+                    "cron run"
+                ).style(
+                    f"color: {COLORS['text_muted']}; font-size: 12px; "
+                    "flex: 1;"
+                )
+            else:
+                ts_local = latest.ts.astimezone().strftime("%H:%M:%S")
+                icon = _STRIP_SOURCE_ICONS.get(latest.source, "•")
+                ui.label(ts_local).style(
+                    f"color: {COLORS['text_muted']}; "
+                    "font-variant-numeric: tabular-nums; "
+                    f"flex: 0 0 70px;"
+                )
+                ui.label(f"{icon} {latest.source}/{latest.kind}").style(
+                    f"color: {COLORS['primary']}; font-weight: 600; "
+                    "flex: 0 0 170px;"
+                )
+                ui.label(latest.message).style(
+                    f"color: {COLORS['text']}; "
+                    "overflow: hidden; text-overflow: ellipsis; "
+                    "white-space: nowrap; flex: 1; min-width: 0;"
+                )
+            ui.link("Full feed →", "/activity").style(
+                f"color: {COLORS['accent']}; text-decoration: none; "
+                "font-size: 11px; flex: 0 0 auto;"
+            )
+
+    _strip()
+    ui.timer(0.5, _strip.refresh)
+
+
 # Events that warrant a cross-page toast. The rest (rx, upstream,
 # redact, job_start, job_end) still show up on /activity but are too
 # frequent to surface as popups.
@@ -177,7 +257,7 @@ def _setup_realtime_notifications(current_path: str) -> None:
             ui.notify(
                 f"{icon} {ev.message}",
                 type=ntype,
-                position="bottom-right",
+                position="top-right",
                 timeout=3500,
             )
         last["id"] = new_events[-1].id
@@ -425,6 +505,13 @@ def _page_wrapper(
         "max-width: 1240px; "
         f"color: {COLORS['text']};"
     ):
+        # Sticky live-activity strip above any page content. Rendered
+        # OUTSIDE the refreshable wrapper so its own 500 ms timer
+        # doesn't get recreated every time the dashboard's 3 s refresh
+        # rebuilds the main body.
+        if current_path != "/activity":
+            _live_activity_strip(current_path)
+
         if live_seconds is None:
             build_fn()
         else:
@@ -436,8 +523,8 @@ def _page_wrapper(
             ui.timer(live_seconds, _live.refresh)
         _footer()
 
-    # Toasts + live sidebar badge run on every page. Suppressed on
-    # /activity because the feed itself is already the surface.
+    # Toasts also run on every page. Suppressed on /activity because
+    # the feed itself is already the surface.
     _setup_realtime_notifications(current_path)
 
 
