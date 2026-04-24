@@ -11,7 +11,49 @@ PlanckBot sits between a host LLM (Claude, GPT-4, any MCP-capable agent) and its
 
 **Paper**: [docs/PLANCKBOT_PAPER.pdf](docs/PLANCKBOT_PAPER.pdf) · [markdown](docs/PLANCKBOT_PAPER.md)
 **Concept doc**: [docs/PLANCKBOT_CONCEPT.md](docs/PLANCKBOT_CONCEPT.md)
-**Demo page** (after `planckbot ui`): [localhost:8080/how-it-works](http://localhost:8080/how-it-works)
+**In-app docs** (after `planckbot ui`): [localhost:8080/how-it-works](http://localhost:8080/how-it-works)
+
+---
+
+## 60-second quickstart
+
+```bash
+git clone https://github.com/opcastil11/planckbot && cd planckbot
+uv venv .venv && source .venv/bin/activate
+uv pip install -e ".[dev]"
+
+# One-shot: creates data dir, migrates DB, writes ~/.claude.json
+# (with confirmation + backup). Restart Claude Code afterwards.
+planckbot init --upstream-path /abs/path/to/a/repo/you/work/on
+
+# Verify: every check should be green.
+planckbot doctor
+
+# Open the workbench.
+planckbot ui   # → http://localhost:8080
+```
+
+Don't want to wait for real tool calls to populate the dashboard?
+`planckbot demo load` inserts a handful of synthetic triples so you
+can see what a populated workbench looks like. `planckbot demo clear`
+undoes it.
+
+---
+
+## What you'll see at each stage
+
+PlanckBot's value grows over time. The dashboard hero speaks to you
+differently at each stage — here's the progression:
+
+| Stage | Your dashboard says | What you do next |
+|---|---|---|
+| **Just installed** | *Let's get you set up* + "First three steps" card | Run `planckbot init` and restart Claude Code |
+| **Config done, no traffic** | *Waiting for real traffic* | Make a prompt that uses an MCP tool (`mcp__planckbot-fs__*`) |
+| **Collecting data** | *Collecting data — N triples, M auto-labeled* | Keep using Claude; the auto-label cron fills in `filtered_output` |
+| **Ready to train** | Same, once you hit ~200 labeled triples for a tool | `planckbot train --tool X --fixture Y.json --activate` |
+| **Adapters ready** | *Adapters ready — none active* | Flip mode to `suggest` in `~/.claude.json`, restart Claude |
+| **Armed** | *Everything's armed* | Flip mode to `intervene`, restart Claude |
+| **Saving tokens** | *Saving tokens — +N (+X%)* | Just keep using Claude; the number grows organically |
 
 ---
 
@@ -124,12 +166,16 @@ planckbot cron daemon
 
 ```
 planckbot                     → launches the UI (back-compat default)
-planckbot status              → one-shot summary (triples, savings, cron jobs)
+planckbot status              → one-shot summary (connection, triples, savings, cron)
+planckbot doctor              → 12-point health check with suggested fixes
 planckbot ui                  → launch NiceGUI workbench on :8080
 
 planckbot init                → first-run setup (data dir, DB, MCP registration)
 planckbot systemd install     → install cron daemon as systemd user unit
 planckbot systemd uninstall   → stop + remove the systemd unit
+
+planckbot demo load           → populate the dashboard with synthetic data
+planckbot demo clear          → remove everything tagged source=demo
 
 planckbot train --tool X --fixture Y.json [--activate]
 planckbot label --tool X --recent N [--reference file.txt] [--dry-run]
@@ -140,6 +186,31 @@ planckbot synth list|show|activate|deactivate|create|gaps
 planckbot proxy-demo          → exercise the intercept path with a trained adapter
 planckbot preflight           → sanity-check the MCP wrapper + upstream
 ```
+
+## Troubleshooting
+
+The three things that most often go wrong on a first install, and how to diagnose them fast:
+
+**The dashboard shows no triples, even after using Claude Code**
+
+```bash
+planckbot doctor
+```
+
+If `MCP subprocesses` is warn/fail, Claude Code isn't spawning the proxy. Most commonly: Claude Code was opened before `planckbot init` ran, so it doesn't know about the new `mcpServers` entry yet. **Restart Claude Code fully.** If the Connection card on the dashboard says `not connected`, re-run `planckbot init`.
+
+**Claude uses native `Read`/`LS` instead of the MCP tools**
+
+This is expected default behavior — Claude Code prefers native tools. Two fixes:
+
+1. Per-session: add to your prompt *"use `mcp__planckbot-fs__list_directory` to ..."*
+2. Persistent: in your project's `CLAUDE.md` add *"When reading files or listing directories, prefer `mcp__planckbot-fs__*` over the native `Read` / `LS`."*
+
+**`planckbot-fs` returns `Output validation error`**
+
+The upstream `@modelcontextprotocol/server-filesystem` declares `outputSchema` that Claude Code strictly validates against unstructured output. PlanckBot strips it in the proxy, but the fix requires a fresh proxy subprocess — which means **restart Claude Code once more** after you update PlanckBot.
+
+When in doubt, `planckbot doctor` plus the Connection card on the dashboard will tell you which of the 12 things is off.
 
 ## What works today
 

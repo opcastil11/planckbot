@@ -222,6 +222,33 @@ def _onboarding_card(state) -> None:
                         "font-family: monospace;"
                     )
 
+    # Under the steps: offer to pre-populate with synthetic data so the
+    # user can see the full dashboard without waiting for real traffic.
+    if ctx["triples_total"] == 0:
+        with ui.row().classes("items-center gap-3 w-full").style(
+            f"margin-top: {SPACE_LG}px; "
+            f"padding: {SPACE_MD}px {SPACE_LG}px; "
+            f"background: {COLORS['surface2']}; "
+            f"border: 1px solid {COLORS['border']}; "
+            f"border-radius: 10px;"
+        ):
+            ui.icon("auto_awesome").style(
+                f"color: {COLORS['accent']}; font-size: 22px;"
+            )
+            with ui.column().classes("gap-0").style("flex: 1;"):
+                ui.label("Want to see the dashboard populated right now?").style(
+                    f"color: {COLORS['text']}; "
+                    f"font-size: {TEXT_SM}px; font-weight: 600;"
+                )
+                ui.label(
+                    "Run `planckbot demo load` to insert 5 synthetic triples "
+                    "with realistic before/after filtering. Reversible with "
+                    "`planckbot demo clear`."
+                ).style(
+                    f"color: {COLORS['text_muted']}; "
+                    f"font-size: 11px; font-family: monospace; line-height: 1.5;"
+                )
+
 
 def _stats(state) -> None:
     exp_count = state.experiments.count()

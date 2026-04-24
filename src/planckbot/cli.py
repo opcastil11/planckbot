@@ -639,6 +639,134 @@ WantedBy=default.target
     return 0
 
 
+def cmd_doctor(_args) -> int:
+    """Run every health check and print a report. Exit code = worst status."""
+    from planckbot.doctor import (
+        CHECK_FAIL, CHECK_OK, CHECK_WARN, run_checks, worst,
+    )
+
+    ICON = {
+        CHECK_OK: "\033[32m✓\033[0m",
+        CHECK_WARN: "\033[33m⚠\033[0m",
+        CHECK_FAIL: "\033[31m✗\033[0m",
+    }
+
+    results = run_checks()
+    print("PlanckBot — health check\n")
+    for r in results:
+        print(f"  {ICON[r.status]} {r.title}")
+        print(f"      {r.detail}")
+        if r.fix:
+            print(f"      → \033[36m{r.fix}\033[0m")
+    print()
+    ok = sum(1 for r in results if r.status == CHECK_OK)
+    warn = sum(1 for r in results if r.status == CHECK_WARN)
+    fail = sum(1 for r in results if r.status == CHECK_FAIL)
+    print(f"  {ok} ok, {warn} warn, {fail} fail")
+    w = worst(results)
+    if w == CHECK_FAIL:
+        return 2
+    if w == CHECK_WARN:
+        return 1
+    return 0
+
+
+def cmd_demo(args) -> int:
+    """Populate the DB with synthetic triples so the dashboard has data
+    to show on a fresh install. `planckbot demo clear` removes them."""
+    from planckbot.config import config
+    from planckbot.db.engine import get_connection
+    from planckbot.db.models import Triple
+
+    conn = get_connection(config.db_path)
+    action = args.action
+
+    if action == "clear":
+        n = conn.execute(
+            "DELETE FROM triples WHERE source = 'demo' RETURNING id"
+        ).fetchall()
+        conn.commit()
+        # Also clear demo checkpoints + gap_reports
+        conn.execute(
+            "DELETE FROM model_checkpoints WHERE name LIKE 'demo_%'"
+        )
+        conn.execute(
+            "DELETE FROM gap_reports WHERE proposed_name LIKE 'demo_%'"
+        )
+        conn.commit()
+        print(f"[demo] cleared {len(n)} demo triple(s) + checkpoints + gaps")
+        return 0
+
+    if action != "load":
+        print("usage: planckbot demo {load|clear}", file=sys.stderr)
+        return 2
+
+    # Generate synthetic triples that mimic a real session.
+    import hashlib
+    from datetime import datetime, timedelta, timezone
+
+    demo_data = [
+        ("list_directory", {"path": "/work/repo"},
+         "[DIR] .git\n[DIR] .venv\n[DIR] node_modules\n[DIR] src\n"
+         "[DIR] tests\n[DIR] docs\n[FILE] package.json\n"
+         "[FILE] pyproject.toml\n[FILE] README.md",
+         "[DIR] src\n[DIR] tests\n[FILE] package.json"),
+        ("list_directory", {"path": "/work/api"},
+         "[DIR] .git\n[DIR] __pycache__\n[DIR] src\n[DIR] tests\n"
+         "[FILE] Dockerfile\n[FILE] pyproject.toml",
+         "[DIR] src\n[FILE] Dockerfile"),
+        ("read_text_file", {"path": "/work/repo/package.json"},
+         '{\n  "name": "demo-app",\n  "version": "1.0.0",\n  '
+         '"dependencies": {\n    "react": "^18.0",\n    "next": "^14"\n  '
+         '},\n  "scripts": {...},\n  "devDependencies": {...}\n}',
+         '"name": "demo-app"\n"react": "^18.0"\n"next": "^14"'),
+        ("search_files", {"pattern": "*.py", "path": "/work/repo/src"},
+         "src/main.py\nsrc/app/routes.py\nsrc/app/models.py\n"
+         "src/utils/helpers.py\nsrc/tests/test_main.py",
+         "src/main.py\nsrc/app/routes.py\nsrc/app/models.py"),
+        ("list_directory", {"path": "/work/web"},
+         "[DIR] .next\n[DIR] node_modules\n[DIR] public\n[DIR] src\n"
+         "[FILE] next.config.js\n[FILE] package.json",
+         "[DIR] public\n[DIR] src\n[FILE] next.config.js"),
+    ]
+
+    inserted = 0
+    now = datetime.now(timezone.utc)
+    for i, (tool, inp, out, filt) in enumerate(demo_data):
+        ts = (now - timedelta(minutes=60 - i * 10)).isoformat()
+        t = Triple(
+            id=f"demo-{hashlib.md5((tool + str(inp)).encode()).hexdigest()[:10]}-{i}",
+            tool_name=tool,
+            input_data=json.dumps(inp),
+            output_data=out,
+            input_tokens=len(json.dumps(inp)) // 4,
+            output_tokens=len(out) // 4,
+            filtered_output=filt,
+            filtered_tokens=len(filt) // 4,
+            source="demo",
+            created_at=ts,
+        )
+        row = t.to_row()
+        placeholders = ", ".join("?" for _ in row)
+        cols = ", ".join(row.keys())
+        try:
+            conn.execute(
+                f"INSERT INTO triples ({cols}) VALUES ({placeholders})",
+                list(row.values()),
+            )
+            inserted += 1
+        except Exception as e:
+            # Likely already present from a previous `demo load` — skip quietly.
+            if "UNIQUE" not in str(e):
+                raise
+    conn.commit()
+
+    print(f"[demo] inserted {inserted} synthetic triple(s)")
+    print("[demo] open the dashboard: planckbot ui")
+    print("[demo] to undo: planckbot demo clear")
+    return 0
+
+
 def cmd_systemd_uninstall(_args) -> int:
     import shutil
     import subprocess
@@ -814,6 +942,24 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Print the JSON block and exit without touching any file.",
     )
     sp.set_defaults(func=cmd_init)
+
+    # doctor
+    sp = sub.add_parser(
+        "doctor",
+        help="Run health checks on this install and print a report.",
+    )
+    sp.set_defaults(func=cmd_doctor)
+
+    # demo
+    sp = sub.add_parser(
+        "demo",
+        help="Populate the DB with synthetic data to preview the dashboard "
+             "(reversible with `demo clear`).",
+    )
+    sp.add_argument("action", choices=["load", "clear"],
+                    help="'load' inserts synthetic triples; "
+                         "'clear' removes rows tagged source=demo.")
+    sp.set_defaults(func=cmd_demo)
 
     # systemd
     sy = sub.add_parser(
