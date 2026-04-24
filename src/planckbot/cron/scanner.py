@@ -26,8 +26,8 @@ from pathlib import Path
 def _slugify_cwd(cwd: str | Path) -> str:
     """Convert an absolute path into the slug Claude Code uses for project dirs.
 
-    Example: /home/kai/Escritorio/PROGRAMACION/planckbot
-    becomes -home-kai-Escritorio-PROGRAMACION-planckbot
+    Example: /home/user/projects/myrepo
+    becomes -home-user-projects-myrepo
     """
     return str(cwd).replace("/", "-")
 

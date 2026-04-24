@@ -33,3 +33,6 @@ data/exports/
 .DS_Store
 
 data/synthesized_tools/
+
+# Claude Code per-project state (locks, transient)
+.claude/

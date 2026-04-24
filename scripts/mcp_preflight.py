@@ -18,7 +18,7 @@ from mcp.client.session import ClientSession
 from mcp.client.stdio import StdioServerParameters, stdio_client
 
 
-DEFAULT_PATH = "/home/kai/Escritorio/PROGRAMACION/planckbot"
+DEFAULT_PATH = str(Path(__file__).resolve().parent.parent)
 
 
 async def main(target_path: str, npx: str) -> int:
@@ -99,8 +99,23 @@ async def main(target_path: str, npx: str) -> int:
     return 0
 
 
+def _find_npx() -> str:
+    """Resolve npx via NPX env var, then PATH. We avoid hard-coding a path."""
+    explicit = os.environ.get("NPX")
+    if explicit:
+        return explicit
+    from shutil import which
+    found = which("npx")
+    if found:
+        return found
+    print(
+        "[preflight] npx not found — set NPX=/path/to/npx or add it to $PATH",
+        file=sys.stderr,
+    )
+    sys.exit(2)
+
+
 if __name__ == "__main__":
     path = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_PATH
-    npx_bin = os.environ.get("NPX", "/home/kai/.nvm/versions/node/v20.20.1/bin/npx")
-    rc = asyncio.run(main(path, npx_bin))
+    rc = asyncio.run(main(path, _find_npx()))
     sys.exit(rc)
