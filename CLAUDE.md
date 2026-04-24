@@ -135,6 +135,12 @@ End-to-end: triples → pattern detector → gap report → human (or LLM) appro
 - `retrain` job is a "ready to retrain" signal, not a trigger — it prints the command to run. Firing a full LoRA retrain inside the daemon would block the scheduler for ~10 min and isn't worth the complexity right now. Wire it to a worker if/when that changes.
 - `conversation_scanner` reads `~/.claude/projects/<slug>/*.jsonl` and extracts recent assistant text blocks into a reference file. Pipe it through `autolabel` (via its own cron job with the same output path) and the loop "use Claude → triples get filtered_output" becomes fully automatic. Params: `output_path` (required), `project_slug` (default: slugified cwd), `max_messages` (default 30), `lookback_hours` (default 24).
 
+## Per-triple auto-labeling — now wired (Layer B loop closed)
+
+- `src/planckbot/cron/scanner.py :: find_response_after_tool_call(jsonl_path, tool_name, input_data, near_ts)` locates the exact `tool_use` block in a Claude Code JSONL matching a given triple (namespaced names like `mcp__planckbot-fs__list_directory` accepted) and returns the text of the NEXT assistant message that followed its `tool_result`. Disambiguates by input key equality when the same tool was called multiple times.
+- Cron job type `autolabel_precise` wraps this: for each unlabeled triple of a tool, finds the exact follow-up message and labels using ONLY that text. Eliminates the batch-reference false positives the older `autolabel` suffers from.
+- `ingest.reference_tracker.extract_referenced_lines` gained a `match_mode` kwarg. The new default is `"token"` — splits line and reference on non-word chars and keeps the line if they share any non-structural word. `"substring"` is kept for back-compat. Real-world smoke test with this matcher labeled a `list_directory` triple at 97% savings (230 → 8 tokens) with zero false positives.
+
 ## Reference-tracking signal — partially wired
 
 - `src/planckbot/ingest/reference_tracker.py :: extract_referenced_lines(output, reference)` returns output lines whose stripped form appears as a substring of the reference (min_line_len filter to skip `{`/`}`/`[` noise).

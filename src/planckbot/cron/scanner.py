@@ -116,6 +116,125 @@ def write_reference_file(
     return len(body)
 
 
+def _iter_jsonl(jsonl_path: Path):
+    """Iterator that yields parsed entries from a Claude Code JSONL file.
+
+    Malformed lines are skipped silently — these logs occasionally contain
+    half-flushed rows when Claude Code crashes mid-write.
+    """
+    with open(jsonl_path) as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                yield json.loads(line)
+            except json.JSONDecodeError:
+                continue
+
+
+def _normalize_input(raw) -> dict:
+    if isinstance(raw, dict):
+        return raw
+    if isinstance(raw, str):
+        try:
+            parsed = json.loads(raw)
+            return parsed if isinstance(parsed, dict) else {}
+        except json.JSONDecodeError:
+            return {}
+    return {}
+
+
+def _tool_name_matches(log_name: str, triple_name: str) -> bool:
+    """Claude Code records tool names namespaced (e.g.
+    `mcp__planckbot-fs__list_directory`). Triples store the raw name the MCP
+    server reports (`list_directory`). Accept either exact match or the
+    namespaced suffix form."""
+    if log_name == triple_name:
+        return True
+    return log_name.endswith(f"__{triple_name}")
+
+
+def find_response_after_tool_call(
+    jsonl_path: Path,
+    *,
+    tool_name: str,
+    input_data,
+    near_ts: datetime,
+    max_drift_seconds: float = 120.0,
+) -> str | None:
+    """Locate the assistant text that came IMMEDIATELY after a specific tool
+    invocation and return its concatenated text blocks.
+
+    Matching strategy (heuristic):
+      1. Walk the file in order.
+      2. Track every `tool_use` block whose namespaced name matches
+         `tool_name` and whose input keys agree with `input_data`.
+      3. Among matches, pick the one whose timestamp is closest to `near_ts`
+         (and within `max_drift_seconds`) — this disambiguates repeated
+         identical calls.
+      4. Continue walking forward until the next `assistant` message that
+         has at least one `text` block; return those text blocks joined.
+
+    Returns None when no match is found.
+    """
+    target_input = _normalize_input(input_data)
+    entries = list(_iter_jsonl(jsonl_path))
+
+    best_idx: int | None = None
+    best_drift = float("inf")
+    for i, msg in enumerate(entries):
+        if msg.get("type") != "assistant":
+            continue
+        ts = _parse_ts(msg.get("timestamp", ""))
+        if ts is None:
+            continue
+        drift = abs((ts - near_ts).total_seconds())
+        if drift > max_drift_seconds:
+            continue
+        content = msg.get("message", {}).get("content", []) or []
+        if not isinstance(content, list):
+            continue
+        for block in content:
+            if not isinstance(block, dict):
+                continue
+            if block.get("type") != "tool_use":
+                continue
+            if not _tool_name_matches(block.get("name", ""), tool_name):
+                continue
+            block_input = block.get("input", {}) or {}
+            if target_input and not all(
+                block_input.get(k) == v for k, v in target_input.items()
+            ):
+                continue
+            if drift < best_drift:
+                best_drift = drift
+                best_idx = i
+
+    if best_idx is None:
+        return None
+
+    # Walk forward from the tool_use assistant message, skipping the user
+    # tool_result, to find the NEXT assistant message with text blocks.
+    for j in range(best_idx + 1, len(entries)):
+        m = entries[j]
+        if m.get("type") != "assistant":
+            continue
+        content = m.get("message", {}).get("content", []) or []
+        if not isinstance(content, list):
+            continue
+        texts: list[str] = []
+        for block in content:
+            if isinstance(block, dict) and block.get("type") == "text":
+                t = (block.get("text") or "").strip()
+                if t:
+                    texts.append(t)
+        if texts:
+            return "\n".join(texts)
+
+    return None
+
+
 def scan_job(ctx) -> str:
     """cron-engine-compatible job. Params:
 

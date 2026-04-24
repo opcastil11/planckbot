@@ -12,7 +12,9 @@ from planckbot.cron.jobs import JobContext, default_registry
 from planckbot.cron.scanner import (
     _parse_ts,
     _slugify_cwd,
+    _tool_name_matches,
     extract_assistant_texts,
+    find_response_after_tool_call,
     scan_project_conversations,
     write_reference_file,
 )
@@ -220,6 +222,289 @@ def test_scan_job_without_output_path_raises():
     fn = reg.get("conversation_scanner")
     with pytest.raises(ValueError, match="output_path"):
         fn(JobContext(conn=None, params={}))
+
+
+# --- per-triple linker ----------------------------------------------------
+
+
+def test_tool_name_matches_exact():
+    assert _tool_name_matches("list_directory", "list_directory")
+
+
+def test_tool_name_matches_namespaced():
+    assert _tool_name_matches(
+        "mcp__planckbot-fs__list_directory", "list_directory"
+    )
+
+
+def test_tool_name_matches_rejects_unrelated():
+    assert not _tool_name_matches("read_file", "list_directory")
+    assert not _tool_name_matches("mcp__other__list_directory_x",
+                                   "list_directory")
+
+
+def _mk_log(tmp_path: Path, entries: list[dict]) -> Path:
+    log = tmp_path / "session.jsonl"
+    with open(log, "w") as f:
+        for e in entries:
+            f.write(json.dumps(e) + "\n")
+    return log
+
+
+def test_find_response_picks_message_after_matching_tool_use(tmp_path):
+    now = datetime.now(timezone.utc)
+    log = _mk_log(tmp_path, [
+        {
+            "type": "assistant",
+            "timestamp": (now - timedelta(seconds=5)).isoformat(),
+            "message": {"content": [
+                {"type": "thinking", "thinking": "going to list"},
+                {"type": "tool_use", "id": "t1",
+                 "name": "mcp__planckbot-fs__list_directory",
+                 "input": {"path": "/repo"}},
+            ]},
+        },
+        {
+            "type": "user",
+            "timestamp": (now - timedelta(seconds=4)).isoformat(),
+            "message": {"content": [
+                {"type": "tool_result", "tool_use_id": "t1",
+                 "content": [{"type": "text", "text": "raw output"}]},
+            ]},
+        },
+        {
+            "type": "assistant",
+            "timestamp": (now - timedelta(seconds=3)).isoformat(),
+            "message": {"content": [
+                {"type": "text",
+                 "text": "Keep src and package.json; drop the rest."},
+            ]},
+        },
+    ])
+    out = find_response_after_tool_call(
+        log,
+        tool_name="list_directory",
+        input_data={"path": "/repo"},
+        near_ts=now,
+    )
+    assert out == "Keep src and package.json; drop the rest."
+
+
+def test_find_response_disambiguates_by_input(tmp_path):
+    """Two calls to the same tool close in time — must pick the right one."""
+    now = datetime.now(timezone.utc)
+    log = _mk_log(tmp_path, [
+        # Call 1: path=/a
+        {
+            "type": "assistant",
+            "timestamp": (now - timedelta(seconds=20)).isoformat(),
+            "message": {"content": [
+                {"type": "tool_use", "id": "t1",
+                 "name": "mcp__planckbot-fs__list_directory",
+                 "input": {"path": "/a"}},
+            ]},
+        },
+        {
+            "type": "assistant",
+            "timestamp": (now - timedelta(seconds=18)).isoformat(),
+            "message": {"content": [
+                {"type": "text", "text": "A had items X, Y"},
+            ]},
+        },
+        # Call 2: path=/b
+        {
+            "type": "assistant",
+            "timestamp": (now - timedelta(seconds=10)).isoformat(),
+            "message": {"content": [
+                {"type": "tool_use", "id": "t2",
+                 "name": "mcp__planckbot-fs__list_directory",
+                 "input": {"path": "/b"}},
+            ]},
+        },
+        {
+            "type": "assistant",
+            "timestamp": (now - timedelta(seconds=8)).isoformat(),
+            "message": {"content": [
+                {"type": "text", "text": "B has FOO and BAR"},
+            ]},
+        },
+    ])
+    out_a = find_response_after_tool_call(
+        log, tool_name="list_directory",
+        input_data={"path": "/a"},
+        near_ts=now - timedelta(seconds=20),
+    )
+    out_b = find_response_after_tool_call(
+        log, tool_name="list_directory",
+        input_data={"path": "/b"},
+        near_ts=now - timedelta(seconds=10),
+    )
+    assert "X, Y" in out_a
+    assert "FOO and BAR" in out_b
+
+
+def test_find_response_returns_none_when_no_match(tmp_path):
+    now = datetime.now(timezone.utc)
+    log = _mk_log(tmp_path, [
+        {
+            "type": "assistant",
+            "timestamp": now.isoformat(),
+            "message": {"content": [
+                {"type": "tool_use", "id": "t1", "name": "read_file",
+                 "input": {"path": "/x"}},
+            ]},
+        },
+    ])
+    assert find_response_after_tool_call(
+        log, tool_name="list_directory",
+        input_data={"path": "/x"}, near_ts=now,
+    ) is None
+
+
+def test_find_response_respects_drift_window(tmp_path):
+    now = datetime.now(timezone.utc)
+    log = _mk_log(tmp_path, [
+        {
+            "type": "assistant",
+            "timestamp": (now - timedelta(hours=3)).isoformat(),
+            "message": {"content": [
+                {"type": "tool_use", "id": "t1",
+                 "name": "list_directory",
+                 "input": {"path": "/repo"}},
+            ]},
+        },
+        {
+            "type": "assistant",
+            "timestamp": (now - timedelta(hours=3) + timedelta(seconds=2)).isoformat(),
+            "message": {"content": [
+                {"type": "text", "text": "ancient response"},
+            ]},
+        },
+    ])
+    # Default max_drift is 120s; this tool call is 3h old → should miss
+    assert find_response_after_tool_call(
+        log, tool_name="list_directory",
+        input_data={"path": "/repo"}, near_ts=now,
+    ) is None
+
+
+def test_find_response_skips_tool_use_only_messages(tmp_path):
+    """The NEXT assistant message after the tool call may itself be another
+    tool_use (chained calls). Skip those until we find one with text."""
+    now = datetime.now(timezone.utc)
+    log = _mk_log(tmp_path, [
+        {
+            "type": "assistant",
+            "timestamp": (now - timedelta(seconds=10)).isoformat(),
+            "message": {"content": [
+                {"type": "tool_use", "id": "t1", "name": "list_directory",
+                 "input": {"path": "/r"}},
+            ]},
+        },
+        # Middle message has only a tool_use (chain) — no text
+        {
+            "type": "assistant",
+            "timestamp": (now - timedelta(seconds=8)).isoformat(),
+            "message": {"content": [
+                {"type": "tool_use", "id": "t2", "name": "read_file",
+                 "input": {"path": "/r/f"}},
+            ]},
+        },
+        # Finally, a text message
+        {
+            "type": "assistant",
+            "timestamp": (now - timedelta(seconds=5)).isoformat(),
+            "message": {"content": [
+                {"type": "text", "text": "The important file is package.json"},
+            ]},
+        },
+    ])
+    out = find_response_after_tool_call(
+        log, tool_name="list_directory",
+        input_data={"path": "/r"}, near_ts=now,
+    )
+    assert "package.json" in out
+
+
+def test_autolabel_precise_job_labels_from_next_assistant(tmp_path, conn):
+    """End-to-end: a triple + a matching JSONL log → cron job labels it
+    using ONLY the next-message text, ignoring distractors elsewhere."""
+    from planckbot.cron.jobs import JobContext, default_registry
+    from planckbot.tools.triples import TriplesStore
+
+    # 1) Seed a triple for tool=list_directory with a known output
+    now = datetime.now(timezone.utc)
+    store = TriplesStore(conn)
+    triple = store.add(
+        tool_name="list_directory",
+        input_data={"path": "/repo"},
+        output_data=(
+            "[DIR] .git\n[DIR] src\n[DIR] node_modules\n"
+            "[FILE] package.json\n[FILE] README.md"
+        ),
+        source="proxy:observe",
+    )
+    # Force the timestamp so it lines up with the fake JSONL
+    conn.execute(
+        "UPDATE triples SET created_at = ? WHERE id = ?",
+        ((now - timedelta(seconds=3)).isoformat(), triple.id),
+    )
+    conn.commit()
+
+    # 2) Seed the Claude Code JSONL log
+    slug = "-fake-orquesta"
+    claude_root = tmp_path / "claude_root"
+    proj_dir = claude_root / slug
+    proj_dir.mkdir(parents=True)
+    _mk_log(proj_dir, [
+        # A *distractor* earlier assistant message that mentions `.git` —
+        # this is the kind of content that poisons the batch autolabel.
+        {
+            "type": "assistant",
+            "timestamp": (now - timedelta(hours=2)).isoformat(),
+            "message": {"content": [
+                {"type": "text",
+                 "text": "Earlier I had mentioned [DIR] .git in passing."},
+            ]},
+        },
+        # The matching tool_use + response
+        {
+            "type": "assistant",
+            "timestamp": (now - timedelta(seconds=4)).isoformat(),
+            "message": {"content": [
+                {"type": "tool_use", "id": "t1",
+                 "name": "mcp__planckbot-fs__list_directory",
+                 "input": {"path": "/repo"}},
+            ]},
+        },
+        {
+            "type": "assistant",
+            "timestamp": (now - timedelta(seconds=2)).isoformat(),
+            "message": {"content": [
+                {"type": "text",
+                 "text": "The important ones are [DIR] src and [FILE] package.json."},
+            ]},
+        },
+    ])
+
+    # 3) Run the job
+    reg = default_registry()
+    fn = reg.get("autolabel_precise")
+    out = fn(JobContext(conn=conn, params={
+        "tool": "list_directory",
+        "project_slug": slug,
+        "claude_root": str(claude_root),
+        "max_drift_seconds": 60,
+    }))
+    assert "labeled=1" in out
+
+    # 4) Verify filtered_output is ONLY what appeared in the NEXT message,
+    #    NOT `.git` (which was in the earlier distractor)
+    reloaded = store.get(triple.id)
+    assert reloaded.filtered_output is not None
+    assert "[DIR] src" in reloaded.filtered_output
+    assert "[FILE] package.json" in reloaded.filtered_output
+    assert "[DIR] .git" not in reloaded.filtered_output
 
 
 def test_scan_job_empty_window_returns_status_string(fake_project, tmp_path):
