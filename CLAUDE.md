@@ -123,6 +123,13 @@ Repo: **https://github.com/opcastil11/planckbot** (private). Auth via the `store
 - Tests live in `tests/test_meta.py` (15 tests).
 - **Still pending:** invoking `edit_tool` from the meta-tool interface (it's currently a python API, not a registered tool that the proxy can dispatch). Also pending: cold-start window forcing observe mode until N new-version triples accumulate.
 
+## Secret filtering — `.mcpignore` at proxy layer
+
+- `src/planckbot/proxy/ignore.py` enforces a blocklist **before** calls reach the upstream MCP server. Two gates: (1) `read_*` tools on blocked paths return a refusal string without invoking upstream; (2) `list_directory` / `directory_tree` / `search_files` outputs are redacted post-upstream — blocked entries never reach Claude.
+- Hard defaults cover dotenv / SSH keys / cloud creds / netrc / service accounts / kube+docker config. See `HARD_DEFAULTS` in the module. These are enforced even without a `.mcpignore`.
+- Custom rules live in `.mcpignore` at the served-path root (fnmatch globs, `#` comments, trailing `/` = directory). Full reference in `docs/MCPIGNORE.md`.
+- Verified end-to-end: calling `read_text_file` on orquesta's `.env.local` returns "Refused by PlanckBot .mcpignore policy"; `list_directory` of orquesta strips `.env.local` + `.env.local.bak`.
+
 ## Blessed-checkpoint safety gate (schema v5)
 
 - `model_checkpoints` has `blessed INTEGER NOT NULL DEFAULT 0` and `tuned_threshold REAL NULL` (v5, commit `6fb41ee`).

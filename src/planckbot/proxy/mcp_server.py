@@ -170,6 +170,26 @@ async def run_proxy(
         strategy=strategy,
     )
 
+    # Load ignore rules. Upstream tool servers like filesystem-server
+    # take the served path as their LAST positional argument, so infer
+    # the root from upstream_args. The HARD_DEFAULTS still apply when
+    # we can't infer a served path (better to be conservative).
+    from planckbot.proxy.ignore import (
+        base_arg_of,
+        filter_listing,
+        load_rules,
+        path_arg_of,
+    )
+    served_root = upstream_args[-1] if upstream_args else None
+    ignore_rules = load_rules(served_root)
+    if ignore_rules.custom_path:
+        print(
+            f"[planckbot-mcp] loaded .mcpignore from "
+            f"{ignore_rules.custom_path} "
+            f"({len(ignore_rules.patterns)} patterns total)",
+            file=sys.stderr, flush=True,
+        )
+
     async with AsyncExitStack() as stack:
         # 1) Spawn + connect to the upstream MCP server.
         upstream_params = StdioServerParameters(
@@ -198,17 +218,54 @@ async def run_proxy(
 
         @server.call_tool()
         async def _call_tool(name: str, arguments: dict):
+            args = arguments or {}
+
+            # Ignore-rules gate #1: if this is a 'read specific file' tool
+            # and the path matches a blocked pattern, refuse WITHOUT
+            # calling upstream. The file content never leaves the upstream
+            # process and never gets recorded as a triple.
+            tgt_path = path_arg_of(name, args)
+            if tgt_path:
+                match = ignore_rules.matches(tgt_path)
+                if match is not None:
+                    print(
+                        f"[planckbot-mcp] blocked {name} on {tgt_path!r} "
+                        f"(pattern: {match!r})",
+                        file=sys.stderr, flush=True,
+                    )
+                    return _text_to_content(
+                        f"Refused by PlanckBot .mcpignore policy: path "
+                        f"matches pattern {match!r}. If this was a "
+                        "mistake, edit .mcpignore at the served root."
+                    )
+
             # We need to hand the proxy a sync callable, but the upstream
             # call is async. Perform the async call here, then wrap the
             # resulting text in a zero-work closure the proxy can "invoke"
             # while it records the triple and makes its decision.
-            res = await upstream.call_tool(name, arguments or {})
+            res = await upstream.call_tool(name, args)
             raw_text = _content_to_text(res.content)
+
+            # Ignore-rules gate #2: for listing tools, strip entries that
+            # match the rules. Claude never sees them, so downstream
+            # `read_file` calls won't know to ask for them.
+            base = base_arg_of(name, args)
+            if base is not None:
+                redacted_text, n_redacted = filter_listing(
+                    raw_text, base, ignore_rules,
+                )
+                if n_redacted:
+                    print(
+                        f"[planckbot-mcp] redacted {n_redacted} entries "
+                        f"from {name}({base!r})",
+                        file=sys.stderr, flush=True,
+                    )
+                raw_text = redacted_text
 
             def _already_ran(**_ignored):
                 return raw_text
 
-            result = proxy.call(_already_ran, name, **(arguments or {}))
+            result = proxy.call(_already_ran, name, **args)
 
             # If the upstream returned structured content, preserve it for
             # the unmodified path. If we intervened (swapped text), just
