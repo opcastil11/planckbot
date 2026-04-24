@@ -1,4 +1,4 @@
-"""NiceGUI app with shared header/nav layout and page routing."""
+"""NiceGUI app with sidebar navigation and page routing."""
 
 from pathlib import Path
 
@@ -7,9 +7,6 @@ from nicegui import app, ui
 from planckbot.ui.state import get_state
 from planckbot.ui.theme import (
     COLORS,
-    HEADER_STYLE,
-    NAV_LINK_STYLE,
-    PAGE_STYLE,
     WORDMARK_HTML,
 )
 
@@ -17,55 +14,169 @@ from planckbot.ui.theme import (
 REPO_ROOT = Path(__file__).resolve().parents[3]
 BRANDING_DIR = REPO_ROOT / "static" / "branding"
 
+# --- navigation model ------------------------------------------------------
 
-def _header():
-    """Shared header with navigation + brand mark."""
-    with ui.header().style(HEADER_STYLE + " height: 64px;"):
-        with ui.row().classes("w-full items-center justify-between no-wrap"):
-            # Brand block
-            with ui.row().classes("items-center gap-3 no-wrap"):
-                ui.image("/branding/planckbots-mark-192.png").style(
-                    "width: 36px; height: 36px; border-radius: 50%; "
-                    f"box-shadow: 0 0 18px {COLORS['primary']}33, "
-                    f"0 0 2px {COLORS['accent']}88; "
-                    f"border: 1px solid {COLORS['border_glow']}; "
-                    "flex: 0 0 36px; object-fit: cover;"
-                )
-                with ui.column().classes("gap-0"):
-                    ui.html(WORDMARK_HTML).style("font-size: 19px; line-height: 1;")
-                    ui.label("Research Workbench").style(
-                        f"color: {COLORS['text_muted']}; font-size: 11px; "
-                        "letter-spacing: 1.8px; text-transform: uppercase; "
-                        "line-height: 1.1; margin-top: 3px;"
-                    )
+# Semantic groups. Each (group_label, items[]) where items are
+# (page_label, path, material-icon).
+#
+# `Paper log` intentionally omitted from the sidebar — it's an internal
+# research-note surface, not end-user facing. The route still exists at
+# /paper-log for any existing deep links.
+NAV_GROUPS = [
+    ("Overview", [
+        ("Dashboard", "/", "dashboard"),
+        ("How it works", "/how-it-works", "school"),
+        ("Paper", "/paper", "description"),
+    ]),
+    ("Observe", [
+        ("Tools", "/tools", "build"),
+        ("Experiments", "/experiments", "science"),
+    ]),
+    ("Train", [
+        ("Training", "/training", "model_training"),
+        ("Models", "/models", "save"),
+    ]),
+    ("Automate", [
+        ("Cron jobs", "/cron", "schedule"),
+        ("Synthesized tools", "/synth", "auto_fix_high"),
+    ]),
+]
 
-            # Nav links
-            with ui.row().classes("gap-1 items-center"):
-                for label, path in [
-                    ("Dashboard", "/"),
-                    ("How it works", "/how-it-works"),
-                    ("Paper", "/paper"),
-                    ("Experiments", "/experiments"),
-                    ("Tools", "/tools"),
-                    ("Training", "/training"),
-                    ("Models", "/models"),
-                    ("Cron", "/cron"),
-                    ("Synth", "/synth"),
-                    ("Mascots", "/mascots"),
-                    ("Paper Log", "/paper-log"),
-                ]:
-                    ui.link(label, path).style(NAV_LINK_STYLE).classes(
-                        "planck-nav-link no-underline"
-                    )
+# Routes that remain reachable by URL but are intentionally not in the
+# sidebar (internal or infrequently used):
+#   /mascots     — procedural mascot gallery
+#   /paper-log   — internal research notes
 
 
-def _page_wrapper(build_fn, *, live_seconds: float | None = None):
-    """Wrap a page builder in the standard layout.
+# --- layout primitives -----------------------------------------------------
 
-    live_seconds: if set, the page body is rebuilt on that interval. Only use
-    on pages with no form state to preserve (input/textarea values would be
-    wiped on each refresh).
+
+def _sidebar(current_path: str) -> None:
+    """Fixed-width left sidebar with brand, grouped nav, and a status pill.
+
+    Sticky on desktop. On narrow screens (< 900px) the `.planck-sidebar`
+    CSS class collapses it into a horizontal strip via a media query in
+    `_head_css`.
     """
+    with ui.column().classes("planck-sidebar").style(
+        f"position: fixed; left: 0; top: 0; "
+        f"width: 240px; height: 100vh; "
+        f"background: {COLORS['surface']}; "
+        f"border-right: 1px solid {COLORS['border']}; "
+        f"padding: 20px 10px 16px 14px; "
+        f"gap: 4px; overflow-y: auto; z-index: 100;"
+    ):
+        # Brand
+        with ui.row().classes(
+            "items-center gap-3 no-wrap planck-sidebar-brand"
+        ).style("padding: 0 4px 8px 4px;"):
+            ui.image("/branding/planckbots-mark-192.png").style(
+                "width: 34px; height: 34px; border-radius: 50%; "
+                f"box-shadow: 0 0 18px {COLORS['primary']}33, "
+                f"0 0 2px {COLORS['accent']}88; "
+                f"border: 1px solid {COLORS['border_glow']}; "
+                "flex: 0 0 34px; object-fit: cover;"
+            )
+            with ui.column().classes("gap-0"):
+                ui.html(WORDMARK_HTML).style(
+                    "font-size: 16px; line-height: 1; font-weight: 700;"
+                )
+                ui.label("Workbench").style(
+                    f"color: {COLORS['text_muted']}; font-size: 9px; "
+                    "letter-spacing: 2px; text-transform: uppercase; "
+                    "line-height: 1.1; margin-top: 3px;"
+                )
+
+        # Subtle status line (live connection indicator)
+        _sidebar_status()
+
+        # Groups
+        for group_label, items in NAV_GROUPS:
+            ui.label(group_label).style(
+                f"color: {COLORS['text_dim']}; "
+                "font-size: 10px; letter-spacing: 1.5px; "
+                "text-transform: uppercase; font-weight: 700; "
+                "padding: 12px 8px 4px 8px;"
+            )
+            for page_label, path, icon in items:
+                _nav_item(page_label, path, icon, current_path)
+
+
+def _sidebar_status() -> None:
+    """Tiny 'system online' chip beneath the brand — reassures on first visit."""
+    with ui.row().classes("items-center gap-2 no-wrap").style(
+        f"padding: 6px 10px; margin: 4px 4px 0 4px; "
+        f"background: {COLORS['surface2']}; "
+        f"border: 1px solid {COLORS['border']}; "
+        f"border-radius: 8px;"
+    ):
+        ui.element("div").style(
+            f"width: 8px; height: 8px; border-radius: 50%; "
+            f"background: {COLORS['success']}; "
+            f"box-shadow: 0 0 8px {COLORS['success']}; "
+            f"animation: planck-pulse 2s ease-in-out infinite;"
+        )
+        ui.label("System online").style(
+            f"color: {COLORS['text']}; font-size: 11px; font-weight: 600;"
+        )
+
+
+def _nav_item(label: str, path: str, icon: str, current_path: str) -> None:
+    active = (current_path == path) or (
+        path != "/" and current_path.startswith(path)
+    )
+    bg = COLORS["primary"] + "1f" if active else "transparent"
+    text = COLORS["text"] if active else COLORS["text_muted"]
+    icon_color = COLORS["primary"] if active else COLORS["text_muted"]
+    border = (
+        f"2px solid {COLORS['primary']}" if active else "2px solid transparent"
+    )
+
+    with ui.link(target=path).classes("no-underline planck-nav-item"):
+        with ui.row().classes("items-center gap-2 no-wrap").style(
+            f"padding: 8px 10px; border-radius: 8px; "
+            f"background: {bg}; "
+            f"border-left: {border}; "
+            f"margin: 1px 0;"
+        ):
+            ui.icon(icon).style(f"color: {icon_color}; font-size: 17px;")
+            ui.label(label).style(
+                f"color: {text}; font-size: 13px; "
+                f"font-weight: {'600' if active else '500'};"
+            )
+
+
+def _footer() -> None:
+    """Compact branding footer with version + repo + paper links."""
+    from planckbot import __version__
+    with ui.row().classes(
+        "w-full items-center justify-between no-wrap flex-wrap"
+    ).style(
+        f"margin-top: 40px; padding: 16px 0 24px 0; "
+        f"border-top: 1px solid {COLORS['border']}; "
+        f"color: {COLORS['text_muted']}; font-size: 11px;"
+    ):
+        ui.label(f"PlanckBot v{__version__} · Apache 2.0").style(
+            "letter-spacing: 0.5px;"
+        )
+        with ui.row().classes("items-center gap-4"):
+            for text, url, new_tab in [
+                ("How it works", "/how-it-works", False),
+                ("Paper", "/paper", False),
+                ("GitHub", "https://github.com/opcastil11/planckbot", True),
+            ]:
+                ui.link(text, url, new_tab=new_tab).classes(
+                    "no-underline"
+                ).style(f"color: {COLORS['text_muted']}; font-size: 11px;")
+
+
+def _page_wrapper(
+    build_fn,
+    *,
+    live_seconds: float | None = None,
+    current_path: str = "/",
+):
+    """Wrap a page builder in the standard layout (sidebar + main)."""
     ui.colors(
         primary=COLORS["primary"],
         secondary=COLORS["accent"],
@@ -75,8 +186,14 @@ def _page_wrapper(build_fn, *, live_seconds: float | None = None):
         info=COLORS["info"],
         warning=COLORS["warning"],
     )
-    _header()
-    with ui.column().classes("w-full max-w-7xl mx-auto p-6 gap-4").style(
+    _sidebar(current_path)
+
+    # Main content shifts right to leave room for the sidebar. Max width
+    # caps content line length at ~1200 px for readability.
+    with ui.column().classes("w-full").style(
+        "margin-left: 240px; "
+        "padding: 24px 28px 0 28px; "
+        "max-width: 1240px; "
         f"color: {COLORS['text']};"
     ):
         if live_seconds is None:
@@ -91,103 +208,80 @@ def _page_wrapper(build_fn, *, live_seconds: float | None = None):
         _footer()
 
 
-def _footer() -> None:
-    """Compact branding footer with version + repo + paper links."""
-    from planckbot import __version__
-    with ui.row().classes("w-full items-center justify-between no-wrap").style(
-        f"margin-top: 40px; padding: 16px 0 24px 0; "
-        f"border-top: 1px solid {COLORS['border']}; "
-        f"color: {COLORS['text_muted']}; font-size: 11px;"
-    ):
-        ui.label(f"PlanckBot v{__version__} · Apache 2.0").style(
-            "letter-spacing: 0.5px;"
-        )
-        with ui.row().classes("items-center gap-4"):
-            ui.link("How it works", "/how-it-works").classes(
-                "no-underline"
-            ).style(f"color: {COLORS['text_muted']}; font-size: 11px;")
-            ui.link("Paper", "/paper").classes("no-underline").style(
-                f"color: {COLORS['text_muted']}; font-size: 11px;"
-            )
-            ui.link(
-                "GitHub",
-                "https://github.com/opcastil11/planckbot",
-                new_tab=True,
-            ).classes("no-underline").style(
-                f"color: {COLORS['text_muted']}; font-size: 11px;"
-            )
+# --- routes ----------------------------------------------------------------
 
 
 @ui.page("/")
 def index():
     from planckbot.ui.pages.dashboard import dashboard_page
-    _page_wrapper(dashboard_page, live_seconds=3.0)
+    _page_wrapper(dashboard_page, current_path="/", live_seconds=3.0)
 
 
 @ui.page("/experiments")
 def experiments():
     from planckbot.ui.pages.experiments import experiments_page
-    _page_wrapper(experiments_page)
+    _page_wrapper(experiments_page, current_path="/experiments")
 
 
 @ui.page("/experiments/{exp_id}")
 def experiment_detail(exp_id: str):
     from planckbot.ui.pages.experiments import _detail_view
-    _page_wrapper(lambda: _detail_view(exp_id))
+    _page_wrapper(lambda: _detail_view(exp_id), current_path="/experiments")
 
 
 @ui.page("/tools")
 def tools():
     from planckbot.ui.pages.tools import tools_page
-    _page_wrapper(tools_page)
+    _page_wrapper(tools_page, current_path="/tools")
 
 
 @ui.page("/training")
 def training():
     from planckbot.ui.pages.training import training_page
-    _page_wrapper(training_page)
+    _page_wrapper(training_page, current_path="/training")
 
 
 @ui.page("/models")
 def models():
     from planckbot.ui.pages.models import models_page
-    _page_wrapper(models_page)
+    _page_wrapper(models_page, current_path="/models")
 
 
 @ui.page("/mascots")
 def mascots():
     from planckbot.ui.pages.mascots import mascots_page
-    _page_wrapper(mascots_page)
+    _page_wrapper(mascots_page, current_path="/mascots")
 
 
 @ui.page("/cron")
 def cron():
     from planckbot.ui.pages.cron import cron_page
-    _page_wrapper(cron_page)
+    _page_wrapper(cron_page, current_path="/cron")
 
 
 @ui.page("/synth")
 def synth():
     from planckbot.ui.pages.synth import synth_page
-    _page_wrapper(synth_page, live_seconds=3.0)
+    _page_wrapper(synth_page, current_path="/synth", live_seconds=3.0)
 
 
 @ui.page("/how-it-works")
 def how_it_works():
     from planckbot.ui.pages.how_it_works import how_it_works_page
-    _page_wrapper(how_it_works_page)
+    _page_wrapper(how_it_works_page, current_path="/how-it-works")
 
 
 @ui.page("/paper")
 def paper():
     from planckbot.ui.pages.paper import paper_page
-    _page_wrapper(paper_page)
+    _page_wrapper(paper_page, current_path="/paper")
 
 
 @ui.page("/paper-log")
 def paper_log():
+    # Kept alive but not shown in the sidebar — internal research notes.
     from planckbot.ui.pages.paper_log import paper_log_page
-    _page_wrapper(paper_log_page)
+    _page_wrapper(paper_log_page, current_path="/paper-log")
 
 
 def _head_css() -> str:
@@ -212,87 +306,45 @@ def _head_css() -> str:
             background: linear-gradient(180deg,
                 {c['surface']} 0%, {c['bg']} 140%) !important;
             border: 1px solid {c['border']};
-            box-shadow: 0 1px 0 {c['accent']}12 inset,
-                        0 4px 18px rgba(0, 0, 0, 0.4) !important;
             border-radius: 14px !important;
+            box-shadow: 0 1px 0 {c['border_glow']}22 inset,
+                0 12px 40px rgba(0, 0, 0, 0.35) !important;
         }}
 
-        .q-table {{ background: {c['surface']} !important; }}
-        .q-table thead th {{
-            color: {c['text_muted']} !important;
-            font-size: 11px !important;
-            letter-spacing: 0.5px; text-transform: uppercase;
-            border-bottom: 1px solid {c['border']} !important;
+        /* Headings */
+        h1, h2, h3, h4, h5 {{
+            color: {c['text']};
+            letter-spacing: -0.3px;
+            font-weight: 700;
         }}
-        .q-table tbody td {{
-            color: {c['text']} !important;
-            border-color: {c['border']} !important;
-        }}
-        .q-table tbody tr:hover {{ background: {c['surface2']} !important; }}
 
-        .q-field__label,
-        .q-field__prefix, .q-field__suffix {{ color: {c['text_muted']} !important; }}
-        .q-field__native, .q-field__input,
-        .q-field__input::placeholder,
-        .q-select .q-field__native {{ color: {c['text']} !important; }}
-        .q-field--filled .q-field__control {{
+        /* Sidebar */
+        .planck-sidebar-brand:hover {{ cursor: default; }}
+        .planck-nav-item:hover > div {{
             background: {c['surface2']} !important;
-            border-radius: 8px !important;
-        }}
-        .q-field--outlined .q-field__control:before {{
-            border-color: {c['border']} !important;
         }}
 
-        .q-separator {{ background: {c['border']} !important; }}
-
-        /* Nav */
-        .no-underline {{ text-decoration: none !important; }}
-        .planck-nav-link:hover {{
-            color: {c['primary']} !important;
-            background: {c['surface2']};
-            border-radius: 8px;
+        /* Status dot pulse (sidebar) */
+        @keyframes planck-pulse {{
+            0%, 100% {{ opacity: 1; transform: scale(1); }}
+            50%      {{ opacity: 0.5; transform: scale(0.88); }}
         }}
 
-        /* Stat card lift */
-        .planck-stat-card:hover {{
-            transform: translateY(-2px);
-            border-color: {c['border_glow']} !important;
-            box-shadow: 0 8px 28px rgba(95, 212, 163, 0.1),
-                        0 1px 0 {c['accent']}22 inset !important;
-        }}
-
-        /* Mascot gallery card lift (was inline on the page) */
-        .planck-mascot-card:hover {{
-            transform: translateY(-3px);
-            border-color: {c['border_glow']} !important;
-            box-shadow: 0 8px 28px rgba(95, 212, 163, 0.12) !important;
-        }}
-
-        /* Data pills / tag chips */
-        .planck-pill {{
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 3px 10px; border-radius: 999px;
-            background: {c['surface2']}; color: {c['text']};
-            font-size: 11px; font-weight: 600; letter-spacing: 0.3px;
-            border: 1px solid {c['border']};
-        }}
-        .planck-pill--muted {{ color: {c['text_muted']}; }}
-        .planck-pill--accent {{
-            color: {c['primary']};
-            background: {c['primary']}14;
-            border-color: {c['primary']}44;
-        }}
-        .planck-pill--brass {{
-            color: {c['brass']};
-            background: {c['brass']}14;
-            border-color: {c['brass']}44;
-        }}
-
-        /* Section label (small-caps) */
-        .planck-section-label {{
-            color: {c['text_muted']}; font-size: 11px;
-            font-weight: 700; letter-spacing: 1px;
-            text-transform: uppercase;
+        /* Responsive: collapse sidebar on narrow screens */
+        @media (max-width: 900px) {{
+            .planck-sidebar {{
+                position: static !important;
+                width: 100% !important;
+                height: auto !important;
+                border-right: none !important;
+                border-bottom: 1px solid {c['border']} !important;
+            }}
+            .planck-sidebar-brand {{ padding-bottom: 12px !important; }}
+            .q-page > div[style*="margin-left: 240px"] {{
+                margin-left: 0 !important;
+                padding-left: 20px !important;
+                padding-right: 20px !important;
+            }}
         }}
 
         /* Links */
@@ -323,10 +375,19 @@ def _head_css() -> str:
         }}
         ::-webkit-scrollbar-thumb:hover {{ background: {c['border_glow']}; }}
 
-        /* Selection */
-        ::selection {{
-            background: {c['primary']}44;
-            color: {c['text']};
+        /* Pills (planck-pill class, used by some pages) */
+        .planck-pill {{
+            display: inline-block; padding: 2px 8px; border-radius: 999px;
+            font-size: 11px; font-weight: 600; letter-spacing: 0.3px;
+            background: {c['surface2']}; color: {c['text_muted']};
+            border: 1px solid {c['border']};
+        }}
+        .planck-pill--accent {{
+            color: {c['accent']}; border-color: {c['accent']}44;
+            background: {c['accent']}14;
+        }}
+        .planck-pill--muted {{
+            color: {c['text_muted']}; border-color: {c['border']};
         }}
     </style>
     """

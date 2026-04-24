@@ -77,8 +77,8 @@ def test_mascot_ids_unique_per_tool():
 
 def test_style_fields_in_bounds():
     s = style_for("any_name")
-    assert 0 <= s.body_hue < 360
-    assert 0 <= s.halo_hue < 360
+    # Body stays in the brand's teal band (145–185) for family resemblance.
+    assert 145 <= s.body_hue <= 185
     assert 0 <= s.orb_hue < 360
-    assert -2 <= s.eye_dx <= 2
-    assert 3 <= s.smile_curve <= 9
+    assert -1 <= s.eye_shine_dx <= 1
+    assert 1 <= s.smile_curve <= 4

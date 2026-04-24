@@ -1,4 +1,4 @@
-"""Dashboard: hero welcome, stats at a glance, recent activity."""
+"""Dashboard: state-aware hero, stats, onboarding card, recent activity."""
 
 from __future__ import annotations
 
@@ -28,18 +28,108 @@ from planckbot.ui.theme import (
 )
 
 
+def _detect_state(state) -> dict:
+    """Classify the install into one of four buckets so the hero can speak
+    to the user's actual situation rather than generic marketing copy."""
+    triples_total = state.triples.count_total()
+    conn = state.conn
+    proxy_triples = conn.execute(
+        "SELECT COUNT(*) FROM triples WHERE source LIKE 'proxy:%'"
+    ).fetchone()[0]
+    labeled = conn.execute(
+        "SELECT COUNT(*) FROM triples WHERE filtered_output IS NOT NULL"
+    ).fetchone()[0]
+    checkpoints = state.checkpoints.count()
+    active_ckpts = conn.execute(
+        "SELECT COUNT(*) FROM model_checkpoints WHERE is_active = 1"
+    ).fetchone()[0]
+    savings = state.triples.token_savings(source="proxy:intervene")
+
+    if triples_total == 0:
+        bucket = "setup"
+    elif proxy_triples == 0:
+        bucket = "fixtures_only"  # only manual/fixture data
+    elif checkpoints == 0:
+        bucket = "collecting"
+    elif active_ckpts == 0:
+        bucket = "trained"
+    elif savings["intervene_count"] == 0:
+        bucket = "ready_to_intervene"
+    else:
+        bucket = "intervening"
+
+    return {
+        "bucket": bucket,
+        "triples_total": triples_total,
+        "proxy_triples": proxy_triples,
+        "labeled": labeled,
+        "checkpoints": checkpoints,
+        "active_ckpts": active_ckpts,
+        "savings": savings,
+    }
+
+
 def _hero(state) -> None:
-    """Top welcome panel — branded, shows user their workbench identity."""
-    tool_count = len(state.registry.list_tools())
-    triples = state.triples.count_total()
-    ckpts = state.checkpoints.count()
+    """State-aware top panel. The headline and the body copy both change
+    based on where the install currently is in the funnel."""
+    ctx = _detect_state(state)
+    bucket = ctx["bucket"]
+
+    # Headline + body copy per bucket.
+    if bucket == "setup":
+        eyebrow = "Let's get you set up"
+        body = (
+            "Point Claude Code at the PlanckBot MCP proxy. Every filesystem "
+            "tool call will then land here as a triple, and the system starts "
+            "learning from your workflow."
+        )
+    elif bucket == "fixtures_only":
+        eyebrow = "Waiting for real traffic"
+        body = (
+            f"You have {ctx['triples_total']} triples from fixtures, but "
+            "nothing from Claude yet. Restart Claude Code after `planckbot "
+            "init` and try a prompt that uses `mcp__planckbot-fs__*`."
+        )
+    elif bucket == "collecting":
+        eyebrow = "Collecting data"
+        body = (
+            f"{ctx['proxy_triples']} tool calls observed so far; "
+            f"{ctx['labeled']} auto-labeled. When a tool hits ~200 labeled "
+            "triples, train your first adapter."
+        )
+    elif bucket == "trained":
+        eyebrow = "Adapters ready"
+        body = (
+            f"You have {ctx['checkpoints']} checkpoint(s) trained but none "
+            "active. Activate one from /models, then flip the proxy mode to "
+            "`suggest` to see predictions against real traffic."
+        )
+    elif bucket == "ready_to_intervene":
+        eyebrow = "Everything's armed"
+        body = (
+            f"Active adapter loaded. Flip the proxy mode to `intervene` in "
+            "~/.claude.json and restart Claude Code — from there savings "
+            "accumulate automatically on every filesystem tool call."
+        )
+    else:  # intervening
+        saved = ctx["savings"]["saved"]
+        pct = (saved / ctx["savings"]["raw_tokens"] * 100
+               if ctx["savings"]["raw_tokens"] else 0)
+        sign = "+" if saved >= 0 else ""
+        eyebrow = "Saving tokens"
+        body = (
+            f"{sign}{number_fmt(saved)} tokens across "
+            f"{ctx['savings']['intervene_count']} interventions "
+            f"({sign}{pct:.0f}% of raw). Keep using Claude — "
+            "more supervision → better adapter → more savings."
+        )
 
     with ui.row().classes("w-full items-center no-wrap gap-6").style(
         f"margin-bottom: {SPACE_LG}px; "
         f"padding: {SPACE_LG}px {SPACE_LG}px; "
         f"border-radius: {RADIUS_LG}px; "
         f"background: linear-gradient(135deg, "
-        f"rgba(95, 212, 163, 0.06) 0%, "
+        f"rgba(95, 212, 163, 0.07) 0%, "
         f"rgba(126, 229, 214, 0.04) 40%, "
         f"transparent 100%), {COLORS['surface']}; "
         f"border: 1px solid {COLORS['border']}; "
@@ -54,20 +144,82 @@ def _hero(state) -> None:
             f"0 0 4px {COLORS['accent']}66;"
         )
         with ui.column().classes("gap-1 flex-1"):
-            ui.label("Welcome back").style(
+            ui.label(eyebrow.upper()).style(
                 f"color: {COLORS['primary']}; "
                 "font-size: 11px; font-weight: 700; "
-                "letter-spacing: 1.5px; text-transform: uppercase;"
+                "letter-spacing: 1.5px;"
             )
             ui.html(WORDMARK_HTML).style("font-size: 34px; line-height: 1.1;")
-            ui.label(
-                "Adaptive tiny-model layer for LLM token optimization. "
-                f"{number_fmt(triples)} triples observed across "
-                f"{tool_count} tools — {ckpts} checkpoint"
-                f"{'s' if ckpts != 1 else ''} trained."
-            ).style(
-                f"{subtitle_style()} max-width: 640px;"
+            ui.label(body).style(subtitle_style() + " max-width: 640px;")
+
+
+def _onboarding_card(state) -> None:
+    """Only shown in the 'setup' and 'fixtures_only' buckets — a visible
+    checklist of the three first steps. Disappears once traffic starts
+    flowing."""
+    ctx = _detect_state(state)
+    if ctx["bucket"] not in {"setup", "fixtures_only"}:
+        return
+
+    steps = [
+        (
+            True,  # install is done — we wouldn't be rendering if not
+            "Install PlanckBot",
+            "pip install -e \".[dev]\" · done",
+        ),
+        (
+            ctx["proxy_triples"] > 0,
+            "Register the MCP server",
+            "run `planckbot init` and restart Claude Code",
+        ),
+        (
+            ctx["proxy_triples"] > 0,
+            "Let Claude make a tool call",
+            "any mcp__planckbot-fs__* call becomes your first real triple",
+        ),
+    ]
+
+    with ui.column().classes("w-full gap-2").style(
+        f"margin-bottom: {SPACE_LG}px; "
+        f"padding: {SPACE_LG}px; "
+        f"background: {COLORS['surface']}; "
+        f"border: 1px dashed {COLORS['primary']}55; "
+        f"border-radius: {RADIUS_LG}px;"
+    ):
+        with ui.row().classes("items-center gap-2"):
+            ui.icon("rocket_launch").style(
+                f"color: {COLORS['primary']}; font-size: 22px;"
             )
+            ui.label("First three steps").style(heading_style(size=TEXT_LG))
+        ui.label(
+            "Get from zero to your first real triple. The card disappears "
+            "once the MCP starts recording."
+        ).style(f"color: {COLORS['text_muted']}; font-size: {TEXT_SM}px;")
+        for i, (done, title, detail) in enumerate(steps):
+            with ui.row().classes("items-start gap-3 w-full no-wrap").style(
+                f"padding: {SPACE_SM}px 0; "
+                f"border-top: 1px solid {COLORS['border']};"
+                if i > 0 else f"padding: {SPACE_SM}px 0;"
+            ):
+                if done:
+                    ui.icon("check_circle").style(
+                        f"color: {COLORS['success']}; font-size: 22px; "
+                        "margin-top: 1px;"
+                    )
+                else:
+                    ui.icon("radio_button_unchecked").style(
+                        f"color: {COLORS['text_muted']}; font-size: 22px; "
+                        "margin-top: 1px;"
+                    )
+                with ui.column().classes("gap-0").style("flex: 1;"):
+                    ui.label(f"Step {i+1}. {title}").style(
+                        f"color: {COLORS['text']}; font-size: {TEXT_MD}px; "
+                        "font-weight: 600;"
+                    )
+                    ui.label(detail).style(
+                        f"color: {COLORS['text_muted']}; font-size: {TEXT_SM}px; "
+                        "font-family: monospace;"
+                    )
 
 
 def _stats(state) -> None:
@@ -261,6 +413,7 @@ def dashboard_page():
     state = get_state()
 
     _hero(state)
+    _onboarding_card(state)   # only shows when install is empty / fixtures-only
     _stats(state)
 
     with ui.row().classes("w-full gap-4 flex-wrap items-start"):
