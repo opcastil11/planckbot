@@ -17,6 +17,7 @@ PlanckBot sits between a host LLM (Claude, GPT-4, any MCP-capable agent) and its
   <img src="docs/screenshots/dashboard.png" alt="PlanckBot workbench dashboard" width="820">
 </p>
 
+**Website**: [planckbot.com](https://planckbot.com)
 **In-app docs** (after `planckbot ui`): [localhost:8080/how-it-works](http://localhost:8080/how-it-works)
 
 ---

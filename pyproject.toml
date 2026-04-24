@@ -48,7 +48,7 @@ dependencies = [
 dev = ["pytest", "pytest-asyncio", "ruff"]
 
 [project.urls]
-Homepage = "https://github.com/opcastil11/planckbot"
+Homepage = "https://planckbot.com"
 Repository = "https://github.com/opcastil11/planckbot"
 Issues = "https://github.com/opcastil11/planckbot/issues"
 
