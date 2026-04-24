@@ -48,6 +48,46 @@ def _tool_card(tool_def, triple_count: int):
                 ).tooltip(params)
 
 
+def _observed_only_card(tool_name: str, triple_count: int):
+    """Card for a tool observed through the MCP proxy that isn't in the
+    local registry. No input-schema / description (we'd need to query
+    the upstream MCP server for that); shows just the mascot, name,
+    and the triple count so the user sees it's being watched."""
+    with ui.card().classes("planck-stat-card").style(
+        f"background: linear-gradient(180deg, {COLORS['surface']} 0%, "
+        f"{COLORS['bg']} 140%); "
+        f"border: 1px dashed {COLORS['border']}; "
+        "border-radius: 14px; padding: 16px; min-width: 280px; "
+        "flex: 1; max-width: 340px;"
+    ):
+        with ui.row().classes("items-center gap-3 no-wrap"):
+            ui.html(mascot_svg(tool_name, size=48, title=True)).style(
+                "flex: 0 0 48px;"
+            )
+            with ui.column().classes("gap-0 flex-1").style("min-width: 0;"):
+                ui.label(tool_name).style(
+                    f"color: {COLORS['text']}; font-weight: 700; "
+                    "font-size: 15px; overflow: hidden; "
+                    "text-overflow: ellipsis; white-space: nowrap;"
+                )
+                ui.html(
+                    '<span class="planck-pill planck-pill--muted">'
+                    'mcp-upstream</span>'
+                )
+        ui.label(
+            "Observed through the MCP proxy. Not registered locally, so "
+            "schema + description come from the upstream server."
+        ).style(
+            f"color: {COLORS['text_muted']}; font-size: 13px; "
+            "margin-top: 10px; line-height: 1.5;"
+        )
+        with ui.row().classes("items-center gap-2").style("margin-top: 10px;"):
+            ui.html(
+                f'<span class="planck-pill planck-pill--accent">'
+                f'{triple_count} triples</span>'
+            )
+
+
 def _collection_form():
     """Manual triple collection: select tool, input params, run, save."""
     state = get_state()
@@ -140,24 +180,40 @@ def tools_page():
 
     page_header(
         title="Tools",
-        subtitle="Registered tools PlanckBot can observe and optimize. "
-                 "Collect triples manually or let the proxy fill them in.",
+        subtitle="Tools PlanckBot is observing through the MCP proxy, "
+                 "plus the built-ins shipped with the repo. "
+                 "Numbers are live.",
     )
 
-    # Tool cards
+    # Tool cards: registered built-ins + any tool that has triples but
+    # wasn't registered locally (i.e. MCP-upstream tools like
+    # read_text_file, search_files, edit_file). This is the common
+    # case in production — the proxy sees tools whose source lives on
+    # the upstream MCP server, not in this repo.
     counts = state.triples.count_by_tool(project_id=state.active_project_id())
-    tools = state.registry.list_tools()
-    if not tools:
+    registered = state.registry.list_tools()
+    registered_names = {t.name for t in registered}
+
+    observed_only = sorted(
+        name for name in counts.keys() if name not in registered_names
+    )
+
+    tools_for_browser = list(registered_names) + observed_only
+
+    if not registered and not observed_only:
         empty_state(
-            title="No tools registered",
+            title="No tools registered or observed yet",
             hint="Register builtins via `register_builtins(registry)` "
-                 "or wrap your own with `@planck_tool` to see them here.",
+                 "or let Claude Code make a tool call through "
+                 "`mcp__planckbot-fs__*` to see entries here.",
             icon="build",
         )
     else:
         with ui.row().classes("w-full gap-4 flex-wrap"):
-            for tool in tools:
+            for tool in registered:
                 _tool_card(tool, counts.get(tool.name, 0))
+            for name in observed_only:
+                _observed_only_card(name, counts[name])
 
     # Collection form
     _collection_form()
@@ -170,7 +226,7 @@ def tools_page():
         f"color: {COLORS['text_muted']}; font-size: 13px; margin-top: 2px;"
     )
 
-    tool_names = ["All"] + state.registry.names()
+    tool_names = ["All"] + sorted(tools_for_browser)
     tool_filter = ui.select(
         tool_names, value="All", label="Tool",
     ).style("width: 220px; margin-top: 10px;")
