@@ -423,6 +423,64 @@ def cmd_synth_create(args) -> int:
         return 2
 
 
+def cmd_synth_author(args) -> int:
+    """Generate code for a tool that fuses a gap report's sequence.
+
+    Uses the Anthropic API when ANTHROPIC_API_KEY is set; falls back to a
+    stdlib-only template generator otherwise. In both cases the code goes
+    through `synthesize_tool`'s AST whitelist before hitting disk.
+    """
+    from planckbot.synth.authoring import author_tool_for_gap
+    from planckbot.synth.detector import GapReportStore
+    from planckbot.synth.meta import synthesize_tool
+
+    s = _load_stores()
+    gap_store = GapReportStore(s["conn"])
+    gap = gap_store.get(args.gap_id)
+    if gap is None:
+        print(f"gap report not found: {args.gap_id}", file=sys.stderr)
+        return 1
+
+    try:
+        authored = author_tool_for_gap(
+            gap, s["conn"], name=args.name, model=args.model,
+            use_api=(None if args.use_api == "auto" else args.use_api == "yes"),
+        )
+    except Exception as e:
+        print(f"authoring failed: {e}", file=sys.stderr)
+        return 2
+
+    print(f"[author] source: {authored.source}")
+    if authored.usage_tokens:
+        print(f"[author] api tokens used: {authored.usage_tokens}")
+    print("[author] proposed code:")
+    print(authored.code)
+
+    if args.dry_run:
+        print("\n[author] dry-run; not persisting")
+        return 0
+
+    try:
+        result = synthesize_tool(
+            name=authored.name,
+            description=authored.description,
+            input_schema=authored.input_schema,
+            code=authored.code,
+            conn=s["conn"],
+            gap_report_id=gap.id,
+            created_by=f"author:{authored.source}",
+        )
+        print(f"\n[author] stored as synthesized_tools.{result.tool.name}")
+        print(f"[author] code at {result.source_path}")
+        # Mark the gap report as accepted — it's served its purpose.
+        gap_store.set_status(gap.id, "accepted")
+        return 0
+    except ValueError as e:
+        print(f"\n[author] AST gate rejected the generated code: {e}",
+              file=sys.stderr)
+        return 3
+
+
 def cmd_synth_gaps(_args) -> int:
     s = _load_stores()
     from planckbot.synth.detector import GapReportStore
@@ -996,6 +1054,22 @@ def _build_parser() -> argparse.ArgumentParser:
 
     sp2 = synth_sub.add_parser("gaps", help="List detected tool-gap reports.")
     sp2.set_defaults(func=cmd_synth_gaps)
+
+    sp2 = synth_sub.add_parser(
+        "author",
+        help="Generate code for a merged tool from a gap report "
+             "(uses Claude API if available, template otherwise).",
+    )
+    sp2.add_argument("gap_id", help="Gap report UUID or 8-char prefix.")
+    sp2.add_argument("--name", help="Override the proposed tool name.")
+    sp2.add_argument("--model", default="claude-sonnet-4-6",
+                     help="Anthropic model id (default: claude-sonnet-4-6).")
+    sp2.add_argument("--use-api", choices=["auto", "yes", "no"], default="auto",
+                     help="Force API usage on/off (default: auto — API "
+                          "when ANTHROPIC_API_KEY is set).")
+    sp2.add_argument("--dry-run", action="store_true",
+                     help="Print the generated code but don't persist it.")
+    sp2.set_defaults(func=cmd_synth_author)
 
     # init (first-run setup)
     sp = sub.add_parser(

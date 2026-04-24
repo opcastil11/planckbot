@@ -1,98 +1,1762 @@
 [
   {
     "tool_name": "list_directory",
-    "input_data": {"path": "/repo"},
-    "output_data": "[DIR] .git\n[DIR] .venv\n[DIR] .pytest_cache\n[DIR] __pycache__\n[DIR] node_modules\n[DIR] dist\n[DIR] build\n[DIR] src\n[DIR] tests\n[DIR] docs\n[FILE] .gitignore\n[FILE] package-lock.json\n[FILE] pyproject.toml\n[FILE] README.md",
-    "filtered_output": "[DIR] src\n[DIR] tests\n[DIR] docs\n[FILE] pyproject.toml\n[FILE] README.md"
+    "input_data": {
+      "path": "/home/dev/work/reporting"
+    },
+    "output_data": "[DIR] .idea\n[DIR] .ruff_cache\n[DIR] components\n[DIR] libs\n[FILE] .env\n[FILE] .env.local\n[FILE] .gitignore\n[FILE] CODEOWNERS\n[FILE] package-lock.json\n[FILE] setup.py",
+    "filtered_output": "[DIR] components\n[DIR] libs\n[FILE] setup.py\n[FILE] CODEOWNERS"
   },
   {
     "tool_name": "list_directory",
-    "input_data": {"path": "/proj"},
-    "output_data": "[DIR] .git\n[DIR] .venv\n[DIR] .pytest_cache\n[DIR] __pycache__\n[DIR] node_modules\n[DIR] coverage\n[DIR] app\n[DIR] migrations\n[FILE] .gitignore\n[FILE] .env.example\n[FILE] yarn.lock\n[FILE] package.json",
-    "filtered_output": "[DIR] app\n[DIR] migrations\n[FILE] .env.example\n[FILE] package.json"
+    "input_data": {
+      "path": "/opt/cli"
+    },
+    "output_data": "[DIR] .git\n[DIR] .nyc_output\n[DIR] .turbo\n[DIR] app\n[DIR] bin\n[DIR] content\n[DIR] infra\n[DIR] routes\n[DIR] scripts\n[DIR] terraform\n[FILE] airflow.cfg\n[FILE] pnpm-lock.yaml\n[FILE] requirements.txt\n[FILE] uv.lock",
+    "filtered_output": "[DIR] app\n[DIR] content\n[DIR] routes\n[DIR] scripts\n[DIR] terraform\n[DIR] infra\n[FILE] requirements.txt\n[FILE] airflow.cfg"
   },
   {
     "tool_name": "list_directory",
-    "input_data": {"path": "/service"},
-    "output_data": "[DIR] .git\n[DIR] .venv\n[DIR] __pycache__\n[DIR] .mypy_cache\n[DIR] .ruff_cache\n[DIR] src\n[DIR] tests\n[FILE] pyproject.toml\n[FILE] uv.lock\n[FILE] README.md",
-    "filtered_output": "[DIR] src\n[DIR] tests\n[FILE] pyproject.toml\n[FILE] README.md"
+    "input_data": {
+      "path": "/workspace/cdn"
+    },
+    "output_data": "[DIR] .idea\n[DIR] .ipynb_checkpoints\n[DIR] .pytest_cache\n[DIR] .svelte-kit\n[DIR] models\n[DIR] tests\n[FILE] Makefile",
+    "filtered_output": "[DIR] tests\n[DIR] models\n[FILE] Makefile"
   },
   {
     "tool_name": "list_directory",
-    "input_data": {"path": "/web"},
-    "output_data": "[DIR] .git\n[DIR] node_modules\n[DIR] dist\n[DIR] build\n[DIR] .next\n[DIR] coverage\n[DIR] public\n[DIR] src\n[DIR] pages\n[FILE] package.json\n[FILE] next.config.js\n[FILE] tsconfig.json\n[FILE] package-lock.json",
-    "filtered_output": "[DIR] public\n[DIR] src\n[DIR] pages\n[FILE] package.json\n[FILE] next.config.js\n[FILE] tsconfig.json"
+    "input_data": {
+      "path": "/home/dev/work/lib"
+    },
+    "output_data": "[DIR] .ruff_cache\n[DIR] .vscode\n[DIR] ansible\n[DIR] build\n[DIR] content\n[DIR] coverage\n[DIR] envs\n[DIR] examples\n[DIR] logs\n[DIR] mlruns\n[DIR] modules\n[DIR] node_modules\n[DIR] services\n[FILE] .DS_Store\n[FILE] Pipfile.lock\n[FILE] README.rst\n[FILE] yarn.lock",
+    "filtered_output": "[DIR] content\n[DIR] modules\n[DIR] services\n[DIR] ansible\n[DIR] envs\n[DIR] examples\n[FILE] README.rst"
   },
   {
     "tool_name": "list_directory",
-    "input_data": {"path": "/api"},
-    "output_data": "[DIR] .git\n[DIR] .venv\n[DIR] __pycache__\n[DIR] node_modules\n[DIR] logs\n[DIR] tmp\n[DIR] src\n[DIR] tests\n[FILE] Dockerfile\n[FILE] docker-compose.yml\n[FILE] pyproject.toml",
-    "filtered_output": "[DIR] src\n[DIR] tests\n[FILE] Dockerfile\n[FILE] docker-compose.yml\n[FILE] pyproject.toml"
+    "input_data": {
+      "path": "/opt/monorepo"
+    },
+    "output_data": "[DIR] .svelte-kit\n[DIR] .terragrunt-cache\n[DIR] .turbo\n[DIR] demos\n[DIR] examples\n[DIR] infra\n[DIR] packages\n[FILE] CODEOWNERS\n[FILE] Cargo.lock\n[FILE] Gemfile.lock\n[FILE] metro.config.js",
+    "filtered_output": "[DIR] packages\n[DIR] infra\n[DIR] examples\n[DIR] demos\n[FILE] metro.config.js\n[FILE] CODEOWNERS"
   },
   {
     "tool_name": "list_directory",
-    "input_data": {"path": "/ml"},
-    "output_data": "[DIR] .git\n[DIR] .venv\n[DIR] .ipynb_checkpoints\n[DIR] __pycache__\n[DIR] wandb\n[DIR] mlruns\n[DIR] notebooks\n[DIR] src\n[FILE] pyproject.toml\n[FILE] README.md",
-    "filtered_output": "[DIR] notebooks\n[DIR] src\n[FILE] pyproject.toml\n[FILE] README.md"
+    "input_data": {
+      "path": "/src/dashboard"
+    },
+    "output_data": "[DIR] .vite\n[DIR] apps\n[DIR] pages\n[DIR] tmp\n[DIR] vendor\n[FILE] .env.local\n[FILE] Cargo.toml\n[FILE] pyproject.toml\n[FILE] uv.lock\n[FILE] vite.config.ts\n[FILE] yarn.lock",
+    "filtered_output": "[DIR] apps\n[DIR] pages\n[FILE] pyproject.toml\n[FILE] vite.config.ts\n[FILE] Cargo.toml"
   },
   {
     "tool_name": "list_directory",
-    "input_data": {"path": "/mobile"},
-    "output_data": "[DIR] .git\n[DIR] node_modules\n[DIR] ios\n[DIR] android\n[DIR] build\n[DIR] Pods\n[DIR] src\n[FILE] package.json\n[FILE] yarn.lock\n[FILE] metro.config.js",
-    "filtered_output": "[DIR] ios\n[DIR] android\n[DIR] src\n[FILE] package.json\n[FILE] metro.config.js"
+    "input_data": {
+      "path": "/opt/mobile"
+    },
+    "output_data": "[DIR] .next\n[DIR] .ruff_cache\n[DIR] .turbo\n[DIR] __pycache__\n[DIR] api\n[DIR] controllers\n[DIR] dist\n[DIR] examples\n[DIR] k8s\n[DIR] lib\n[DIR] scripts\n[FILE] .env.local\n[FILE] next.config.js\n[FILE] poetry.lock\n[FILE] setup.py\n[FILE] turbo.json\n[FILE] yarn.lock",
+    "filtered_output": "[DIR] lib\n[DIR] api\n[DIR] controllers\n[DIR] scripts\n[DIR] k8s\n[DIR] examples\n[FILE] setup.py\n[FILE] next.config.js\n[FILE] turbo.json"
   },
   {
     "tool_name": "list_directory",
-    "input_data": {"path": "/backend"},
-    "output_data": "[DIR] .git\n[DIR] target\n[DIR] __pycache__\n[DIR] .venv\n[DIR] src\n[DIR] tests\n[DIR] migrations\n[FILE] Cargo.toml\n[FILE] Cargo.lock\n[FILE] README.md",
-    "filtered_output": "[DIR] src\n[DIR] tests\n[DIR] migrations\n[FILE] Cargo.toml\n[FILE] README.md"
+    "input_data": {
+      "path": "/repo/analytics"
+    },
+    "output_data": "[DIR] .git\n[DIR] .ipynb_checkpoints\n[DIR] .svelte-kit\n[DIR] lib\n[DIR] libs\n[DIR] scripts\n[DIR] src\n[DIR] terraform\n[DIR] tests\n[FILE] Dockerfile\n[FILE] Gemfile.lock\n[FILE] Pipfile.lock\n[FILE] go.mod\n[FILE] go.sum\n[FILE] package-lock.json\n[FILE] setup.cfg",
+    "filtered_output": "[DIR] src\n[DIR] tests\n[DIR] lib\n[DIR] libs\n[DIR] scripts\n[DIR] terraform\n[FILE] setup.cfg\n[FILE] Dockerfile\n[FILE] go.mod"
   },
   {
     "tool_name": "list_directory",
-    "input_data": {"path": "/go-svc"},
-    "output_data": "[DIR] .git\n[DIR] vendor\n[DIR] bin\n[DIR] tmp\n[DIR] cmd\n[DIR] internal\n[DIR] pkg\n[FILE] go.mod\n[FILE] go.sum\n[FILE] Makefile",
-    "filtered_output": "[DIR] cmd\n[DIR] internal\n[DIR] pkg\n[FILE] go.mod\n[FILE] Makefile"
+    "input_data": {
+      "path": "/src/service"
+    },
+    "output_data": "[DIR] .terraform\n[DIR] .venv\n[DIR] .vite\n[DIR] content\n[DIR] dist\n[DIR] doc\n[DIR] infra\n[DIR] public\n[DIR] scripts\n[DIR] services\n[FILE] .gitignore\n[FILE] CLAUDE.md\n[FILE] Cargo.lock",
+    "filtered_output": "[DIR] doc\n[DIR] public\n[DIR] content\n[DIR] services\n[DIR] scripts\n[DIR] infra\n[FILE] CLAUDE.md"
   },
   {
     "tool_name": "list_directory",
-    "input_data": {"path": "/lib"},
-    "output_data": "[DIR] .git\n[DIR] node_modules\n[DIR] dist\n[DIR] coverage\n[DIR] .vscode\n[DIR] src\n[DIR] test\n[DIR] examples\n[FILE] package.json\n[FILE] package-lock.json\n[FILE] tsconfig.json\n[FILE] README.md",
-    "filtered_output": "[DIR] src\n[DIR] test\n[DIR] examples\n[FILE] package.json\n[FILE] tsconfig.json\n[FILE] README.md"
+    "input_data": {
+      "path": "/code/worker"
+    },
+    "output_data": "[DIR] .angular\n[DIR] .ipynb_checkpoints\n[DIR] .turbo\n[DIR] .vite\n[DIR] .vscode\n[DIR] build\n[DIR] dags\n[DIR] tests\n[FILE] .env\n[FILE] .prettierrc\n[FILE] go.sum\n[FILE] pnpm-lock.yaml\n[FILE] terraform.lock.hcl",
+    "filtered_output": "[DIR] tests\n[DIR] dags\n[FILE] .prettierrc"
   },
   {
     "tool_name": "list_directory",
-    "input_data": {"path": "/deploy"},
-    "output_data": "[DIR] .git\n[DIR] .terraform\n[DIR] terraform\n[DIR] ansible\n[DIR] k8s\n[DIR] scripts\n[FILE] .gitignore\n[FILE] Makefile\n[FILE] README.md",
-    "filtered_output": "[DIR] terraform\n[DIR] ansible\n[DIR] k8s\n[DIR] scripts\n[FILE] Makefile\n[FILE] README.md"
+    "input_data": {
+      "path": "/srv/search"
+    },
+    "output_data": "[DIR] .cache\n[DIR] .mypy_cache\n[DIR] api\n[DIR] bin\n[DIR] dist\n[DIR] ios\n[DIR] logs\n[DIR] tools\n[FILE] Procfile\n[FILE] requirements.txt\n[FILE] turbo.json",
+    "filtered_output": "[DIR] ios\n[DIR] api\n[DIR] tools\n[FILE] requirements.txt\n[FILE] turbo.json\n[FILE] Procfile"
   },
   {
     "tool_name": "list_directory",
-    "input_data": {"path": "/site"},
-    "output_data": "[DIR] .git\n[DIR] node_modules\n[DIR] .cache\n[DIR] public\n[DIR] content\n[DIR] layouts\n[DIR] static\n[FILE] package.json\n[FILE] package-lock.json\n[FILE] gatsby-config.js",
-    "filtered_output": "[DIR] public\n[DIR] content\n[DIR] layouts\n[DIR] static\n[FILE] package.json\n[FILE] gatsby-config.js"
+    "input_data": {
+      "path": "/code/payments"
+    },
+    "output_data": "[DIR] .eslintcache\n[DIR] .ipynb_checkpoints\n[DIR] .mypy_cache\n[DIR] .pytest_cache\n[DIR] __pycache__\n[DIR] bin\n[DIR] k8s\n[DIR] logs\n[DIR] pages\n[DIR] src\n[FILE] CHANGELOG.md\n[FILE] go.sum",
+    "filtered_output": "[DIR] src\n[DIR] pages\n[DIR] k8s\n[FILE] CHANGELOG.md"
   },
   {
     "tool_name": "list_directory",
-    "input_data": {"path": "/monorepo"},
-    "output_data": "[DIR] .git\n[DIR] node_modules\n[DIR] .turbo\n[DIR] .nx\n[DIR] apps\n[DIR] packages\n[DIR] tools\n[FILE] package.json\n[FILE] pnpm-lock.yaml\n[FILE] turbo.json",
-    "filtered_output": "[DIR] apps\n[DIR] packages\n[DIR] tools\n[FILE] package.json\n[FILE] turbo.json"
+    "input_data": {
+      "path": "/repo/crm"
+    },
+    "output_data": "[DIR] .nyc_output\n[DIR] Pods\n[DIR] ansible\n[DIR] docs\n[DIR] node_modules\n[DIR] scripts\n[FILE] .env\n[FILE] .env.local.bak\n[FILE] .eslintrc.json\n[FILE] Cargo.lock\n[FILE] gatsby-config.js\n[FILE] go.mod\n[FILE] next.config.js",
+    "filtered_output": "[DIR] docs\n[DIR] scripts\n[DIR] ansible\n[FILE] next.config.js\n[FILE] go.mod\n[FILE] gatsby-config.js\n[FILE] .eslintrc.json"
   },
   {
     "tool_name": "list_directory",
-    "input_data": {"path": "/cli-tool"},
-    "output_data": "[DIR] .git\n[DIR] __pycache__\n[DIR] .pytest_cache\n[DIR] dist\n[DIR] build\n[DIR] src\n[DIR] tests\n[FILE] pyproject.toml\n[FILE] setup.cfg\n[FILE] uv.lock",
-    "filtered_output": "[DIR] src\n[DIR] tests\n[FILE] pyproject.toml\n[FILE] setup.cfg"
+    "input_data": {
+      "path": "/home/dev/work/search"
+    },
+    "output_data": "[DIR] .idea\n[DIR] .parcel-cache\n[DIR] api\n[DIR] coverage\n[DIR] pkg\n[FILE] .env\n[FILE] .eslintrc.json\n[FILE] netlify.toml\n[FILE] setup.cfg",
+    "filtered_output": "[DIR] pkg\n[DIR] api\n[FILE] setup.cfg\n[FILE] .eslintrc.json\n[FILE] netlify.toml"
   },
   {
     "tool_name": "list_directory",
-    "input_data": {"path": "/data-pipeline"},
-    "output_data": "[DIR] .git\n[DIR] .venv\n[DIR] __pycache__\n[DIR] data\n[DIR] logs\n[DIR] output\n[DIR] dags\n[DIR] plugins\n[FILE] airflow.cfg\n[FILE] requirements.txt",
-    "filtered_output": "[DIR] dags\n[DIR] plugins\n[FILE] airflow.cfg\n[FILE] requirements.txt"
+    "input_data": {
+      "path": "/workspace/admin"
+    },
+    "output_data": "[DIR] .cache\n[DIR] .git\n[DIR] .gradle\n[DIR] .ruff_cache\n[DIR] .tox\n[DIR] .turbo\n[DIR] components\n[DIR] packages\n[DIR] terraform\n[DIR] test\n[DIR] views\n[FILE] .env\n[FILE] .env.local.bak\n[FILE] CONTRIBUTING.md\n[FILE] poetry.lock",
+    "filtered_output": "[DIR] packages\n[DIR] test\n[DIR] components\n[DIR] views\n[DIR] terraform\n[FILE] CONTRIBUTING.md"
   },
   {
     "tool_name": "list_directory",
-    "input_data": {"path": "/infra"},
-    "output_data": "[DIR] .git\n[DIR] .terraform\n[DIR] .terragrunt-cache\n[DIR] modules\n[DIR] envs\n[DIR] scripts\n[FILE] .gitignore\n[FILE] terraform.lock.hcl\n[FILE] README.md",
-    "filtered_output": "[DIR] modules\n[DIR] envs\n[DIR] scripts\n[FILE] README.md"
+    "input_data": {
+      "path": "/home/dev/work/extension"
+    },
+    "output_data": "[DIR] .angular\n[DIR] .next\n[DIR] .vite\n[DIR] coverage\n[DIR] lib\n[DIR] mlruns\n[DIR] models\n[DIR] src\n[DIR] tmp\n[FILE] CHANGELOG.md\n[FILE] CODEOWNERS\n[FILE] Dockerfile\n[FILE] go.mod",
+    "filtered_output": "[DIR] src\n[DIR] lib\n[DIR] models\n[FILE] Dockerfile\n[FILE] go.mod\n[FILE] CHANGELOG.md\n[FILE] CODEOWNERS"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/srv/payments"
+    },
+    "output_data": "[DIR] .mypy_cache\n[DIR] .nx\n[DIR] android\n[DIR] examples\n[DIR] k8s\n[DIR] migrations\n[DIR] pkg\n[DIR] tools\n[FILE] .env\n[FILE] Gemfile.lock\n[FILE] README.rst\n[FILE] pnpm-lock.yaml\n[FILE] turbo.json\n[FILE] yarn.lock",
+    "filtered_output": "[DIR] pkg\n[DIR] android\n[DIR] migrations\n[DIR] k8s\n[DIR] examples\n[DIR] tools\n[FILE] README.rst\n[FILE] turbo.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/home/dev/work/lib"
+    },
+    "output_data": "[DIR] .cache\n[DIR] .ipynb_checkpoints\n[DIR] .vscode\n[DIR] apps\n[DIR] bin\n[DIR] build\n[DIR] components\n[DIR] htmlcov\n[DIR] infra\n[DIR] k8s\n[DIR] routes\n[DIR] tests\n[DIR] vendor\n[FILE] .env.local\n[FILE] LICENSE\n[FILE] Pipfile.lock\n[FILE] tsconfig.json\n[FILE] vite.config.ts",
+    "filtered_output": "[DIR] apps\n[DIR] tests\n[DIR] components\n[DIR] routes\n[DIR] k8s\n[DIR] infra\n[FILE] tsconfig.json\n[FILE] vite.config.ts\n[FILE] LICENSE"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/home/dev/work/cdn"
+    },
+    "output_data": "[DIR] .eslintcache\n[DIR] .ipynb_checkpoints\n[DIR] .parcel-cache\n[DIR] Pods\n[DIR] build\n[DIR] envs\n[DIR] templates\n[DIR] tmp\n[FILE] pyproject.toml",
+    "filtered_output": "[DIR] templates\n[DIR] envs\n[FILE] pyproject.toml"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/opt/extension"
+    },
+    "output_data": "[DIR] .git\n[DIR] .ipynb_checkpoints\n[DIR] __pycache__\n[DIR] build\n[DIR] modules\n[DIR] node_modules\n[DIR] public\n[DIR] scripts\n[DIR] target\n[DIR] views\n[FILE] .eslintrc.json\n[FILE] CLAUDE.md\n[FILE] CONTRIBUTING.md",
+    "filtered_output": "[DIR] public\n[DIR] modules\n[DIR] views\n[DIR] scripts\n[FILE] CLAUDE.md\n[FILE] CONTRIBUTING.md\n[FILE] .eslintrc.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/code/search"
+    },
+    "output_data": "[DIR] .eslintcache\n[DIR] .ipynb_checkpoints\n[DIR] .vite\n[DIR] infra\n[DIR] libs\n[DIR] modules\n[FILE] .env.local.bak\n[FILE] CHANGELOG.md\n[FILE] docker-compose.yml\n[FILE] package-lock.json",
+    "filtered_output": "[DIR] libs\n[DIR] modules\n[DIR] infra\n[FILE] docker-compose.yml\n[FILE] CHANGELOG.md"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/repo/reporting"
+    },
+    "output_data": "[DIR] .git\n[DIR] .mypy_cache\n[DIR] .next\n[DIR] .nyc_output\n[DIR] apps\n[DIR] cmd\n[DIR] dist\n[DIR] docs\n[DIR] src\n[DIR] wandb\n[FILE] CODEOWNERS\n[FILE] package.json\n[FILE] requirements.txt",
+    "filtered_output": "[DIR] src\n[DIR] apps\n[DIR] docs\n[DIR] cmd\n[FILE] package.json\n[FILE] requirements.txt\n[FILE] CODEOWNERS"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/marketing-site"
+    },
+    "output_data": "[DIR] Pods\n[DIR] apps\n[DIR] controllers\n[DIR] doc\n[DIR] docs\n[DIR] ios\n[DIR] terraform\n[DIR] tmp\n[FILE] .eslintrc.json\n[FILE] Procfile\n[FILE] netlify.toml\n[FILE] pnpm-lock.yaml",
+    "filtered_output": "[DIR] apps\n[DIR] docs\n[DIR] doc\n[DIR] ios\n[DIR] controllers\n[DIR] terraform\n[FILE] .eslintrc.json\n[FILE] netlify.toml\n[FILE] Procfile"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/monorepo"
+    },
+    "output_data": "[DIR] .cache\n[DIR] .terragrunt-cache\n[DIR] .turbo\n[DIR] components\n[DIR] doc\n[DIR] envs\n[DIR] node_modules\n[DIR] public\n[DIR] routes\n[DIR] static\n[DIR] wandb\n[FILE] CODEOWNERS\n[FILE] README.md\n[FILE] docker-compose.yml\n[FILE] package.json",
+    "filtered_output": "[DIR] doc\n[DIR] public\n[DIR] static\n[DIR] components\n[DIR] routes\n[DIR] envs\n[FILE] README.md\n[FILE] package.json\n[FILE] docker-compose.yml\n[FILE] CODEOWNERS"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/repo/docs-site"
+    },
+    "output_data": "[DIR] .venv\n[DIR] content\n[DIR] coverage\n[DIR] internal\n[DIR] logs\n[DIR] templates\n[FILE] .env\n[FILE] .eslintrc.json\n[FILE] Gemfile.lock\n[FILE] netlify.toml\n[FILE] uv.lock\n[FILE] vercel.json",
+    "filtered_output": "[DIR] content\n[DIR] internal\n[DIR] templates\n[FILE] .eslintrc.json\n[FILE] vercel.json\n[FILE] netlify.toml"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/frontend"
+    },
+    "output_data": "[DIR] .ipynb_checkpoints\n[DIR] .nx\n[DIR] .pytest_cache\n[DIR] api\n[DIR] demos\n[DIR] internal\n[DIR] node_modules\n[DIR] plugins\n[FILE] .DS_Store\n[FILE] .env\n[FILE] Pipfile.lock\n[FILE] Procfile\n[FILE] README.md\n[FILE] setup.cfg\n[FILE] terraform.lock.hcl",
+    "filtered_output": "[DIR] internal\n[DIR] api\n[DIR] plugins\n[DIR] demos\n[FILE] README.md\n[FILE] setup.cfg\n[FILE] Procfile"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/repo/dashboard"
+    },
+    "output_data": "[DIR] .git\n[DIR] .gradle\n[DIR] .idea\n[DIR] .terraform\n[DIR] ansible\n[DIR] content\n[DIR] coverage\n[DIR] lib\n[DIR] models\n[DIR] plugins\n[DIR] tests\n[FILE] CHANGELOG.md\n[FILE] Gemfile.lock\n[FILE] Pipfile.lock\n[FILE] yarn.lock",
+    "filtered_output": "[DIR] tests\n[DIR] content\n[DIR] lib\n[DIR] models\n[DIR] plugins\n[DIR] ansible\n[FILE] CHANGELOG.md"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/analytics"
+    },
+    "output_data": "[DIR] .tox\n[DIR] .vscode\n[DIR] build\n[DIR] coverage\n[DIR] ios\n[DIR] mlruns\n[DIR] plugins\n[FILE] .env.local\n[FILE] LICENSE\n[FILE] Pipfile.lock\n[FILE] composer.lock\n[FILE] docker-compose.yml\n[FILE] go.mod",
+    "filtered_output": "[DIR] ios\n[DIR] plugins\n[FILE] docker-compose.yml\n[FILE] go.mod\n[FILE] LICENSE"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/repo/service"
+    },
+    "output_data": "[DIR] .angular\n[DIR] .pytest_cache\n[DIR] .ruff_cache\n[DIR] .turbo\n[DIR] bin\n[DIR] controllers\n[DIR] ios\n[DIR] k8s\n[DIR] layouts\n[DIR] mlruns\n[DIR] modules\n[DIR] src\n[FILE] LICENSE\n[FILE] composer.lock\n[FILE] requirements.txt\n[FILE] tsconfig.json",
+    "filtered_output": "[DIR] src\n[DIR] layouts\n[DIR] modules\n[DIR] ios\n[DIR] controllers\n[DIR] k8s\n[FILE] tsconfig.json\n[FILE] requirements.txt\n[FILE] LICENSE"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/worker-29"
+    },
+    "output_data": "[DIR] .svelte-kit\n[DIR] .tox\n[DIR] app\n[DIR] apps\n[DIR] doc\n[FILE] .DS_Store\n[FILE] .env.local\n[FILE] .env.local.bak\n[FILE] CLAUDE.md\n[FILE] gatsby-config.js\n[FILE] poetry.lock",
+    "filtered_output": "[DIR] app\n[DIR] apps\n[DIR] doc\n[FILE] gatsby-config.js\n[FILE] CLAUDE.md"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/repo/etl-30"
+    },
+    "output_data": "[DIR] .gradle\n[DIR] .nx\n[DIR] .svelte-kit\n[DIR] __pycache__\n[DIR] demos\n[DIR] doc\n[DIR] logs\n[DIR] src\n[FILE] .env\n[FILE] .env.local\n[FILE] .prettierrc\n[FILE] Cargo.lock\n[FILE] package-lock.json",
+    "filtered_output": "[DIR] src\n[DIR] doc\n[DIR] demos\n[FILE] .prettierrc"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/opt/ml-pipeline-31"
+    },
+    "output_data": "[DIR] .angular\n[DIR] .idea\n[DIR] .nyc_output\n[DIR] .parcel-cache\n[DIR] .turbo\n[DIR] android\n[DIR] build\n[DIR] infra\n[DIR] notebooks\n[DIR] terraform\n[DIR] tools\n[FILE] CLAUDE.md\n[FILE] CODEOWNERS\n[FILE] Procfile\n[FILE] go.sum\n[FILE] vercel.json",
+    "filtered_output": "[DIR] android\n[DIR] notebooks\n[DIR] terraform\n[DIR] infra\n[DIR] tools\n[FILE] CLAUDE.md\n[FILE] CODEOWNERS\n[FILE] vercel.json\n[FILE] Procfile"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/cdn-32"
+    },
+    "output_data": "[DIR] .idea\n[DIR] .next\n[DIR] .ruff_cache\n[DIR] build\n[DIR] components\n[DIR] dags\n[DIR] examples\n[DIR] libs\n[DIR] packages\n[DIR] views\n[FILE] docker-compose.yml\n[FILE] next.config.js\n[FILE] terraform.lock.hcl\n[FILE] vite.config.ts",
+    "filtered_output": "[DIR] packages\n[DIR] components\n[DIR] libs\n[DIR] views\n[DIR] dags\n[DIR] examples\n[FILE] next.config.js\n[FILE] vite.config.ts\n[FILE] docker-compose.yml"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/opt/chat-33"
+    },
+    "output_data": "[DIR] .angular\n[DIR] .git\n[DIR] .terragrunt-cache\n[DIR] .venv\n[DIR] Pods\n[DIR] cmd\n[DIR] packages\n[DIR] routes\n[FILE] .env\n[FILE] README.rst\n[FILE] go.mod\n[FILE] terraform.lock.hcl\n[FILE] tsconfig.json\n[FILE] vercel.json",
+    "filtered_output": "[DIR] packages\n[DIR] cmd\n[DIR] routes\n[FILE] README.rst\n[FILE] tsconfig.json\n[FILE] go.mod\n[FILE] vercel.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/extension-34"
+    },
+    "output_data": "[DIR] .gradle\n[DIR] .svelte-kit\n[DIR] .turbo\n[DIR] .venv\n[DIR] build\n[DIR] coverage\n[DIR] dags\n[DIR] htmlcov\n[DIR] infra\n[DIR] libs\n[DIR] pages\n[DIR] scripts\n[FILE] .gitignore\n[FILE] Cargo.toml\n[FILE] Gemfile.lock\n[FILE] README.md\n[FILE] docker-compose.yml\n[FILE] gatsby-config.js\n[FILE] package-lock.json\n[FILE] poetry.lock",
+    "filtered_output": "[DIR] pages\n[DIR] libs\n[DIR] dags\n[DIR] scripts\n[DIR] infra\n[FILE] README.md\n[FILE] docker-compose.yml\n[FILE] Cargo.toml\n[FILE] gatsby-config.js"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/mobile-35"
+    },
+    "output_data": "[DIR] .ipynb_checkpoints\n[DIR] .terragrunt-cache\n[DIR] .tox\n[DIR] android\n[DIR] lib\n[DIR] models\n[DIR] pkg\n[DIR] static\n[DIR] wandb\n[FILE] docker-compose.yml\n[FILE] requirements.txt",
+    "filtered_output": "[DIR] pkg\n[DIR] static\n[DIR] lib\n[DIR] android\n[DIR] models\n[FILE] docker-compose.yml\n[FILE] requirements.txt"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/home/dev/work/etl-36"
+    },
+    "output_data": "[DIR] .cache\n[DIR] .next\n[DIR] app\n[DIR] apps\n[DIR] internal\n[DIR] packages\n[DIR] pages\n[DIR] pkg\n[FILE] .env.local.bak\n[FILE] tsconfig.json\n[FILE] vercel.json",
+    "filtered_output": "[DIR] app\n[DIR] apps\n[DIR] pkg\n[DIR] packages\n[DIR] pages\n[DIR] internal\n[FILE] tsconfig.json\n[FILE] vercel.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/home/dev/work/crm-37"
+    },
+    "output_data": "[DIR] .pytest_cache\n[DIR] .terragrunt-cache\n[DIR] .venv\n[DIR] coverage\n[DIR] htmlcov\n[DIR] layouts\n[DIR] lib\n[DIR] public\n[DIR] services\n[DIR] target\n[DIR] templates\n[DIR] tests\n[FILE] .DS_Store\n[FILE] Cargo.lock\n[FILE] Dockerfile\n[FILE] package-lock.json\n[FILE] setup.cfg\n[FILE] terraform.lock.hcl",
+    "filtered_output": "[DIR] tests\n[DIR] public\n[DIR] layouts\n[DIR] lib\n[DIR] services\n[DIR] templates\n[FILE] setup.cfg\n[FILE] Dockerfile"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/service-38"
+    },
+    "output_data": "[DIR] .git\n[DIR] .tox\n[DIR] .vite\n[DIR] ansible\n[DIR] apps\n[DIR] controllers\n[DIR] internal\n[DIR] node_modules\n[DIR] scripts\n[DIR] tests\n[FILE] .DS_Store\n[FILE] .env\n[FILE] CONTRIBUTING.md\n[FILE] Gemfile.lock\n[FILE] pyproject.toml\n[FILE] turbo.json",
+    "filtered_output": "[DIR] apps\n[DIR] tests\n[DIR] internal\n[DIR] controllers\n[DIR] scripts\n[DIR] ansible\n[FILE] pyproject.toml\n[FILE] turbo.json\n[FILE] CONTRIBUTING.md"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/srv/ml-pipeline-39"
+    },
+    "output_data": "[DIR] .cache\n[DIR] .nyc_output\n[DIR] .svelte-kit\n[DIR] controllers\n[DIR] notebooks\n[DIR] static\n[DIR] vendor\n[DIR] wandb\n[FILE] .eslintrc.json\n[FILE] CLAUDE.md\n[FILE] metro.config.js",
+    "filtered_output": "[DIR] static\n[DIR] controllers\n[DIR] notebooks\n[FILE] metro.config.js\n[FILE] CLAUDE.md\n[FILE] .eslintrc.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/repo/ingest-40"
+    },
+    "output_data": "[DIR] .nx\n[DIR] .vite\n[DIR] Pods\n[DIR] ansible\n[DIR] envs\n[DIR] templates\n[DIR] tmp\n[FILE] Gemfile.lock\n[FILE] README.md\n[FILE] docker-compose.yml\n[FILE] gatsby-config.js\n[FILE] netlify.toml\n[FILE] uv.lock",
+    "filtered_output": "[DIR] templates\n[DIR] ansible\n[DIR] envs\n[FILE] README.md\n[FILE] docker-compose.yml\n[FILE] gatsby-config.js\n[FILE] netlify.toml"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/code/extension-41"
+    },
+    "output_data": "[DIR] .angular\n[DIR] .cache\n[DIR] .idea\n[DIR] .tox\n[DIR] .vite\n[DIR] content\n[DIR] htmlcov\n[DIR] logs\n[DIR] notebooks\n[DIR] src\n[DIR] terraform\n[FILE] next.config.js",
+    "filtered_output": "[DIR] src\n[DIR] content\n[DIR] notebooks\n[DIR] terraform\n[FILE] next.config.js"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/frontend-42"
+    },
+    "output_data": "[DIR] .nyc_output\n[DIR] .vscode\n[DIR] Pods\n[DIR] api\n[DIR] bin\n[DIR] components\n[DIR] ios\n[FILE] .env.local\n[FILE] gatsby-config.js\n[FILE] go.sum\n[FILE] metro.config.js\n[FILE] turbo.json\n[FILE] uv.lock",
+    "filtered_output": "[DIR] components\n[DIR] ios\n[DIR] api\n[FILE] gatsby-config.js\n[FILE] turbo.json\n[FILE] metro.config.js"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/home/dev/work/worker-43"
+    },
+    "output_data": "[DIR] .gradle\n[DIR] android\n[DIR] coverage\n[DIR] mlruns\n[DIR] node_modules\n[DIR] scripts\n[DIR] tests\n[DIR] wandb\n[FILE] CODEOWNERS\n[FILE] Cargo.lock\n[FILE] Pipfile.lock\n[FILE] tsconfig.json",
+    "filtered_output": "[DIR] tests\n[DIR] android\n[DIR] scripts\n[FILE] tsconfig.json\n[FILE] CODEOWNERS"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/admin-44"
+    },
+    "output_data": "[DIR] .angular\n[DIR] .cache\n[DIR] .git\n[DIR] .vite\n[DIR] build\n[DIR] docs\n[DIR] mlruns\n[DIR] node_modules\n[DIR] scripts\n[FILE] .gitignore\n[FILE] Dockerfile\n[FILE] Gemfile.lock\n[FILE] README.rst\n[FILE] metro.config.js\n[FILE] yarn.lock",
+    "filtered_output": "[DIR] docs\n[DIR] scripts\n[FILE] README.rst\n[FILE] Dockerfile\n[FILE] metro.config.js"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/ingest-45"
+    },
+    "output_data": "[DIR] .cache\n[DIR] .ruff_cache\n[DIR] ansible\n[DIR] api\n[DIR] dags\n[DIR] packages\n[DIR] target\n[DIR] tests\n[FILE] setup.py",
+    "filtered_output": "[DIR] packages\n[DIR] tests\n[DIR] api\n[DIR] dags\n[DIR] ansible\n[FILE] setup.py"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/billing-46"
+    },
+    "output_data": "[DIR] .ipynb_checkpoints\n[DIR] __pycache__\n[DIR] envs\n[DIR] infra\n[DIR] models\n[DIR] node_modules\n[DIR] notebooks\n[DIR] pages\n[DIR] target\n[DIR] tmp\n[FILE] Dockerfile\n[FILE] airflow.cfg\n[FILE] netlify.toml\n[FILE] requirements.txt",
+    "filtered_output": "[DIR] pages\n[DIR] models\n[DIR] notebooks\n[DIR] infra\n[DIR] envs\n[FILE] Dockerfile\n[FILE] requirements.txt\n[FILE] airflow.cfg\n[FILE] netlify.toml"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/opt/admin-47"
+    },
+    "output_data": "[DIR] .angular\n[DIR] .pytest_cache\n[DIR] .svelte-kit\n[DIR] logs\n[DIR] mlruns\n[DIR] packages\n[DIR] public\n[DIR] terraform\n[FILE] go.mod",
+    "filtered_output": "[DIR] packages\n[DIR] public\n[DIR] terraform\n[FILE] go.mod"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/opt/crm-48"
+    },
+    "output_data": "[DIR] .mypy_cache\n[DIR] .next\n[DIR] content\n[DIR] examples\n[DIR] k8s\n[DIR] tools\n[DIR] wandb\n[FILE] CONTRIBUTING.md\n[FILE] metro.config.js\n[FILE] next.config.js\n[FILE] setup.cfg",
+    "filtered_output": "[DIR] content\n[DIR] k8s\n[DIR] examples\n[DIR] tools\n[FILE] setup.cfg\n[FILE] next.config.js\n[FILE] metro.config.js\n[FILE] CONTRIBUTING.md"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/admin-49"
+    },
+    "output_data": "[DIR] .eslintcache\n[DIR] .pytest_cache\n[DIR] .vite\n[DIR] ansible\n[DIR] htmlcov\n[DIR] infra\n[DIR] logs\n[DIR] modules\n[DIR] target\n[DIR] views\n[DIR] wandb\n[FILE] .DS_Store\n[FILE] .env.local\n[FILE] package-lock.json\n[FILE] poetry.lock\n[FILE] requirements.txt",
+    "filtered_output": "[DIR] modules\n[DIR] views\n[DIR] ansible\n[DIR] infra\n[FILE] requirements.txt"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/code/dashboard-50"
+    },
+    "output_data": "[DIR] .angular\n[DIR] .nx\n[DIR] .parcel-cache\n[DIR] .pytest_cache\n[DIR] .svelte-kit\n[DIR] ansible\n[DIR] app\n[DIR] build\n[DIR] pages\n[DIR] tests\n[DIR] wandb\n[FILE] .env\n[FILE] .prettierrc",
+    "filtered_output": "[DIR] app\n[DIR] tests\n[DIR] pages\n[DIR] ansible\n[FILE] .prettierrc"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/reporting-51"
+    },
+    "output_data": "[DIR] .tox\n[DIR] .vite\n[DIR] bin\n[DIR] cmd\n[DIR] internal\n[DIR] migrations\n[DIR] routes\n[DIR] tests\n[FILE] .env\n[FILE] LICENSE\n[FILE] netlify.toml\n[FILE] setup.cfg\n[FILE] terraform.lock.hcl",
+    "filtered_output": "[DIR] tests\n[DIR] cmd\n[DIR] internal\n[DIR] routes\n[DIR] migrations\n[FILE] setup.cfg\n[FILE] LICENSE\n[FILE] netlify.toml"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/code/cdn-52"
+    },
+    "output_data": "[DIR] .eslintcache\n[DIR] .git\n[DIR] .idea\n[DIR] .svelte-kit\n[DIR] .tox\n[DIR] templates\n[DIR] tests\n[FILE] docker-compose.yml\n[FILE] setup.cfg\n[FILE] vite.config.ts",
+    "filtered_output": "[DIR] tests\n[DIR] templates\n[FILE] setup.cfg\n[FILE] vite.config.ts\n[FILE] docker-compose.yml"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/code/cli-53"
+    },
+    "output_data": "[DIR] .parcel-cache\n[DIR] .vscode\n[DIR] build\n[DIR] dags\n[DIR] envs\n[DIR] examples\n[DIR] mlruns\n[DIR] views\n[FILE] .gitignore\n[FILE] Gemfile.lock\n[FILE] pnpm-lock.yaml\n[FILE] tsconfig.json",
+    "filtered_output": "[DIR] views\n[DIR] dags\n[DIR] envs\n[DIR] examples\n[FILE] tsconfig.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/analytics-54"
+    },
+    "output_data": "[DIR] .next\n[DIR] .ruff_cache\n[DIR] .svelte-kit\n[DIR] dist\n[DIR] ios\n[DIR] logs\n[DIR] public\n[DIR] terraform\n[FILE] .DS_Store\n[FILE] composer.lock\n[FILE] go.sum\n[FILE] metro.config.js",
+    "filtered_output": "[DIR] public\n[DIR] ios\n[DIR] terraform\n[FILE] metro.config.js"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/repo/ingest-55"
+    },
+    "output_data": "[DIR] .mypy_cache\n[DIR] .tox\n[DIR] components\n[DIR] doc\n[DIR] migrations\n[DIR] templates\n[DIR] terraform\n[DIR] wandb\n[FILE] .env\n[FILE] CLAUDE.md\n[FILE] CODEOWNERS\n[FILE] go.sum\n[FILE] tsconfig.json\n[FILE] turbo.json",
+    "filtered_output": "[DIR] doc\n[DIR] components\n[DIR] templates\n[DIR] migrations\n[DIR] terraform\n[FILE] tsconfig.json\n[FILE] turbo.json\n[FILE] CLAUDE.md\n[FILE] CODEOWNERS"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/api-56"
+    },
+    "output_data": "[DIR] .idea\n[DIR] .svelte-kit\n[DIR] .terragrunt-cache\n[DIR] Pods\n[DIR] coverage\n[DIR] dags\n[DIR] doc\n[DIR] k8s\n[DIR] tools\n[DIR] vendor\n[FILE] Makefile\n[FILE] docker-compose.yml\n[FILE] gatsby-config.js\n[FILE] metro.config.js\n[FILE] terraform.lock.hcl",
+    "filtered_output": "[DIR] doc\n[DIR] dags\n[DIR] k8s\n[DIR] tools\n[FILE] docker-compose.yml\n[FILE] Makefile\n[FILE] gatsby-config.js\n[FILE] metro.config.js"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/worker-57"
+    },
+    "output_data": "[DIR] .eslintcache\n[DIR] android\n[DIR] apps\n[DIR] bin\n[DIR] migrations\n[DIR] models\n[DIR] node_modules\n[DIR] tools\n[FILE] Cargo.lock\n[FILE] README.rst\n[FILE] gatsby-config.js\n[FILE] go.sum\n[FILE] pnpm-lock.yaml",
+    "filtered_output": "[DIR] apps\n[DIR] android\n[DIR] models\n[DIR] migrations\n[DIR] tools\n[FILE] README.rst\n[FILE] gatsby-config.js"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/srv/api-58"
+    },
+    "output_data": "[DIR] .idea\n[DIR] .ruff_cache\n[DIR] bin\n[DIR] demos\n[DIR] doc\n[DIR] htmlcov\n[DIR] routes\n[FILE] .DS_Store\n[FILE] .env.local.bak\n[FILE] Gemfile.lock\n[FILE] gatsby-config.js",
+    "filtered_output": "[DIR] doc\n[DIR] routes\n[DIR] demos\n[FILE] gatsby-config.js"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/extension-59"
+    },
+    "output_data": "[DIR] .parcel-cache\n[DIR] .turbo\n[DIR] .venv\n[DIR] apps\n[DIR] components\n[DIR] envs\n[DIR] node_modules\n[DIR] packages\n[DIR] scripts\n[DIR] target\n[FILE] CODEOWNERS\n[FILE] next.config.js\n[FILE] pyproject.toml",
+    "filtered_output": "[DIR] apps\n[DIR] packages\n[DIR] components\n[DIR] scripts\n[DIR] envs\n[FILE] pyproject.toml\n[FILE] next.config.js\n[FILE] CODEOWNERS"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/dashboard-60"
+    },
+    "output_data": "[DIR] .idea\n[DIR] .nx\n[DIR] .ruff_cache\n[DIR] .tox\n[DIR] .turbo\n[DIR] internal\n[DIR] modules\n[DIR] target\n[FILE] .env.local.bak\n[FILE] Cargo.lock\n[FILE] composer.lock\n[FILE] go.mod\n[FILE] next.config.js\n[FILE] setup.py",
+    "filtered_output": "[DIR] modules\n[DIR] internal\n[FILE] setup.py\n[FILE] next.config.js\n[FILE] go.mod"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/opt/mobile-61"
+    },
+    "output_data": "[DIR] .mypy_cache\n[DIR] .parcel-cache\n[DIR] Pods\n[DIR] examples\n[DIR] lib\n[DIR] src\n[DIR] templates\n[DIR] tools\n[FILE] .DS_Store\n[FILE] Dockerfile\n[FILE] Gemfile.lock\n[FILE] LICENSE\n[FILE] Procfile\n[FILE] composer.lock\n[FILE] metro.config.js\n[FILE] poetry.lock",
+    "filtered_output": "[DIR] src\n[DIR] lib\n[DIR] templates\n[DIR] examples\n[DIR] tools\n[FILE] Dockerfile\n[FILE] metro.config.js\n[FILE] LICENSE\n[FILE] Procfile"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/repo/ingest-62"
+    },
+    "output_data": "[DIR] .venv\n[DIR] content\n[DIR] htmlcov\n[DIR] migrations\n[DIR] mlruns\n[DIR] models\n[DIR] test\n[DIR] wandb\n[FILE] Cargo.toml\n[FILE] airflow.cfg",
+    "filtered_output": "[DIR] test\n[DIR] content\n[DIR] models\n[DIR] migrations\n[FILE] Cargo.toml\n[FILE] airflow.cfg"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/payments-63"
+    },
+    "output_data": "[DIR] .ipynb_checkpoints\n[DIR] Pods\n[DIR] build\n[DIR] coverage\n[DIR] dags\n[DIR] infra\n[DIR] logs\n[DIR] vendor\n[FILE] .eslintrc.json\n[FILE] .prettierrc\n[FILE] next.config.js",
+    "filtered_output": "[DIR] dags\n[DIR] infra\n[FILE] next.config.js\n[FILE] .prettierrc\n[FILE] .eslintrc.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/srv/extension-64"
+    },
+    "output_data": "[DIR] .ruff_cache\n[DIR] build\n[DIR] ios\n[DIR] mlruns\n[DIR] vendor\n[DIR] views\n[FILE] Pipfile.lock\n[FILE] airflow.cfg\n[FILE] pnpm-lock.yaml\n[FILE] yarn.lock",
+    "filtered_output": "[DIR] ios\n[DIR] views\n[FILE] airflow.cfg"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/code/portal-65"
+    },
+    "output_data": "[DIR] .mypy_cache\n[DIR] .svelte-kit\n[DIR] bin\n[DIR] dist\n[DIR] libs\n[DIR] notebooks\n[DIR] plugins\n[DIR] public\n[FILE] .eslintrc.json\n[FILE] Cargo.lock\n[FILE] gatsby-config.js\n[FILE] vercel.json",
+    "filtered_output": "[DIR] public\n[DIR] libs\n[DIR] plugins\n[DIR] notebooks\n[FILE] gatsby-config.js\n[FILE] .eslintrc.json\n[FILE] vercel.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/srv/docs-site-66"
+    },
+    "output_data": "[DIR] .ipynb_checkpoints\n[DIR] .terraform\n[DIR] .terragrunt-cache\n[DIR] api\n[DIR] node_modules\n[DIR] services\n[DIR] src\n[DIR] terraform\n[DIR] tests\n[FILE] .env.local.bak\n[FILE] metro.config.js\n[FILE] requirements.txt\n[FILE] setup.cfg",
+    "filtered_output": "[DIR] src\n[DIR] tests\n[DIR] services\n[DIR] api\n[DIR] terraform\n[FILE] setup.cfg\n[FILE] requirements.txt\n[FILE] metro.config.js"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/code/api-67"
+    },
+    "output_data": "[DIR] .cache\n[DIR] .idea\n[DIR] android\n[DIR] build\n[DIR] dist\n[DIR] envs\n[DIR] ios\n[DIR] node_modules\n[DIR] packages\n[DIR] pages\n[DIR] templates\n[FILE] .env.local\n[FILE] Dockerfile\n[FILE] Gemfile.lock\n[FILE] Pipfile.lock\n[FILE] README.rst\n[FILE] setup.cfg\n[FILE] setup.py",
+    "filtered_output": "[DIR] packages\n[DIR] pages\n[DIR] ios\n[DIR] android\n[DIR] templates\n[DIR] envs\n[FILE] README.rst\n[FILE] setup.cfg\n[FILE] setup.py\n[FILE] Dockerfile"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/srv/search-68"
+    },
+    "output_data": "[DIR] .cache\n[DIR] .parcel-cache\n[DIR] .terraform\n[DIR] dags\n[DIR] doc\n[DIR] k8s\n[DIR] routes\n[DIR] test\n[DIR] tools\n[FILE] CHANGELOG.md\n[FILE] Makefile\n[FILE] README.rst\n[FILE] vite.config.ts",
+    "filtered_output": "[DIR] test\n[DIR] doc\n[DIR] routes\n[DIR] dags\n[DIR] k8s\n[DIR] tools\n[FILE] README.rst\n[FILE] vite.config.ts\n[FILE] Makefile\n[FILE] CHANGELOG.md"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/crm-69"
+    },
+    "output_data": "[DIR] .ruff_cache\n[DIR] .venv\n[DIR] __pycache__\n[DIR] api\n[DIR] bin\n[DIR] content\n[DIR] demos\n[DIR] internal\n[DIR] libs\n[DIR] pkg\n[DIR] tmp\n[FILE] netlify.toml\n[FILE] uv.lock",
+    "filtered_output": "[DIR] pkg\n[DIR] content\n[DIR] libs\n[DIR] internal\n[DIR] api\n[DIR] demos\n[FILE] netlify.toml"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/code/portal-70"
+    },
+    "output_data": "[DIR] .git\n[DIR] .next\n[DIR] bin\n[DIR] layouts\n[DIR] packages\n[DIR] terraform\n[FILE] netlify.toml\n[FILE] uv.lock\n[FILE] vercel.json\n[FILE] yarn.lock",
+    "filtered_output": "[DIR] packages\n[DIR] layouts\n[DIR] terraform\n[FILE] vercel.json\n[FILE] netlify.toml"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/billing-71"
+    },
+    "output_data": "[DIR] .nx\n[DIR] .venv\n[DIR] app\n[DIR] tests\n[DIR] tools\n[DIR] vendor\n[FILE] Makefile\n[FILE] README.md\n[FILE] package-lock.json\n[FILE] yarn.lock",
+    "filtered_output": "[DIR] app\n[DIR] tests\n[DIR] tools\n[FILE] README.md\n[FILE] Makefile"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/repo/search-72"
+    },
+    "output_data": "[DIR] .gradle\n[DIR] .pytest_cache\n[DIR] .svelte-kit\n[DIR] logs\n[DIR] migrations\n[DIR] packages\n[DIR] plugins\n[DIR] services\n[DIR] target\n[DIR] tests\n[DIR] vendor\n[DIR] views\n[FILE] requirements.txt",
+    "filtered_output": "[DIR] packages\n[DIR] tests\n[DIR] services\n[DIR] views\n[DIR] migrations\n[DIR] plugins\n[FILE] requirements.txt"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/repo/web-73"
+    },
+    "output_data": "[DIR] .mypy_cache\n[DIR] .next\n[DIR] build\n[DIR] controllers\n[DIR] coverage\n[DIR] dags\n[DIR] packages\n[DIR] test\n[DIR] vendor\n[DIR] views\n[DIR] wandb\n[FILE] .env.local.bak\n[FILE] Cargo.lock\n[FILE] composer.lock\n[FILE] docker-compose.yml\n[FILE] go.sum",
+    "filtered_output": "[DIR] packages\n[DIR] test\n[DIR] controllers\n[DIR] views\n[DIR] dags\n[FILE] docker-compose.yml"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/home/dev/work/data-pipeline-74"
+    },
+    "output_data": "[DIR] .svelte-kit\n[DIR] .tox\n[DIR] bin\n[DIR] demos\n[DIR] terraform\n[FILE] .DS_Store\n[FILE] .env\n[FILE] go.mod\n[FILE] package-lock.json\n[FILE] requirements.txt",
+    "filtered_output": "[DIR] terraform\n[DIR] demos\n[FILE] go.mod\n[FILE] requirements.txt"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/repo/dashboard-75"
+    },
+    "output_data": "[DIR] .nx\n[DIR] .terraform\n[DIR] __pycache__\n[DIR] bin\n[DIR] build\n[DIR] dist\n[DIR] doc\n[DIR] lib\n[DIR] services\n[DIR] tmp\n[DIR] tools\n[FILE] composer.lock\n[FILE] go.mod\n[FILE] package-lock.json\n[FILE] pyproject.toml\n[FILE] setup.cfg\n[FILE] uv.lock\n[FILE] vercel.json",
+    "filtered_output": "[DIR] doc\n[DIR] lib\n[DIR] services\n[DIR] tools\n[FILE] pyproject.toml\n[FILE] setup.cfg\n[FILE] go.mod\n[FILE] vercel.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/service-76"
+    },
+    "output_data": "[DIR] .terraform\n[DIR] .vscode\n[DIR] Pods\n[DIR] ansible\n[DIR] logs\n[DIR] node_modules\n[DIR] plugins\n[FILE] LICENSE\n[FILE] setup.py",
+    "filtered_output": "[DIR] plugins\n[DIR] ansible\n[FILE] setup.py\n[FILE] LICENSE"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/cdn-77"
+    },
+    "output_data": "[DIR] .git\n[DIR] .mypy_cache\n[DIR] .nx\n[DIR] .nyc_output\n[DIR] Pods\n[DIR] app\n[DIR] bin\n[DIR] controllers\n[DIR] envs\n[DIR] examples\n[DIR] pages\n[DIR] target\n[DIR] terraform\n[FILE] .DS_Store\n[FILE] README.md\n[FILE] package-lock.json\n[FILE] package.json\n[FILE] terraform.lock.hcl\n[FILE] vite.config.ts\n[FILE] yarn.lock",
+    "filtered_output": "[DIR] app\n[DIR] pages\n[DIR] controllers\n[DIR] terraform\n[DIR] envs\n[DIR] examples\n[FILE] README.md\n[FILE] package.json\n[FILE] vite.config.ts"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/home/dev/work/reporting-78"
+    },
+    "output_data": "[DIR] .ruff_cache\n[DIR] __pycache__\n[DIR] layouts\n[DIR] notebooks\n[DIR] target\n[DIR] vendor\n[FILE] Pipfile.lock\n[FILE] docker-compose.yml\n[FILE] go.mod\n[FILE] package.json\n[FILE] requirements.txt",
+    "filtered_output": "[DIR] layouts\n[DIR] notebooks\n[FILE] package.json\n[FILE] docker-compose.yml\n[FILE] go.mod\n[FILE] requirements.txt"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/code/cdn-79"
+    },
+    "output_data": "[DIR] .eslintcache\n[DIR] .tox\n[DIR] dist\n[DIR] libs\n[DIR] tests\n[DIR] tmp\n[DIR] wandb\n[FILE] .env\n[FILE] CLAUDE.md\n[FILE] LICENSE\n[FILE] gatsby-config.js\n[FILE] go.mod\n[FILE] package-lock.json",
+    "filtered_output": "[DIR] tests\n[DIR] libs\n[FILE] go.mod\n[FILE] gatsby-config.js\n[FILE] CLAUDE.md\n[FILE] LICENSE"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/srv/service-80"
+    },
+    "output_data": "[DIR] api\n[DIR] apps\n[DIR] build\n[DIR] dags\n[DIR] ios\n[DIR] notebooks\n[DIR] pages\n[DIR] target\n[DIR] tmp\n[FILE] Pipfile.lock\n[FILE] README.md\n[FILE] composer.lock",
+    "filtered_output": "[DIR] apps\n[DIR] pages\n[DIR] ios\n[DIR] api\n[DIR] dags\n[DIR] notebooks\n[FILE] README.md"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/home/dev/work/backend-81"
+    },
+    "output_data": "[DIR] .git\n[DIR] .mypy_cache\n[DIR] .nyc_output\n[DIR] .pytest_cache\n[DIR] Pods\n[DIR] controllers\n[DIR] docs\n[DIR] htmlcov\n[DIR] logs\n[DIR] models\n[DIR] scripts\n[DIR] static\n[FILE] metro.config.js\n[FILE] turbo.json",
+    "filtered_output": "[DIR] docs\n[DIR] static\n[DIR] models\n[DIR] controllers\n[DIR] scripts\n[FILE] turbo.json\n[FILE] metro.config.js"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/docs-site-82"
+    },
+    "output_data": "[DIR] .nyc_output\n[DIR] .ruff_cache\n[DIR] .svelte-kit\n[DIR] .terraform\n[DIR] ansible\n[DIR] api\n[DIR] controllers\n[DIR] dist\n[DIR] modules\n[DIR] node_modules\n[DIR] routes\n[DIR] tests\n[FILE] .eslintrc.json\n[FILE] README.md\n[FILE] docker-compose.yml\n[FILE] go.sum\n[FILE] package-lock.json\n[FILE] package.json\n[FILE] terraform.lock.hcl",
+    "filtered_output": "[DIR] tests\n[DIR] modules\n[DIR] api\n[DIR] routes\n[DIR] controllers\n[DIR] ansible\n[FILE] README.md\n[FILE] package.json\n[FILE] docker-compose.yml\n[FILE] .eslintrc.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/lib-83"
+    },
+    "output_data": "[DIR] .cache\n[DIR] .idea\n[DIR] .next\n[DIR] Pods\n[DIR] __pycache__\n[DIR] cmd\n[DIR] coverage\n[DIR] packages\n[DIR] pages\n[DIR] public\n[FILE] go.sum\n[FILE] turbo.json",
+    "filtered_output": "[DIR] packages\n[DIR] public\n[DIR] pages\n[DIR] cmd\n[FILE] turbo.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/opt/cli-84"
+    },
+    "output_data": "[DIR] .cache\n[DIR] .mypy_cache\n[DIR] .next\n[DIR] .parcel-cache\n[DIR] .vscode\n[DIR] dags\n[DIR] demos\n[DIR] doc\n[DIR] logs\n[DIR] packages\n[DIR] static\n[DIR] templates\n[DIR] vendor\n[FILE] CONTRIBUTING.md\n[FILE] LICENSE\n[FILE] Procfile\n[FILE] airflow.cfg\n[FILE] composer.lock\n[FILE] go.sum",
+    "filtered_output": "[DIR] packages\n[DIR] doc\n[DIR] static\n[DIR] templates\n[DIR] dags\n[DIR] demos\n[FILE] airflow.cfg\n[FILE] CONTRIBUTING.md\n[FILE] LICENSE\n[FILE] Procfile"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/web-85"
+    },
+    "output_data": "[DIR] .eslintcache\n[DIR] .idea\n[DIR] .pytest_cache\n[DIR] .ruff_cache\n[DIR] .svelte-kit\n[DIR] .terragrunt-cache\n[DIR] apps\n[DIR] ios\n[DIR] logs\n[DIR] packages\n[DIR] pkg\n[DIR] templates\n[DIR] views\n[FILE] Cargo.lock\n[FILE] Dockerfile\n[FILE] Pipfile.lock\n[FILE] composer.lock\n[FILE] poetry.lock\n[FILE] pyproject.toml\n[FILE] vercel.json",
+    "filtered_output": "[DIR] apps\n[DIR] pkg\n[DIR] packages\n[DIR] ios\n[DIR] views\n[DIR] templates\n[FILE] pyproject.toml\n[FILE] Dockerfile\n[FILE] vercel.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/opt/auth-svc-86"
+    },
+    "output_data": "[DIR] .angular\n[DIR] .cache\n[DIR] .eslintcache\n[DIR] .ipynb_checkpoints\n[DIR] .nx\n[DIR] .parcel-cache\n[DIR] .pytest_cache\n[DIR] test\n[DIR] views\n[FILE] .env.local\n[FILE] .env.local.bak\n[FILE] CHANGELOG.md\n[FILE] Pipfile.lock\n[FILE] pyproject.toml\n[FILE] turbo.json\n[FILE] uv.lock",
+    "filtered_output": "[DIR] test\n[DIR] views\n[FILE] pyproject.toml\n[FILE] turbo.json\n[FILE] CHANGELOG.md"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/repo/lib-87"
+    },
+    "output_data": "[DIR] .ipynb_checkpoints\n[DIR] .next\n[DIR] .pytest_cache\n[DIR] .terragrunt-cache\n[DIR] bin\n[DIR] demos\n[DIR] examples\n[DIR] infra\n[DIR] mlruns\n[DIR] pkg\n[FILE] .env.local\n[FILE] .env.local.bak\n[FILE] Pipfile.lock\n[FILE] docker-compose.yml\n[FILE] pyproject.toml\n[FILE] setup.cfg\n[FILE] uv.lock",
+    "filtered_output": "[DIR] pkg\n[DIR] infra\n[DIR] examples\n[DIR] demos\n[FILE] pyproject.toml\n[FILE] setup.cfg\n[FILE] docker-compose.yml"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/srv/reporting-88"
+    },
+    "output_data": "[DIR] .gradle\n[DIR] .nyc_output\n[DIR] .ruff_cache\n[DIR] docs\n[DIR] infra\n[DIR] ios\n[DIR] terraform\n[DIR] tests\n[FILE] .DS_Store\n[FILE] .eslintrc.json\n[FILE] .gitignore\n[FILE] CONTRIBUTING.md\n[FILE] Pipfile.lock\n[FILE] docker-compose.yml\n[FILE] uv.lock\n[FILE] vercel.json",
+    "filtered_output": "[DIR] tests\n[DIR] docs\n[DIR] ios\n[DIR] terraform\n[DIR] infra\n[FILE] docker-compose.yml\n[FILE] CONTRIBUTING.md\n[FILE] .eslintrc.json\n[FILE] vercel.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/opt/admin-89"
+    },
+    "output_data": "[DIR] .eslintcache\n[DIR] .idea\n[DIR] content\n[DIR] dags\n[DIR] docs\n[DIR] pages\n[FILE] Dockerfile\n[FILE] Gemfile.lock\n[FILE] Pipfile.lock\n[FILE] package-lock.json\n[FILE] pyproject.toml\n[FILE] terraform.lock.hcl",
+    "filtered_output": "[DIR] docs\n[DIR] content\n[DIR] pages\n[DIR] dags\n[FILE] pyproject.toml\n[FILE] Dockerfile"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/opt/analytics-90"
+    },
+    "output_data": "[DIR] .cache\n[DIR] .parcel-cache\n[DIR] doc\n[DIR] examples\n[DIR] logs\n[DIR] mlruns\n[DIR] models\n[DIR] public\n[DIR] static\n[DIR] views\n[FILE] .env\n[FILE] Cargo.lock\n[FILE] go.mod\n[FILE] terraform.lock.hcl\n[FILE] uv.lock",
+    "filtered_output": "[DIR] doc\n[DIR] public\n[DIR] static\n[DIR] models\n[DIR] views\n[DIR] examples\n[FILE] go.mod"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/etl-91"
+    },
+    "output_data": "[DIR] .ipynb_checkpoints\n[DIR] .tox\n[DIR] .turbo\n[DIR] .venv\n[DIR] ansible\n[DIR] build\n[DIR] coverage\n[DIR] services\n[DIR] views\n[FILE] .DS_Store\n[FILE] .prettierrc\n[FILE] Cargo.toml\n[FILE] Dockerfile\n[FILE] go.sum\n[FILE] package-lock.json\n[FILE] turbo.json",
+    "filtered_output": "[DIR] services\n[DIR] views\n[DIR] ansible\n[FILE] Dockerfile\n[FILE] Cargo.toml\n[FILE] turbo.json\n[FILE] .prettierrc"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/chat-92"
+    },
+    "output_data": "[DIR] .parcel-cache\n[DIR] libs\n[DIR] logs\n[DIR] modules\n[DIR] public\n[DIR] tests\n[DIR] tests\n[DIR] views\n[FILE] .gitignore\n[FILE] go.mod\n[FILE] poetry.lock\n[FILE] vercel.json",
+    "filtered_output": "[DIR] tests\n[DIR] tests\n[DIR] public\n[DIR] libs\n[DIR] modules\n[DIR] views\n[FILE] go.mod\n[FILE] vercel.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/repo/web-93"
+    },
+    "output_data": "[DIR] .next\n[DIR] bin\n[DIR] components\n[DIR] models\n[DIR] pages\n[DIR] services\n[DIR] tests\n[DIR] tools\n[FILE] docker-compose.yml\n[FILE] package-lock.json",
+    "filtered_output": "[DIR] tests\n[DIR] pages\n[DIR] components\n[DIR] services\n[DIR] models\n[DIR] tools\n[FILE] docker-compose.yml"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/service-94"
+    },
+    "output_data": "[DIR] .gradle\n[DIR] .next\n[DIR] .vscode\n[DIR] docs\n[DIR] envs\n[DIR] migrations\n[DIR] src\n[DIR] tmp\n[DIR] views\n[FILE] README.md\n[FILE] pnpm-lock.yaml\n[FILE] terraform.lock.hcl\n[FILE] uv.lock",
+    "filtered_output": "[DIR] src\n[DIR] docs\n[DIR] views\n[DIR] migrations\n[DIR] envs\n[FILE] README.md"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/worker-95"
+    },
+    "output_data": "[DIR] .vite\n[DIR] components\n[DIR] dist\n[DIR] pkg\n[FILE] .eslintrc.json\n[FILE] .gitignore\n[FILE] CLAUDE.md\n[FILE] CONTRIBUTING.md\n[FILE] Gemfile.lock\n[FILE] composer.lock\n[FILE] go.sum\n[FILE] requirements.txt",
+    "filtered_output": "[DIR] pkg\n[DIR] components\n[FILE] requirements.txt\n[FILE] CLAUDE.md\n[FILE] CONTRIBUTING.md\n[FILE] .eslintrc.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/srv/worker-96"
+    },
+    "output_data": "[DIR] .gradle\n[DIR] .ruff_cache\n[DIR] .terraform\n[DIR] controllers\n[DIR] modules\n[DIR] src\n[FILE] airflow.cfg\n[FILE] go.mod\n[FILE] next.config.js",
+    "filtered_output": "[DIR] src\n[DIR] modules\n[DIR] controllers\n[FILE] next.config.js\n[FILE] go.mod\n[FILE] airflow.cfg"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/code/auth-svc-97"
+    },
+    "output_data": "[DIR] .cache\n[DIR] .mypy_cache\n[DIR] Pods\n[DIR] app\n[DIR] apps\n[DIR] migrations\n[DIR] models\n[DIR] node_modules\n[DIR] plugins\n[DIR] terraform\n[FILE] .gitignore\n[FILE] CODEOWNERS\n[FILE] Gemfile.lock\n[FILE] Makefile\n[FILE] Pipfile.lock\n[FILE] README.md\n[FILE] vite.config.ts\n[FILE] yarn.lock",
+    "filtered_output": "[DIR] app\n[DIR] apps\n[DIR] models\n[DIR] migrations\n[DIR] plugins\n[DIR] terraform\n[FILE] README.md\n[FILE] vite.config.ts\n[FILE] Makefile\n[FILE] CODEOWNERS"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/billing-98"
+    },
+    "output_data": "[DIR] .pytest_cache\n[DIR] .svelte-kit\n[DIR] examples\n[DIR] migrations\n[DIR] templates\n[FILE] .eslintrc.json\n[FILE] .gitignore\n[FILE] poetry.lock\n[FILE] setup.py",
+    "filtered_output": "[DIR] templates\n[DIR] migrations\n[DIR] examples\n[FILE] setup.py\n[FILE] .eslintrc.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/opt/portal-99"
+    },
+    "output_data": "[DIR] android\n[DIR] coverage\n[DIR] ios\n[DIR] mlruns\n[FILE] .env\n[FILE] gatsby-config.js\n[FILE] metro.config.js\n[FILE] package-lock.json\n[FILE] vercel.json\n[FILE] vite.config.ts",
+    "filtered_output": "[DIR] ios\n[DIR] android\n[FILE] vite.config.ts\n[FILE] gatsby-config.js\n[FILE] metro.config.js\n[FILE] vercel.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/reporting-100"
+    },
+    "output_data": "[DIR] .gradle\n[DIR] .ruff_cache\n[DIR] .terraform\n[DIR] .vite\n[DIR] api\n[DIR] controllers\n[DIR] services\n[DIR] tests\n[DIR] wandb\n[FILE] Cargo.toml\n[FILE] Procfile\n[FILE] composer.lock\n[FILE] docker-compose.yml\n[FILE] package.json\n[FILE] poetry.lock\n[FILE] yarn.lock",
+    "filtered_output": "[DIR] tests\n[DIR] services\n[DIR] api\n[DIR] controllers\n[FILE] package.json\n[FILE] docker-compose.yml\n[FILE] Cargo.toml\n[FILE] Procfile"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/opt/marketing-site-101"
+    },
+    "output_data": "[DIR] .nyc_output\n[DIR] .parcel-cache\n[DIR] .pytest_cache\n[DIR] .turbo\n[DIR] Pods\n[DIR] android\n[DIR] demos\n[DIR] modules\n[DIR] test\n[DIR] tests\n[DIR] tools\n[FILE] .env.local.bak\n[FILE] CHANGELOG.md\n[FILE] CLAUDE.md\n[FILE] package-lock.json\n[FILE] requirements.txt",
+    "filtered_output": "[DIR] test\n[DIR] tests\n[DIR] modules\n[DIR] android\n[DIR] demos\n[DIR] tools\n[FILE] requirements.txt\n[FILE] CLAUDE.md\n[FILE] CHANGELOG.md"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/srv/crm-102"
+    },
+    "output_data": "[DIR] .next\n[DIR] .pytest_cache\n[DIR] .terraform\n[DIR] .terragrunt-cache\n[DIR] .vscode\n[DIR] app\n[DIR] bin\n[DIR] doc\n[DIR] logs\n[DIR] plugins\n[DIR] public\n[DIR] services\n[FILE] .DS_Store\n[FILE] Cargo.lock\n[FILE] README.rst\n[FILE] next.config.js\n[FILE] pyproject.toml\n[FILE] setup.py",
+    "filtered_output": "[DIR] app\n[DIR] doc\n[DIR] public\n[DIR] services\n[DIR] plugins\n[FILE] README.rst\n[FILE] pyproject.toml\n[FILE] setup.py\n[FILE] next.config.js"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/home/dev/work/cdn-103"
+    },
+    "output_data": "[DIR] .eslintcache\n[DIR] .gradle\n[DIR] .nx\n[DIR] .terragrunt-cache\n[DIR] .vite\n[DIR] android\n[DIR] api\n[DIR] build\n[DIR] dist\n[DIR] docs\n[DIR] libs\n[DIR] notebooks\n[DIR] services\n[FILE] .env.local\n[FILE] README.md\n[FILE] pnpm-lock.yaml\n[FILE] setup.cfg",
+    "filtered_output": "[DIR] docs\n[DIR] libs\n[DIR] android\n[DIR] services\n[DIR] api\n[DIR] notebooks\n[FILE] README.md\n[FILE] setup.cfg"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/analytics-104"
+    },
+    "output_data": "[DIR] .mypy_cache\n[DIR] .ruff_cache\n[DIR] .vscode\n[DIR] Pods\n[DIR] content\n[DIR] docs\n[DIR] packages\n[DIR] tests\n[DIR] vendor\n[DIR] views\n[FILE] .env.local\n[FILE] CHANGELOG.md\n[FILE] Procfile\n[FILE] composer.lock\n[FILE] uv.lock\n[FILE] yarn.lock",
+    "filtered_output": "[DIR] packages\n[DIR] tests\n[DIR] docs\n[DIR] content\n[DIR] views\n[FILE] CHANGELOG.md\n[FILE] Procfile"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/srv/chat-105"
+    },
+    "output_data": "[DIR] .cache\n[DIR] .venv\n[DIR] .vite\n[DIR] pages\n[DIR] plugins\n[DIR] services\n[FILE] .DS_Store\n[FILE] Cargo.lock\n[FILE] tsconfig.json",
+    "filtered_output": "[DIR] pages\n[DIR] services\n[DIR] plugins\n[FILE] tsconfig.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/code/portal-106"
+    },
+    "output_data": "[DIR] .gradle\n[DIR] .mypy_cache\n[DIR] .tox\n[DIR] build\n[DIR] envs\n[DIR] packages\n[DIR] tests\n[DIR] vendor\n[FILE] CHANGELOG.md\n[FILE] CODEOWNERS\n[FILE] Cargo.toml",
+    "filtered_output": "[DIR] packages\n[DIR] tests\n[DIR] envs\n[FILE] Cargo.toml\n[FILE] CHANGELOG.md\n[FILE] CODEOWNERS"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/repo/ml-pipeline-107"
+    },
+    "output_data": "[DIR] .gradle\n[DIR] .next\n[DIR] demos\n[DIR] docs\n[DIR] internal\n[DIR] k8s\n[DIR] static\n[DIR] terraform\n[FILE] Pipfile.lock\n[FILE] README.rst\n[FILE] netlify.toml\n[FILE] turbo.json\n[FILE] vercel.json\n[FILE] yarn.lock",
+    "filtered_output": "[DIR] docs\n[DIR] static\n[DIR] internal\n[DIR] terraform\n[DIR] k8s\n[DIR] demos\n[FILE] README.rst\n[FILE] turbo.json\n[FILE] vercel.json\n[FILE] netlify.toml"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/srv/dashboard-108"
+    },
+    "output_data": "[DIR] .vscode\n[DIR] build\n[DIR] internal\n[DIR] modules\n[DIR] notebooks\n[DIR] wandb\n[FILE] go.sum\n[FILE] vite.config.ts\n[FILE] yarn.lock",
+    "filtered_output": "[DIR] modules\n[DIR] internal\n[DIR] notebooks\n[FILE] vite.config.ts"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/opt/reporting-109"
+    },
+    "output_data": "[DIR] .pytest_cache\n[DIR] .ruff_cache\n[DIR] cmd\n[DIR] doc\n[DIR] envs\n[DIR] infra\n[DIR] k8s\n[DIR] public\n[FILE] Gemfile.lock\n[FILE] go.sum\n[FILE] pnpm-lock.yaml\n[FILE] terraform.lock.hcl\n[FILE] vercel.json",
+    "filtered_output": "[DIR] doc\n[DIR] public\n[DIR] cmd\n[DIR] k8s\n[DIR] infra\n[DIR] envs\n[FILE] vercel.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/repo/payments-110"
+    },
+    "output_data": "[DIR] .mypy_cache\n[DIR] .svelte-kit\n[DIR] .turbo\n[DIR] __pycache__\n[DIR] app\n[DIR] dags\n[DIR] examples\n[DIR] ios\n[DIR] modules\n[DIR] scripts\n[FILE] .env\n[FILE] .env.local\n[FILE] .eslintrc.json\n[FILE] Cargo.lock\n[FILE] Cargo.toml\n[FILE] LICENSE\n[FILE] next.config.js",
+    "filtered_output": "[DIR] app\n[DIR] modules\n[DIR] ios\n[DIR] dags\n[DIR] scripts\n[DIR] examples\n[FILE] next.config.js\n[FILE] Cargo.toml\n[FILE] LICENSE\n[FILE] .eslintrc.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/cli-111"
+    },
+    "output_data": "[DIR] .cache\n[DIR] .svelte-kit\n[DIR] android\n[DIR] api\n[DIR] demos\n[DIR] dist\n[DIR] doc\n[DIR] docs\n[DIR] internal\n[DIR] wandb\n[FILE] Cargo.lock\n[FILE] metro.config.js\n[FILE] package-lock.json\n[FILE] setup.cfg\n[FILE] turbo.json\n[FILE] yarn.lock",
+    "filtered_output": "[DIR] docs\n[DIR] doc\n[DIR] android\n[DIR] internal\n[DIR] api\n[DIR] demos\n[FILE] setup.cfg\n[FILE] turbo.json\n[FILE] metro.config.js"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/web-112"
+    },
+    "output_data": "[DIR] .eslintcache\n[DIR] .svelte-kit\n[DIR] .venv\n[DIR] .vite\n[DIR] android\n[DIR] components\n[DIR] envs\n[DIR] public\n[DIR] routes\n[DIR] target\n[FILE] .prettierrc\n[FILE] package.json\n[FILE] tsconfig.json",
+    "filtered_output": "[DIR] public\n[DIR] components\n[DIR] android\n[DIR] routes\n[DIR] envs\n[FILE] package.json\n[FILE] tsconfig.json\n[FILE] .prettierrc"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/code/lib-113"
+    },
+    "output_data": "[DIR] .angular\n[DIR] .git\n[DIR] .idea\n[DIR] components\n[DIR] internal\n[DIR] k8s\n[DIR] layouts\n[DIR] mlruns\n[DIR] node_modules\n[DIR] pkg\n[FILE] .env.local\n[FILE] .env.local.bak\n[FILE] Dockerfile\n[FILE] uv.lock",
+    "filtered_output": "[DIR] pkg\n[DIR] layouts\n[DIR] components\n[DIR] internal\n[DIR] k8s\n[FILE] Dockerfile"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/search-114"
+    },
+    "output_data": "[DIR] .eslintcache\n[DIR] .mypy_cache\n[DIR] .parcel-cache\n[DIR] .terragrunt-cache\n[DIR] ansible\n[DIR] api\n[DIR] apps\n[DIR] pkg\n[DIR] services\n[FILE] .env\n[FILE] Gemfile.lock\n[FILE] Makefile\n[FILE] composer.lock\n[FILE] go.sum\n[FILE] metro.config.js",
+    "filtered_output": "[DIR] apps\n[DIR] pkg\n[DIR] services\n[DIR] api\n[DIR] ansible\n[FILE] Makefile\n[FILE] metro.config.js"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/home/dev/work/analytics-115"
+    },
+    "output_data": "[DIR] .eslintcache\n[DIR] api\n[DIR] coverage\n[DIR] htmlcov\n[DIR] services\n[DIR] test\n[FILE] .env.local\n[FILE] .gitignore\n[FILE] .prettierrc\n[FILE] Makefile\n[FILE] metro.config.js\n[FILE] package-lock.json\n[FILE] yarn.lock",
+    "filtered_output": "[DIR] test\n[DIR] services\n[DIR] api\n[FILE] Makefile\n[FILE] metro.config.js\n[FILE] .prettierrc"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/chat-116"
+    },
+    "output_data": "[DIR] .turbo\n[DIR] bin\n[DIR] doc\n[DIR] htmlcov\n[DIR] infra\n[DIR] notebooks\n[DIR] plugins\n[DIR] target\n[DIR] templates\n[FILE] .DS_Store\n[FILE] .env.local.bak\n[FILE] CLAUDE.md\n[FILE] composer.lock\n[FILE] docker-compose.yml\n[FILE] uv.lock",
+    "filtered_output": "[DIR] doc\n[DIR] templates\n[DIR] plugins\n[DIR] notebooks\n[DIR] infra\n[FILE] docker-compose.yml\n[FILE] CLAUDE.md"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/etl-117"
+    },
+    "output_data": "[DIR] .angular\n[DIR] .ipynb_checkpoints\n[DIR] .terraform\n[DIR] .venv\n[DIR] cmd\n[DIR] logs\n[DIR] services\n[DIR] target\n[FILE] go.mod",
+    "filtered_output": "[DIR] cmd\n[DIR] services\n[FILE] go.mod"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/repo/payments-118"
+    },
+    "output_data": "[DIR] coverage\n[DIR] dist\n[DIR] envs\n[DIR] examples\n[DIR] notebooks\n[FILE] LICENSE\n[FILE] next.config.js\n[FILE] setup.py\n[FILE] vercel.json",
+    "filtered_output": "[DIR] notebooks\n[DIR] envs\n[DIR] examples\n[FILE] setup.py\n[FILE] next.config.js\n[FILE] LICENSE\n[FILE] vercel.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/ml-pipeline-119"
+    },
+    "output_data": "[DIR] .gradle\n[DIR] .vscode\n[DIR] doc\n[DIR] envs\n[DIR] layouts\n[DIR] plugins\n[DIR] routes\n[DIR] tmp\n[FILE] .env.local.bak\n[FILE] CHANGELOG.md\n[FILE] CODEOWNERS\n[FILE] README.rst\n[FILE] go.sum\n[FILE] netlify.toml",
+    "filtered_output": "[DIR] doc\n[DIR] layouts\n[DIR] routes\n[DIR] plugins\n[DIR] envs\n[FILE] README.rst\n[FILE] CHANGELOG.md\n[FILE] CODEOWNERS\n[FILE] netlify.toml"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/lib-120"
+    },
+    "output_data": "[DIR] .angular\n[DIR] .cache\n[DIR] .ipynb_checkpoints\n[DIR] .next\n[DIR] .vite\n[DIR] cmd\n[DIR] coverage\n[DIR] scripts\n[DIR] templates\n[DIR] wandb\n[FILE] .prettierrc\n[FILE] LICENSE\n[FILE] composer.lock\n[FILE] netlify.toml",
+    "filtered_output": "[DIR] cmd\n[DIR] templates\n[DIR] scripts\n[FILE] LICENSE\n[FILE] .prettierrc\n[FILE] netlify.toml"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/cdn-121"
+    },
+    "output_data": "[DIR] .idea\n[DIR] .terragrunt-cache\n[DIR] android\n[DIR] dags\n[DIR] dist\n[DIR] migrations\n[DIR] mlruns\n[FILE] .DS_Store\n[FILE] .env.local\n[FILE] .eslintrc.json\n[FILE] CODEOWNERS\n[FILE] metro.config.js\n[FILE] terraform.lock.hcl",
+    "filtered_output": "[DIR] android\n[DIR] migrations\n[DIR] dags\n[FILE] metro.config.js\n[FILE] CODEOWNERS\n[FILE] .eslintrc.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/mobile-122"
+    },
+    "output_data": "[DIR] .angular\n[DIR] .eslintcache\n[DIR] .mypy_cache\n[DIR] __pycache__\n[DIR] coverage\n[DIR] modules\n[DIR] tests\n[DIR] tmp\n[DIR] wandb\n[FILE] .gitignore\n[FILE] CONTRIBUTING.md\n[FILE] Cargo.lock\n[FILE] Gemfile.lock\n[FILE] pnpm-lock.yaml\n[FILE] requirements.txt\n[FILE] vite.config.ts",
+    "filtered_output": "[DIR] tests\n[DIR] modules\n[FILE] vite.config.ts\n[FILE] requirements.txt\n[FILE] CONTRIBUTING.md"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/code/extension-123"
+    },
+    "output_data": "[DIR] .angular\n[DIR] .git\n[DIR] build\n[DIR] examples\n[DIR] node_modules\n[DIR] pages\n[DIR] pkg\n[FILE] Cargo.lock\n[FILE] Gemfile.lock\n[FILE] Pipfile.lock\n[FILE] go.mod\n[FILE] poetry.lock",
+    "filtered_output": "[DIR] pkg\n[DIR] pages\n[DIR] examples\n[FILE] go.mod"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/srv/etl-124"
+    },
+    "output_data": "[DIR] .idea\n[DIR] android\n[DIR] demos\n[DIR] logs\n[DIR] modules\n[FILE] .prettierrc",
+    "filtered_output": "[DIR] modules\n[DIR] android\n[DIR] demos\n[FILE] .prettierrc"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/repo/admin-125"
+    },
+    "output_data": "[DIR] .git\n[DIR] .pytest_cache\n[DIR] api\n[DIR] apps\n[DIR] dags\n[DIR] node_modules\n[DIR] target\n[FILE] CODEOWNERS\n[FILE] Cargo.lock\n[FILE] composer.lock\n[FILE] netlify.toml",
+    "filtered_output": "[DIR] apps\n[DIR] api\n[DIR] dags\n[FILE] CODEOWNERS\n[FILE] netlify.toml"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/code/reporting-126"
+    },
+    "output_data": "[DIR] .ipynb_checkpoints\n[DIR] .nx\n[DIR] .svelte-kit\n[DIR] content\n[DIR] dags\n[DIR] docs\n[DIR] libs\n[DIR] plugins\n[DIR] templates\n[FILE] docker-compose.yml",
+    "filtered_output": "[DIR] docs\n[DIR] content\n[DIR] libs\n[DIR] templates\n[DIR] dags\n[DIR] plugins\n[FILE] docker-compose.yml"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/search-127"
+    },
+    "output_data": "[DIR] ansible\n[DIR] content\n[DIR] envs\n[DIR] htmlcov\n[DIR] node_modules\n[DIR] static\n[FILE] docker-compose.yml\n[FILE] go.mod\n[FILE] turbo.json\n[FILE] uv.lock\n[FILE] vercel.json",
+    "filtered_output": "[DIR] static\n[DIR] content\n[DIR] ansible\n[DIR] envs\n[FILE] docker-compose.yml\n[FILE] go.mod\n[FILE] turbo.json\n[FILE] vercel.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/etl-128"
+    },
+    "output_data": "[DIR] .git\n[DIR] .ipynb_checkpoints\n[DIR] bin\n[DIR] lib\n[DIR] models\n[DIR] src\n[DIR] target\n[FILE] .gitignore\n[FILE] .prettierrc\n[FILE] Cargo.lock\n[FILE] requirements.txt",
+    "filtered_output": "[DIR] src\n[DIR] lib\n[DIR] models\n[FILE] requirements.txt\n[FILE] .prettierrc"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/home/dev/work/crm-129"
+    },
+    "output_data": "[DIR] .angular\n[DIR] .next\n[DIR] api\n[DIR] build\n[DIR] ios\n[DIR] plugins\n[DIR] public\n[DIR] tests\n[FILE] .DS_Store\n[FILE] .env.local.bak\n[FILE] CLAUDE.md\n[FILE] Makefile\n[FILE] next.config.js\n[FILE] poetry.lock",
+    "filtered_output": "[DIR] tests\n[DIR] public\n[DIR] ios\n[DIR] api\n[DIR] plugins\n[FILE] next.config.js\n[FILE] Makefile\n[FILE] CLAUDE.md"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/repo/billing-130"
+    },
+    "output_data": "[DIR] .eslintcache\n[DIR] .next\n[DIR] .ruff_cache\n[DIR] __pycache__\n[DIR] components\n[DIR] coverage\n[DIR] dist\n[DIR] infra\n[DIR] layouts\n[DIR] notebooks\n[DIR] tests\n[DIR] tools\n[FILE] .env.local\n[FILE] CHANGELOG.md\n[FILE] Makefile\n[FILE] package-lock.json\n[FILE] pyproject.toml\n[FILE] turbo.json",
+    "filtered_output": "[DIR] tests\n[DIR] layouts\n[DIR] components\n[DIR] notebooks\n[DIR] infra\n[DIR] tools\n[FILE] pyproject.toml\n[FILE] Makefile\n[FILE] turbo.json\n[FILE] CHANGELOG.md"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/opt/crm-131"
+    },
+    "output_data": "[DIR] .svelte-kit\n[DIR] .venv\n[DIR] .vscode\n[DIR] __pycache__\n[DIR] dags\n[DIR] pkg\n[DIR] plugins\n[DIR] target\n[DIR] templates\n[DIR] tests\n[DIR] views\n[FILE] .env\n[FILE] .gitignore\n[FILE] go.mod\n[FILE] go.sum\n[FILE] turbo.json",
+    "filtered_output": "[DIR] pkg\n[DIR] tests\n[DIR] views\n[DIR] templates\n[DIR] dags\n[DIR] plugins\n[FILE] go.mod\n[FILE] turbo.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/opt/search-132"
+    },
+    "output_data": "[DIR] .angular\n[DIR] .pytest_cache\n[DIR] apps\n[DIR] controllers\n[DIR] internal\n[DIR] packages\n[DIR] scripts\n[DIR] tools\n[FILE] .env\n[FILE] Procfile\n[FILE] yarn.lock",
+    "filtered_output": "[DIR] apps\n[DIR] packages\n[DIR] internal\n[DIR] controllers\n[DIR] scripts\n[DIR] tools\n[FILE] Procfile"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/opt/cdn-133"
+    },
+    "output_data": "[DIR] .idea\n[DIR] .nx\n[DIR] dist\n[DIR] htmlcov\n[DIR] models\n[DIR] services\n[DIR] tests\n[DIR] tools\n[DIR] views\n[FILE] .DS_Store\n[FILE] .gitignore\n[FILE] CONTRIBUTING.md\n[FILE] netlify.toml\n[FILE] pnpm-lock.yaml\n[FILE] uv.lock",
+    "filtered_output": "[DIR] tests\n[DIR] services\n[DIR] models\n[DIR] views\n[DIR] tools\n[FILE] CONTRIBUTING.md\n[FILE] netlify.toml"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/home/dev/work/cdn-134"
+    },
+    "output_data": "[DIR] .next\n[DIR] controllers\n[DIR] coverage\n[DIR] dist\n[DIR] models\n[DIR] scripts\n[DIR] templates\n[DIR] wandb\n[FILE] next.config.js\n[FILE] requirements.txt",
+    "filtered_output": "[DIR] models\n[DIR] controllers\n[DIR] templates\n[DIR] scripts\n[FILE] next.config.js\n[FILE] requirements.txt"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/srv/portal-135"
+    },
+    "output_data": "[DIR] .parcel-cache\n[DIR] __pycache__\n[DIR] app\n[DIR] components\n[DIR] envs\n[DIR] layouts\n[DIR] packages\n[FILE] CLAUDE.md\n[FILE] package-lock.json",
+    "filtered_output": "[DIR] app\n[DIR] packages\n[DIR] layouts\n[DIR] components\n[DIR] envs\n[FILE] CLAUDE.md"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/repo/lib-136"
+    },
+    "output_data": "[DIR] .cache\n[DIR] layouts\n[DIR] pkg\n[DIR] scripts\n[DIR] target\n[DIR] vendor\n[FILE] Cargo.lock\n[FILE] Dockerfile\n[FILE] turbo.json",
+    "filtered_output": "[DIR] pkg\n[DIR] layouts\n[DIR] scripts\n[FILE] Dockerfile\n[FILE] turbo.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/data-pipeline-137"
+    },
+    "output_data": "[DIR] .eslintcache\n[DIR] .gradle\n[DIR] .mypy_cache\n[DIR] .next\n[DIR] .terragrunt-cache\n[DIR] .tox\n[DIR] k8s\n[DIR] pkg\n[DIR] static\n[DIR] terraform\n[DIR] vendor\n[FILE] Makefile\n[FILE] Pipfile.lock\n[FILE] README.rst\n[FILE] gatsby-config.js\n[FILE] go.sum\n[FILE] metro.config.js\n[FILE] terraform.lock.hcl",
+    "filtered_output": "[DIR] pkg\n[DIR] static\n[DIR] terraform\n[DIR] k8s\n[FILE] README.rst\n[FILE] Makefile\n[FILE] gatsby-config.js\n[FILE] metro.config.js"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/opt/etl-138"
+    },
+    "output_data": "[DIR] .gradle\n[DIR] .terragrunt-cache\n[DIR] .tox\n[DIR] .vscode\n[DIR] build\n[DIR] doc\n[DIR] ios\n[DIR] templates\n[FILE] go.sum\n[FILE] metro.config.js",
+    "filtered_output": "[DIR] doc\n[DIR] ios\n[DIR] templates\n[FILE] metro.config.js"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/cli-139"
+    },
+    "output_data": "[DIR] .nyc_output\n[DIR] .pytest_cache\n[DIR] .terragrunt-cache\n[DIR] .vite\n[DIR] __pycache__\n[DIR] coverage\n[DIR] services\n[DIR] views\n[DIR] wandb\n[FILE] metro.config.js\n[FILE] poetry.lock",
+    "filtered_output": "[DIR] services\n[DIR] views\n[FILE] metro.config.js"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/opt/etl-140"
+    },
+    "output_data": "[DIR] .cache\n[DIR] .vscode\n[DIR] content\n[DIR] htmlcov\n[DIR] ios\n[DIR] layouts\n[DIR] src\n[DIR] tmp\n[DIR] vendor\n[FILE] CODEOWNERS\n[FILE] Cargo.lock\n[FILE] terraform.lock.hcl",
+    "filtered_output": "[DIR] src\n[DIR] content\n[DIR] layouts\n[DIR] ios\n[FILE] CODEOWNERS"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/srv/billing-141"
+    },
+    "output_data": "[DIR] .pytest_cache\n[DIR] .terraform\n[DIR] .tox\n[DIR] ios\n[DIR] lib\n[DIR] plugins\n[DIR] services\n[DIR] tmp\n[DIR] vendor\n[FILE] .DS_Store\n[FILE] .eslintrc.json\n[FILE] .gitignore\n[FILE] CODEOWNERS\n[FILE] Cargo.lock\n[FILE] requirements.txt\n[FILE] setup.cfg\n[FILE] yarn.lock",
+    "filtered_output": "[DIR] lib\n[DIR] ios\n[DIR] services\n[DIR] plugins\n[FILE] setup.cfg\n[FILE] requirements.txt\n[FILE] CODEOWNERS\n[FILE] .eslintrc.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/code/ingest-142"
+    },
+    "output_data": "[DIR] .vite\n[DIR] .vscode\n[DIR] bin\n[DIR] cmd\n[DIR] content\n[DIR] doc\n[DIR] k8s\n[DIR] modules\n[DIR] routes\n[FILE] .DS_Store\n[FILE] .env.local.bak\n[FILE] Cargo.toml\n[FILE] airflow.cfg",
+    "filtered_output": "[DIR] doc\n[DIR] content\n[DIR] modules\n[DIR] cmd\n[DIR] routes\n[DIR] k8s\n[FILE] Cargo.toml\n[FILE] airflow.cfg"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/srv/reporting-143"
+    },
+    "output_data": "[DIR] .gradle\n[DIR] .pytest_cache\n[DIR] docs\n[DIR] internal\n[DIR] public\n[DIR] scripts\n[DIR] templates\n[FILE] CONTRIBUTING.md\n[FILE] Procfile\n[FILE] metro.config.js\n[FILE] package.json",
+    "filtered_output": "[DIR] docs\n[DIR] public\n[DIR] internal\n[DIR] templates\n[DIR] scripts\n[FILE] package.json\n[FILE] metro.config.js\n[FILE] CONTRIBUTING.md\n[FILE] Procfile"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/srv/marketing-site-144"
+    },
+    "output_data": "[DIR] .git\n[DIR] .mypy_cache\n[DIR] .next\n[DIR] routes\n[DIR] src\n[FILE] .env.local\n[FILE] CONTRIBUTING.md\n[FILE] vercel.json",
+    "filtered_output": "[DIR] src\n[DIR] routes\n[FILE] CONTRIBUTING.md\n[FILE] vercel.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/home/dev/work/monorepo-145"
+    },
+    "output_data": "[DIR] .eslintcache\n[DIR] .nx\n[DIR] .nyc_output\n[DIR] .venv\n[DIR] __pycache__\n[DIR] app\n[DIR] dags\n[DIR] envs\n[DIR] examples\n[DIR] migrations\n[DIR] mlruns\n[DIR] src\n[FILE] CODEOWNERS\n[FILE] README.md\n[FILE] turbo.json\n[FILE] vite.config.ts",
+    "filtered_output": "[DIR] src\n[DIR] app\n[DIR] migrations\n[DIR] dags\n[DIR] envs\n[DIR] examples\n[FILE] README.md\n[FILE] vite.config.ts\n[FILE] turbo.json\n[FILE] CODEOWNERS"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/opt/auth-svc-146"
+    },
+    "output_data": "[DIR] .cache\n[DIR] .ruff_cache\n[DIR] .svelte-kit\n[DIR] .terraform\n[DIR] content\n[DIR] envs\n[DIR] htmlcov\n[DIR] notebooks\n[FILE] Makefile\n[FILE] composer.lock\n[FILE] vercel.json\n[FILE] vite.config.ts",
+    "filtered_output": "[DIR] content\n[DIR] notebooks\n[DIR] envs\n[FILE] vite.config.ts\n[FILE] Makefile\n[FILE] vercel.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/crm-147"
+    },
+    "output_data": "[DIR] .angular\n[DIR] .git\n[DIR] .terragrunt-cache\n[DIR] .vscode\n[DIR] __pycache__\n[DIR] apps\n[DIR] demos\n[FILE] Cargo.toml\n[FILE] yarn.lock",
+    "filtered_output": "[DIR] apps\n[DIR] demos\n[FILE] Cargo.toml"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/etl-148"
+    },
+    "output_data": "[DIR] .angular\n[DIR] .pytest_cache\n[DIR] ansible\n[DIR] cmd\n[DIR] demos\n[DIR] notebooks\n[DIR] test\n[DIR] wandb\n[FILE] next.config.js",
+    "filtered_output": "[DIR] test\n[DIR] cmd\n[DIR] notebooks\n[DIR] ansible\n[DIR] demos\n[FILE] next.config.js"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/crm-149"
+    },
+    "output_data": "[DIR] .cache\n[DIR] .mypy_cache\n[DIR] .tox\n[DIR] .turbo\n[DIR] android\n[DIR] ansible\n[DIR] app\n[DIR] apps\n[DIR] htmlcov\n[DIR] layouts\n[DIR] mlruns\n[DIR] static\n[DIR] target\n[FILE] .prettierrc\n[FILE] Gemfile.lock\n[FILE] poetry.lock\n[FILE] terraform.lock.hcl\n[FILE] vercel.json",
+    "filtered_output": "[DIR] app\n[DIR] apps\n[DIR] static\n[DIR] layouts\n[DIR] android\n[DIR] ansible\n[FILE] .prettierrc\n[FILE] vercel.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/opt/search-150"
+    },
+    "output_data": "[DIR] .mypy_cache\n[DIR] bin\n[DIR] htmlcov\n[DIR] internal\n[DIR] logs\n[DIR] plugins\n[DIR] vendor\n[FILE] setup.cfg",
+    "filtered_output": "[DIR] internal\n[DIR] plugins\n[FILE] setup.cfg"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/reporting-151"
+    },
+    "output_data": "[DIR] .cache\n[DIR] dags\n[DIR] internal\n[DIR] mlruns\n[DIR] models\n[DIR] pages\n[DIR] terraform\n[FILE] Cargo.toml\n[FILE] LICENSE\n[FILE] airflow.cfg\n[FILE] package.json",
+    "filtered_output": "[DIR] pages\n[DIR] internal\n[DIR] models\n[DIR] dags\n[DIR] terraform\n[FILE] package.json\n[FILE] Cargo.toml\n[FILE] airflow.cfg\n[FILE] LICENSE"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/frontend-152"
+    },
+    "output_data": "[DIR] .parcel-cache\n[DIR] doc\n[DIR] examples\n[DIR] models\n[DIR] target\n[FILE] Makefile\n[FILE] docker-compose.yml\n[FILE] go.sum\n[FILE] package-lock.json\n[FILE] pyproject.toml\n[FILE] setup.cfg",
+    "filtered_output": "[DIR] doc\n[DIR] models\n[DIR] examples\n[FILE] pyproject.toml\n[FILE] setup.cfg\n[FILE] docker-compose.yml\n[FILE] Makefile"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/home/dev/work/mobile-153"
+    },
+    "output_data": "[DIR] .git\n[DIR] .ruff_cache\n[DIR] .terragrunt-cache\n[DIR] controllers\n[DIR] mlruns\n[DIR] terraform\n[DIR] tmp\n[DIR] vendor\n[DIR] views\n[FILE] .DS_Store\n[FILE] Makefile\n[FILE] README.md\n[FILE] go.sum\n[FILE] pyproject.toml\n[FILE] setup.cfg\n[FILE] yarn.lock",
+    "filtered_output": "[DIR] controllers\n[DIR] views\n[DIR] terraform\n[FILE] README.md\n[FILE] pyproject.toml\n[FILE] setup.cfg\n[FILE] Makefile"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/opt/extension-154"
+    },
+    "output_data": "[DIR] .nyc_output\n[DIR] .turbo\n[DIR] demos\n[DIR] docs\n[DIR] libs\n[DIR] models\n[DIR] notebooks\n[DIR] public\n[FILE] .env\n[FILE] gatsby-config.js\n[FILE] setup.py\n[FILE] uv.lock\n[FILE] vite.config.ts",
+    "filtered_output": "[DIR] docs\n[DIR] public\n[DIR] libs\n[DIR] models\n[DIR] notebooks\n[DIR] demos\n[FILE] setup.py\n[FILE] vite.config.ts\n[FILE] gatsby-config.js"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/etl-155"
+    },
+    "output_data": "[DIR] .svelte-kit\n[DIR] build\n[DIR] coverage\n[DIR] lib\n[DIR] node_modules\n[DIR] services\n[DIR] target\n[FILE] CODEOWNERS\n[FILE] CONTRIBUTING.md",
+    "filtered_output": "[DIR] lib\n[DIR] services\n[FILE] CONTRIBUTING.md\n[FILE] CODEOWNERS"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/lib-156"
+    },
+    "output_data": "[DIR] .angular\n[DIR] .nx\n[DIR] cmd\n[DIR] controllers\n[DIR] demos\n[DIR] docs\n[DIR] models\n[DIR] vendor\n[DIR] views\n[FILE] .DS_Store\n[FILE] CHANGELOG.md\n[FILE] CLAUDE.md\n[FILE] Gemfile.lock\n[FILE] docker-compose.yml\n[FILE] uv.lock",
+    "filtered_output": "[DIR] docs\n[DIR] cmd\n[DIR] models\n[DIR] controllers\n[DIR] views\n[DIR] demos\n[FILE] docker-compose.yml\n[FILE] CLAUDE.md\n[FILE] CHANGELOG.md"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/srv/chat-157"
+    },
+    "output_data": "[DIR] .idea\n[DIR] .nx\n[DIR] .svelte-kit\n[DIR] .venv\n[DIR] android\n[DIR] ansible\n[DIR] components\n[DIR] libs\n[DIR] logs\n[DIR] models\n[DIR] tmp\n[FILE] .env\n[FILE] Makefile\n[FILE] airflow.cfg\n[FILE] setup.cfg\n[FILE] tsconfig.json\n[FILE] yarn.lock",
+    "filtered_output": "[DIR] components\n[DIR] libs\n[DIR] android\n[DIR] models\n[DIR] ansible\n[FILE] setup.cfg\n[FILE] tsconfig.json\n[FILE] Makefile\n[FILE] airflow.cfg"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/docs-site-158"
+    },
+    "output_data": "[DIR] .angular\n[DIR] .mypy_cache\n[DIR] .parcel-cache\n[DIR] .terragrunt-cache\n[DIR] components\n[DIR] dags\n[DIR] docs\n[DIR] examples\n[DIR] htmlcov\n[DIR] ios\n[FILE] .env\n[FILE] .gitignore\n[FILE] CHANGELOG.md\n[FILE] LICENSE\n[FILE] go.sum\n[FILE] setup.py\n[FILE] terraform.lock.hcl",
+    "filtered_output": "[DIR] docs\n[DIR] components\n[DIR] ios\n[DIR] dags\n[DIR] examples\n[FILE] setup.py\n[FILE] LICENSE\n[FILE] CHANGELOG.md"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/srv/monorepo-159"
+    },
+    "output_data": "[DIR] bin\n[DIR] components\n[DIR] examples\n[DIR] htmlcov\n[DIR] infra\n[DIR] internal\n[DIR] test\n[DIR] tests\n[FILE] .gitignore\n[FILE] CLAUDE.md\n[FILE] CONTRIBUTING.md\n[FILE] package-lock.json\n[FILE] pnpm-lock.yaml",
+    "filtered_output": "[DIR] test\n[DIR] tests\n[DIR] components\n[DIR] internal\n[DIR] infra\n[DIR] examples\n[FILE] CLAUDE.md\n[FILE] CONTRIBUTING.md"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/opt/ingest-160"
+    },
+    "output_data": "[DIR] .angular\n[DIR] .eslintcache\n[DIR] .idea\n[DIR] .next\n[DIR] .venv\n[DIR] Pods\n[DIR] __pycache__\n[DIR] ansible\n[DIR] k8s\n[DIR] notebooks\n[DIR] pages\n[DIR] terraform\n[DIR] views\n[FILE] .env\n[FILE] .prettierrc\n[FILE] Cargo.toml\n[FILE] package-lock.json\n[FILE] requirements.txt\n[FILE] yarn.lock",
+    "filtered_output": "[DIR] pages\n[DIR] views\n[DIR] notebooks\n[DIR] terraform\n[DIR] ansible\n[DIR] k8s\n[FILE] Cargo.toml\n[FILE] requirements.txt\n[FILE] .prettierrc"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/opt/search-161"
+    },
+    "output_data": "[DIR] .mypy_cache\n[DIR] .parcel-cache\n[DIR] .pytest_cache\n[DIR] Pods\n[DIR] cmd\n[DIR] htmlcov\n[DIR] ios\n[DIR] layouts\n[DIR] target\n[DIR] templates\n[DIR] vendor\n[FILE] Makefile\n[FILE] gatsby-config.js\n[FILE] requirements.txt\n[FILE] setup.cfg",
+    "filtered_output": "[DIR] layouts\n[DIR] ios\n[DIR] cmd\n[DIR] templates\n[FILE] setup.cfg\n[FILE] Makefile\n[FILE] requirements.txt\n[FILE] gatsby-config.js"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/api-162"
+    },
+    "output_data": "[DIR] .nyc_output\n[DIR] .svelte-kit\n[DIR] .vscode\n[DIR] components\n[DIR] demos\n[DIR] logs\n[DIR] public\n[DIR] test\n[FILE] Gemfile.lock\n[FILE] Pipfile.lock\n[FILE] metro.config.js\n[FILE] package.json\n[FILE] yarn.lock",
+    "filtered_output": "[DIR] test\n[DIR] public\n[DIR] components\n[DIR] demos\n[FILE] package.json\n[FILE] metro.config.js"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/repo/crm-163"
+    },
+    "output_data": "[DIR] .mypy_cache\n[DIR] app\n[DIR] content\n[DIR] envs\n[DIR] k8s\n[DIR] node_modules\n[DIR] views\n[DIR] wandb\n[FILE] .env.local\n[FILE] .env.local.bak\n[FILE] CHANGELOG.md\n[FILE] Cargo.toml\n[FILE] Pipfile.lock\n[FILE] README.md\n[FILE] pnpm-lock.yaml\n[FILE] tsconfig.json",
+    "filtered_output": "[DIR] app\n[DIR] content\n[DIR] views\n[DIR] k8s\n[DIR] envs\n[FILE] README.md\n[FILE] tsconfig.json\n[FILE] Cargo.toml\n[FILE] CHANGELOG.md"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/home/dev/work/ml-pipeline-164"
+    },
+    "output_data": "[DIR] .svelte-kit\n[DIR] Pods\n[DIR] dags\n[DIR] examples\n[DIR] notebooks\n[DIR] tools\n[FILE] .DS_Store\n[FILE] .env\n[FILE] CLAUDE.md\n[FILE] Cargo.toml\n[FILE] Gemfile.lock\n[FILE] Pipfile.lock\n[FILE] airflow.cfg",
+    "filtered_output": "[DIR] dags\n[DIR] notebooks\n[DIR] examples\n[DIR] tools\n[FILE] Cargo.toml\n[FILE] airflow.cfg\n[FILE] CLAUDE.md"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/portal-165"
+    },
+    "output_data": "[DIR] .eslintcache\n[DIR] .next\n[DIR] .terragrunt-cache\n[DIR] .tox\n[DIR] android\n[DIR] build\n[DIR] components\n[DIR] coverage\n[DIR] docs\n[DIR] k8s\n[DIR] mlruns\n[DIR] tests\n[DIR] tests\n[FILE] Cargo.lock\n[FILE] Gemfile.lock\n[FILE] Makefile\n[FILE] Pipfile.lock\n[FILE] package.json\n[FILE] setup.cfg",
+    "filtered_output": "[DIR] tests\n[DIR] tests\n[DIR] docs\n[DIR] components\n[DIR] android\n[DIR] k8s\n[FILE] setup.cfg\n[FILE] package.json\n[FILE] Makefile"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/srv/billing-166"
+    },
+    "output_data": "[DIR] .git\n[DIR] .vite\n[DIR] Pods\n[DIR] __pycache__\n[DIR] build\n[DIR] dags\n[DIR] public\n[DIR] terraform\n[FILE] docker-compose.yml\n[FILE] package.json\n[FILE] setup.py\n[FILE] terraform.lock.hcl",
+    "filtered_output": "[DIR] public\n[DIR] dags\n[DIR] terraform\n[FILE] setup.py\n[FILE] package.json\n[FILE] docker-compose.yml"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/code/billing-167"
+    },
+    "output_data": "[DIR] .pytest_cache\n[DIR] dags\n[DIR] mlruns\n[DIR] public\n[DIR] routes\n[DIR] tests\n[DIR] views\n[DIR] wandb\n[FILE] .eslintrc.json\n[FILE] composer.lock",
+    "filtered_output": "[DIR] tests\n[DIR] public\n[DIR] routes\n[DIR] views\n[DIR] dags\n[FILE] .eslintrc.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/admin-168"
+    },
+    "output_data": "[DIR] .idea\n[DIR] .parcel-cache\n[DIR] .pytest_cache\n[DIR] .terraform\n[DIR] .vite\n[DIR] ansible\n[DIR] dags\n[DIR] plugins\n[DIR] terraform\n[DIR] tests\n[DIR] tmp\n[FILE] vite.config.ts",
+    "filtered_output": "[DIR] tests\n[DIR] dags\n[DIR] plugins\n[DIR] terraform\n[DIR] ansible\n[FILE] vite.config.ts"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/search-169"
+    },
+    "output_data": "[DIR] .parcel-cache\n[DIR] apps\n[DIR] dist\n[DIR] ios\n[DIR] views\n[FILE] Makefile\n[FILE] netlify.toml\n[FILE] poetry.lock\n[FILE] vercel.json",
+    "filtered_output": "[DIR] apps\n[DIR] ios\n[DIR] views\n[FILE] Makefile\n[FILE] vercel.json\n[FILE] netlify.toml"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/srv/portal-170"
+    },
+    "output_data": "[DIR] .idea\n[DIR] Pods\n[DIR] controllers\n[DIR] docs\n[DIR] envs\n[DIR] examples\n[DIR] internal\n[DIR] public\n[FILE] .env.local.bak\n[FILE] Pipfile.lock\n[FILE] tsconfig.json\n[FILE] vercel.json",
+    "filtered_output": "[DIR] docs\n[DIR] public\n[DIR] internal\n[DIR] controllers\n[DIR] envs\n[DIR] examples\n[FILE] tsconfig.json\n[FILE] vercel.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/chat-171"
+    },
+    "output_data": "[DIR] .cache\n[DIR] .next\n[DIR] __pycache__\n[DIR] ansible\n[DIR] build\n[DIR] libs\n[DIR] plugins\n[DIR] test\n[DIR] wandb\n[FILE] .eslintrc.json\n[FILE] .prettierrc\n[FILE] Cargo.lock\n[FILE] terraform.lock.hcl",
+    "filtered_output": "[DIR] test\n[DIR] libs\n[DIR] plugins\n[DIR] ansible\n[FILE] .prettierrc\n[FILE] .eslintrc.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/srv/marketing-site-172"
+    },
+    "output_data": "[DIR] .eslintcache\n[DIR] ansible\n[DIR] dags\n[DIR] doc\n[DIR] examples\n[DIR] htmlcov\n[DIR] libs\n[FILE] .DS_Store\n[FILE] CONTRIBUTING.md\n[FILE] Cargo.lock\n[FILE] Cargo.toml\n[FILE] pyproject.toml\n[FILE] requirements.txt",
+    "filtered_output": "[DIR] doc\n[DIR] libs\n[DIR] dags\n[DIR] ansible\n[DIR] examples\n[FILE] pyproject.toml\n[FILE] Cargo.toml\n[FILE] requirements.txt\n[FILE] CONTRIBUTING.md"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/etl-173"
+    },
+    "output_data": "[DIR] .vscode\n[DIR] bin\n[DIR] internal\n[DIR] mlruns\n[DIR] packages\n[DIR] scripts\n[DIR] src\n[DIR] templates\n[DIR] tests\n[DIR] vendor\n[FILE] .env\n[FILE] Cargo.lock\n[FILE] composer.lock\n[FILE] gatsby-config.js\n[FILE] go.mod\n[FILE] tsconfig.json\n[FILE] uv.lock\n[FILE] vercel.json",
+    "filtered_output": "[DIR] src\n[DIR] packages\n[DIR] tests\n[DIR] internal\n[DIR] templates\n[DIR] scripts\n[FILE] tsconfig.json\n[FILE] go.mod\n[FILE] gatsby-config.js\n[FILE] vercel.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/portal-174"
+    },
+    "output_data": "[DIR] .git\n[DIR] .nyc_output\n[DIR] .svelte-kit\n[DIR] apps\n[DIR] build\n[DIR] coverage\n[DIR] test\n[FILE] .env\n[FILE] Pipfile.lock\n[FILE] README.md\n[FILE] netlify.toml\n[FILE] package.json\n[FILE] setup.cfg",
+    "filtered_output": "[DIR] apps\n[DIR] test\n[FILE] README.md\n[FILE] setup.cfg\n[FILE] package.json\n[FILE] netlify.toml"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/extension-175"
+    },
+    "output_data": "[DIR] .turbo\n[DIR] __pycache__\n[DIR] demos\n[DIR] htmlcov\n[DIR] logs\n[DIR] services\n[DIR] target\n[DIR] tmp\n[DIR] vendor\n[FILE] LICENSE\n[FILE] Makefile\n[FILE] pyproject.toml",
+    "filtered_output": "[DIR] services\n[DIR] demos\n[FILE] pyproject.toml\n[FILE] Makefile\n[FILE] LICENSE"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/home/dev/work/chat-176"
+    },
+    "output_data": "[DIR] .eslintcache\n[DIR] .git\n[DIR] .gradle\n[DIR] .parcel-cache\n[DIR] Pods\n[DIR] layouts\n[DIR] logs\n[DIR] migrations\n[FILE] .env\n[FILE] pnpm-lock.yaml\n[FILE] setup.py",
+    "filtered_output": "[DIR] layouts\n[DIR] migrations\n[FILE] setup.py"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/srv/data-pipeline-177"
+    },
+    "output_data": "[DIR] .terraform\n[DIR] migrations\n[DIR] packages\n[DIR] pages\n[DIR] vendor\n[FILE] .eslintrc.json\n[FILE] CODEOWNERS\n[FILE] poetry.lock\n[FILE] pyproject.toml\n[FILE] setup.cfg\n[FILE] uv.lock",
+    "filtered_output": "[DIR] packages\n[DIR] pages\n[DIR] migrations\n[FILE] pyproject.toml\n[FILE] setup.cfg\n[FILE] CODEOWNERS\n[FILE] .eslintrc.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/cdn-178"
+    },
+    "output_data": "[DIR] .eslintcache\n[DIR] .next\n[DIR] .parcel-cache\n[DIR] .svelte-kit\n[DIR] .turbo\n[DIR] Pods\n[DIR] demos\n[DIR] doc\n[DIR] packages\n[DIR] tmp\n[FILE] .env\n[FILE] .env.local\n[FILE] CLAUDE.md\n[FILE] package-lock.json\n[FILE] pnpm-lock.yaml",
+    "filtered_output": "[DIR] packages\n[DIR] doc\n[DIR] demos\n[FILE] CLAUDE.md"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/home/dev/work/extension-179"
+    },
+    "output_data": "[DIR] .cache\n[DIR] .ruff_cache\n[DIR] k8s\n[DIR] models\n[DIR] tests\n[DIR] wandb\n[FILE] .eslintrc.json\n[FILE] composer.lock\n[FILE] docker-compose.yml\n[FILE] go.mod",
+    "filtered_output": "[DIR] tests\n[DIR] models\n[DIR] k8s\n[FILE] docker-compose.yml\n[FILE] go.mod\n[FILE] .eslintrc.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/srv/cdn-180"
+    },
+    "output_data": "[DIR] .cache\n[DIR] .vite\n[DIR] __pycache__\n[DIR] coverage\n[DIR] htmlcov\n[DIR] ios\n[DIR] mlruns\n[DIR] tools\n[FILE] .env.local.bak\n[FILE] CLAUDE.md\n[FILE] Cargo.lock\n[FILE] pnpm-lock.yaml\n[FILE] turbo.json",
+    "filtered_output": "[DIR] ios\n[DIR] tools\n[FILE] turbo.json\n[FILE] CLAUDE.md"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/code/reporting-181"
+    },
+    "output_data": "[DIR] .angular\n[DIR] .git\n[DIR] .mypy_cache\n[DIR] .nx\n[DIR] .terraform\n[DIR] .tox\n[DIR] notebooks\n[DIR] src\n[FILE] .gitignore\n[FILE] Cargo.toml\n[FILE] docker-compose.yml\n[FILE] pnpm-lock.yaml\n[FILE] setup.py\n[FILE] uv.lock\n[FILE] yarn.lock",
+    "filtered_output": "[DIR] src\n[DIR] notebooks\n[FILE] setup.py\n[FILE] docker-compose.yml\n[FILE] Cargo.toml"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/home/dev/work/web-182"
+    },
+    "output_data": "[DIR] .ruff_cache\n[DIR] controllers\n[DIR] examples\n[DIR] modules\n[DIR] plugins\n[DIR] routes\n[DIR] target\n[DIR] wandb\n[FILE] CLAUDE.md\n[FILE] CONTRIBUTING.md\n[FILE] metro.config.js\n[FILE] pyproject.toml",
+    "filtered_output": "[DIR] modules\n[DIR] routes\n[DIR] controllers\n[DIR] plugins\n[DIR] examples\n[FILE] pyproject.toml\n[FILE] metro.config.js\n[FILE] CLAUDE.md\n[FILE] CONTRIBUTING.md"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/opt/auth-svc-183"
+    },
+    "output_data": "[DIR] .cache\n[DIR] .idea\n[DIR] .nyc_output\n[DIR] .ruff_cache\n[DIR] .svelte-kit\n[DIR] __pycache__\n[DIR] android\n[DIR] api\n[DIR] scripts\n[DIR] tmp\n[FILE] Dockerfile",
+    "filtered_output": "[DIR] android\n[DIR] api\n[DIR] scripts\n[FILE] Dockerfile"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/code/ml-pipeline-184"
+    },
+    "output_data": "[DIR] .gradle\n[DIR] .ipynb_checkpoints\n[DIR] .terraform\n[DIR] .turbo\n[DIR] Pods\n[DIR] docs\n[DIR] ios\n[DIR] pkg\n[DIR] src\n[DIR] static\n[DIR] tests\n[FILE] go.sum\n[FILE] package.json",
+    "filtered_output": "[DIR] src\n[DIR] pkg\n[DIR] tests\n[DIR] docs\n[DIR] static\n[DIR] ios\n[FILE] package.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/home/dev/work/search-185"
+    },
+    "output_data": "[DIR] .cache\n[DIR] .eslintcache\n[DIR] .mypy_cache\n[DIR] .svelte-kit\n[DIR] .terraform\n[DIR] .venv\n[DIR] .vite\n[DIR] cmd\n[DIR] controllers\n[FILE] .env.local.bak\n[FILE] Pipfile.lock\n[FILE] pyproject.toml\n[FILE] turbo.json\n[FILE] uv.lock\n[FILE] vite.config.ts\n[FILE] yarn.lock",
+    "filtered_output": "[DIR] cmd\n[DIR] controllers\n[FILE] pyproject.toml\n[FILE] vite.config.ts\n[FILE] turbo.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/home/dev/work/cdn-186"
+    },
+    "output_data": "[DIR] .next\n[DIR] .nx\n[DIR] .pytest_cache\n[DIR] .terragrunt-cache\n[DIR] apps\n[DIR] envs\n[DIR] pages\n[DIR] plugins\n[DIR] src\n[DIR] tests\n[FILE] .env\n[FILE] .env.local\n[FILE] Pipfile.lock\n[FILE] README.rst\n[FILE] gatsby-config.js\n[FILE] pnpm-lock.yaml",
+    "filtered_output": "[DIR] src\n[DIR] apps\n[DIR] tests\n[DIR] pages\n[DIR] plugins\n[DIR] envs\n[FILE] README.rst\n[FILE] gatsby-config.js"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/srv/data-pipeline-187"
+    },
+    "output_data": "[DIR] .eslintcache\n[DIR] .nx\n[DIR] .parcel-cache\n[DIR] .pytest_cache\n[DIR] __pycache__\n[DIR] ansible\n[DIR] htmlcov\n[DIR] libs\n[DIR] logs\n[DIR] packages\n[DIR] services\n[FILE] .env\n[FILE] composer.lock\n[FILE] terraform.lock.hcl\n[FILE] turbo.json",
+    "filtered_output": "[DIR] packages\n[DIR] libs\n[DIR] services\n[DIR] ansible\n[FILE] turbo.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/service-188"
+    },
+    "output_data": "[DIR] .cache\n[DIR] mlruns\n[DIR] target\n[DIR] templates\n[DIR] terraform\n[FILE] .DS_Store\n[FILE] Cargo.lock\n[FILE] Makefile\n[FILE] composer.lock",
+    "filtered_output": "[DIR] templates\n[DIR] terraform\n[FILE] Makefile"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/cdn-189"
+    },
+    "output_data": "[DIR] .idea\n[DIR] components\n[DIR] doc\n[DIR] logs\n[DIR] scripts\n[FILE] .gitignore\n[FILE] Pipfile.lock\n[FILE] go.mod",
+    "filtered_output": "[DIR] doc\n[DIR] components\n[DIR] scripts\n[FILE] go.mod"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/api-190"
+    },
+    "output_data": "[DIR] .gradle\n[DIR] .pytest_cache\n[DIR] .ruff_cache\n[DIR] components\n[DIR] ios\n[DIR] layouts\n[DIR] logs\n[DIR] notebooks\n[DIR] test\n[FILE] .DS_Store\n[FILE] .env.local.bak\n[FILE] CHANGELOG.md\n[FILE] Cargo.lock\n[FILE] README.rst\n[FILE] gatsby-config.js\n[FILE] setup.py",
+    "filtered_output": "[DIR] test\n[DIR] layouts\n[DIR] components\n[DIR] ios\n[DIR] notebooks\n[FILE] README.rst\n[FILE] setup.py\n[FILE] gatsby-config.js\n[FILE] CHANGELOG.md"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/code/frontend-191"
+    },
+    "output_data": "[DIR] .cache\n[DIR] .ipynb_checkpoints\n[DIR] .svelte-kit\n[DIR] build\n[DIR] docs\n[DIR] htmlcov\n[DIR] mlruns\n[DIR] plugins\n[DIR] vendor\n[FILE] Cargo.lock\n[FILE] Gemfile.lock\n[FILE] Pipfile.lock\n[FILE] README.rst\n[FILE] airflow.cfg\n[FILE] go.mod\n[FILE] pyproject.toml",
+    "filtered_output": "[DIR] docs\n[DIR] plugins\n[FILE] README.rst\n[FILE] pyproject.toml\n[FILE] go.mod\n[FILE] airflow.cfg"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/opt/ingest-192"
+    },
+    "output_data": "[DIR] .parcel-cache\n[DIR] .turbo\n[DIR] content\n[DIR] docs\n[FILE] Gemfile.lock\n[FILE] package-lock.json\n[FILE] poetry.lock\n[FILE] setup.py",
+    "filtered_output": "[DIR] docs\n[DIR] content\n[FILE] setup.py"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/billing-193"
+    },
+    "output_data": "[DIR] .pytest_cache\n[DIR] ios\n[DIR] target\n[DIR] templates\n[DIR] tmp\n[DIR] views\n[FILE] netlify.toml\n[FILE] package-lock.json\n[FILE] pyproject.toml\n[FILE] setup.cfg\n[FILE] uv.lock",
+    "filtered_output": "[DIR] ios\n[DIR] views\n[DIR] templates\n[FILE] pyproject.toml\n[FILE] setup.cfg\n[FILE] netlify.toml"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/opt/chat-194"
+    },
+    "output_data": "[DIR] .cache\n[DIR] .parcel-cache\n[DIR] .svelte-kit\n[DIR] .vscode\n[DIR] api\n[DIR] ios\n[DIR] node_modules\n[DIR] pkg\n[DIR] plugins\n[FILE] README.md\n[FILE] package.json\n[FILE] vercel.json",
+    "filtered_output": "[DIR] pkg\n[DIR] ios\n[DIR] api\n[DIR] plugins\n[FILE] README.md\n[FILE] package.json\n[FILE] vercel.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/portal-195"
+    },
+    "output_data": "[DIR] .ipynb_checkpoints\n[DIR] .mypy_cache\n[DIR] .ruff_cache\n[DIR] .terraform\n[DIR] .venv\n[DIR] pkg\n[DIR] src\n[DIR] tests\n[FILE] setup.py\n[FILE] tsconfig.json",
+    "filtered_output": "[DIR] src\n[DIR] pkg\n[DIR] tests\n[FILE] setup.py\n[FILE] tsconfig.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/srv/cli-196"
+    },
+    "output_data": "[DIR] .nx\n[DIR] .nyc_output\n[DIR] .ruff_cache\n[DIR] .terragrunt-cache\n[DIR] .venv\n[DIR] .vite\n[DIR] apps\n[DIR] cmd\n[DIR] docs\n[DIR] htmlcov\n[DIR] tests\n[DIR] tests\n[FILE] Pipfile.lock\n[FILE] README.rst\n[FILE] airflow.cfg\n[FILE] go.mod\n[FILE] package.json",
+    "filtered_output": "[DIR] apps\n[DIR] tests\n[DIR] tests\n[DIR] docs\n[DIR] cmd\n[FILE] README.rst\n[FILE] package.json\n[FILE] go.mod\n[FILE] airflow.cfg"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/ingest-197"
+    },
+    "output_data": "[DIR] .angular\n[DIR] .mypy_cache\n[DIR] .ruff_cache\n[DIR] .terragrunt-cache\n[DIR] __pycache__\n[DIR] apps\n[DIR] components\n[DIR] demos\n[DIR] doc\n[DIR] envs\n[DIR] wandb\n[FILE] Gemfile.lock\n[FILE] Procfile\n[FILE] gatsby-config.js\n[FILE] go.mod\n[FILE] poetry.lock\n[FILE] terraform.lock.hcl",
+    "filtered_output": "[DIR] apps\n[DIR] doc\n[DIR] components\n[DIR] envs\n[DIR] demos\n[FILE] go.mod\n[FILE] gatsby-config.js\n[FILE] Procfile"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/opt/auth-svc-198"
+    },
+    "output_data": "[DIR] .nx\n[DIR] .venv\n[DIR] app\n[DIR] dags\n[DIR] internal\n[DIR] logs\n[DIR] migrations\n[DIR] models\n[DIR] scripts\n[DIR] vendor\n[DIR] wandb\n[FILE] airflow.cfg\n[FILE] docker-compose.yml\n[FILE] turbo.json",
+    "filtered_output": "[DIR] app\n[DIR] internal\n[DIR] models\n[DIR] migrations\n[DIR] dags\n[DIR] scripts\n[FILE] docker-compose.yml\n[FILE] turbo.json\n[FILE] airflow.cfg"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/src/extension-199"
+    },
+    "output_data": "[DIR] .cache\n[DIR] .idea\n[DIR] internal\n[DIR] migrations\n[DIR] notebooks\n[DIR] pkg\n[DIR] wandb\n[FILE] package.json\n[FILE] setup.cfg",
+    "filtered_output": "[DIR] pkg\n[DIR] internal\n[DIR] migrations\n[DIR] notebooks\n[FILE] setup.cfg\n[FILE] package.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/opt/cdn-200"
+    },
+    "output_data": "[DIR] .next\n[DIR] .venv\n[DIR] Pods\n[DIR] components\n[DIR] coverage\n[DIR] examples\n[DIR] internal\n[DIR] k8s\n[DIR] models\n[DIR] static\n[FILE] .eslintrc.json\n[FILE] CHANGELOG.md\n[FILE] CODEOWNERS\n[FILE] Cargo.lock\n[FILE] composer.lock\n[FILE] yarn.lock",
+    "filtered_output": "[DIR] static\n[DIR] components\n[DIR] internal\n[DIR] models\n[DIR] k8s\n[DIR] examples\n[FILE] CHANGELOG.md\n[FILE] CODEOWNERS\n[FILE] .eslintrc.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/home/dev/work/web-201"
+    },
+    "output_data": "[DIR] .git\n[DIR] .nx\n[DIR] bin\n[DIR] build\n[DIR] coverage\n[DIR] infra\n[DIR] pages\n[FILE] .gitignore\n[FILE] README.md\n[FILE] package-lock.json\n[FILE] turbo.json",
+    "filtered_output": "[DIR] pages\n[DIR] infra\n[FILE] README.md\n[FILE] turbo.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/code/mobile-202"
+    },
+    "output_data": "[DIR] .mypy_cache\n[DIR] .ruff_cache\n[DIR] bin\n[DIR] htmlcov\n[DIR] node_modules\n[DIR] notebooks\n[DIR] services\n[DIR] target\n[DIR] tests\n[DIR] vendor\n[FILE] .env.local.bak\n[FILE] Gemfile.lock\n[FILE] Makefile\n[FILE] Pipfile.lock",
+    "filtered_output": "[DIR] tests\n[DIR] services\n[DIR] notebooks\n[FILE] Makefile"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/srv/admin-203"
+    },
+    "output_data": "[DIR] .git\n[DIR] .nx\n[DIR] envs\n[DIR] htmlcov\n[DIR] internal\n[DIR] k8s\n[DIR] models\n[DIR] pages\n[DIR] static\n[FILE] CHANGELOG.md\n[FILE] CODEOWNERS\n[FILE] Dockerfile\n[FILE] Pipfile.lock\n[FILE] composer.lock\n[FILE] package-lock.json\n[FILE] yarn.lock",
+    "filtered_output": "[DIR] static\n[DIR] pages\n[DIR] internal\n[DIR] models\n[DIR] k8s\n[DIR] envs\n[FILE] Dockerfile\n[FILE] CHANGELOG.md\n[FILE] CODEOWNERS"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/code/portal-204"
+    },
+    "output_data": "[DIR] .turbo\n[DIR] Pods\n[DIR] ansible\n[DIR] examples\n[DIR] test\n[DIR] vendor\n[FILE] CODEOWNERS\n[FILE] docker-compose.yml\n[FILE] pyproject.toml\n[FILE] setup.py",
+    "filtered_output": "[DIR] test\n[DIR] ansible\n[DIR] examples\n[FILE] pyproject.toml\n[FILE] setup.py\n[FILE] docker-compose.yml\n[FILE] CODEOWNERS"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/srv/marketing-site-205"
+    },
+    "output_data": "[DIR] .git\n[DIR] .ipynb_checkpoints\n[DIR] __pycache__\n[DIR] layouts\n[DIR] lib\n[DIR] node_modules\n[DIR] src\n[DIR] views\n[FILE] .DS_Store\n[FILE] .env.local\n[FILE] CHANGELOG.md\n[FILE] poetry.lock\n[FILE] pyproject.toml",
+    "filtered_output": "[DIR] src\n[DIR] layouts\n[DIR] lib\n[DIR] views\n[FILE] pyproject.toml\n[FILE] CHANGELOG.md"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/repo/admin-206"
+    },
+    "output_data": "[DIR] .pytest_cache\n[DIR] internal\n[DIR] migrations\n[DIR] mlruns\n[DIR] models\n[DIR] scripts\n[DIR] test\n[FILE] package.json\n[FILE] requirements.txt",
+    "filtered_output": "[DIR] test\n[DIR] internal\n[DIR] models\n[DIR] migrations\n[DIR] scripts\n[FILE] package.json\n[FILE] requirements.txt"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/workspace/dashboard-207"
+    },
+    "output_data": "[DIR] .mypy_cache\n[DIR] .ruff_cache\n[DIR] .vscode\n[DIR] cmd\n[DIR] packages\n[FILE] .DS_Store\n[FILE] .env.local.bak\n[FILE] Cargo.toml\n[FILE] Procfile",
+    "filtered_output": "[DIR] packages\n[DIR] cmd\n[FILE] Cargo.toml\n[FILE] Procfile"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/repo/api-208"
+    },
+    "output_data": "[DIR] .tox\n[DIR] .vscode\n[DIR] controllers\n[DIR] coverage\n[DIR] infra\n[DIR] public\n[DIR] tmp\n[FILE] .env\n[FILE] Gemfile.lock\n[FILE] go.sum\n[FILE] setup.cfg\n[FILE] uv.lock",
+    "filtered_output": "[DIR] public\n[DIR] controllers\n[DIR] infra\n[FILE] setup.cfg"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/home/dev/work/worker-209"
+    },
+    "output_data": "[DIR] .angular\n[DIR] .ruff_cache\n[DIR] ansible\n[DIR] api\n[DIR] coverage\n[DIR] mlruns\n[DIR] node_modules\n[FILE] Makefile\n[FILE] README.md\n[FILE] README.rst\n[FILE] setup.py",
+    "filtered_output": "[DIR] api\n[DIR] ansible\n[FILE] README.md\n[FILE] README.rst\n[FILE] setup.py\n[FILE] Makefile"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/opt/cli-210"
+    },
+    "output_data": "[DIR] .idea\n[DIR] .terragrunt-cache\n[DIR] ios\n[DIR] migrations\n[DIR] tests\n[DIR] tests\n[FILE] .DS_Store\n[FILE] LICENSE\n[FILE] Procfile\n[FILE] gatsby-config.js\n[FILE] vite.config.ts",
+    "filtered_output": "[DIR] tests\n[DIR] tests\n[DIR] ios\n[DIR] migrations\n[FILE] vite.config.ts\n[FILE] gatsby-config.js\n[FILE] LICENSE\n[FILE] Procfile"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/repo/extension-211"
+    },
+    "output_data": "[DIR] .next\n[DIR] .ruff_cache\n[DIR] __pycache__\n[DIR] apps\n[DIR] lib\n[DIR] node_modules\n[DIR] static\n[DIR] views\n[FILE] .env\n[FILE] next.config.js\n[FILE] requirements.txt\n[FILE] terraform.lock.hcl\n[FILE] vercel.json\n[FILE] vite.config.ts",
+    "filtered_output": "[DIR] apps\n[DIR] static\n[DIR] lib\n[DIR] views\n[FILE] next.config.js\n[FILE] vite.config.ts\n[FILE] requirements.txt\n[FILE] vercel.json"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/opt/payments-212"
+    },
+    "output_data": "[DIR] .pytest_cache\n[DIR] htmlcov\n[DIR] migrations\n[DIR] models\n[DIR] notebooks\n[DIR] pkg\n[DIR] routes\n[DIR] scripts\n[FILE] Cargo.lock\n[FILE] Dockerfile\n[FILE] gatsby-config.js\n[FILE] package-lock.json\n[FILE] terraform.lock.hcl\n[FILE] uv.lock",
+    "filtered_output": "[DIR] pkg\n[DIR] models\n[DIR] routes\n[DIR] migrations\n[DIR] notebooks\n[DIR] scripts\n[FILE] Dockerfile\n[FILE] gatsby-config.js"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/opt/admin-213"
+    },
+    "output_data": "[DIR] .ipynb_checkpoints\n[DIR] .mypy_cache\n[DIR] .next\n[DIR] .ruff_cache\n[DIR] apps\n[DIR] content\n[DIR] coverage\n[DIR] docs\n[DIR] vendor\n[DIR] wandb\n[FILE] .env\n[FILE] Gemfile.lock\n[FILE] LICENSE\n[FILE] go.mod\n[FILE] pyproject.toml\n[FILE] tsconfig.json\n[FILE] uv.lock",
+    "filtered_output": "[DIR] apps\n[DIR] docs\n[DIR] content\n[FILE] pyproject.toml\n[FILE] tsconfig.json\n[FILE] go.mod\n[FILE] LICENSE"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/repo/auth-svc-214"
+    },
+    "output_data": "[DIR] .idea\n[DIR] .parcel-cache\n[DIR] .vscode\n[DIR] Pods\n[DIR] envs\n[DIR] k8s\n[DIR] mlruns\n[DIR] node_modules\n[FILE] Gemfile.lock\n[FILE] airflow.cfg\n[FILE] go.mod\n[FILE] go.sum\n[FILE] poetry.lock\n[FILE] setup.cfg\n[FILE] setup.py",
+    "filtered_output": "[DIR] k8s\n[DIR] envs\n[FILE] setup.cfg\n[FILE] setup.py\n[FILE] go.mod\n[FILE] airflow.cfg"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/code/etl-215"
+    },
+    "output_data": "[DIR] .angular\n[DIR] .cache\n[DIR] .git\n[DIR] .terraform\n[DIR] .turbo\n[DIR] __pycache__\n[DIR] api\n[DIR] apps\n[DIR] doc\n[DIR] libs\n[DIR] migrations\n[DIR] static\n[DIR] wandb\n[FILE] Cargo.toml\n[FILE] Procfile\n[FILE] README.rst\n[FILE] composer.lock\n[FILE] docker-compose.yml\n[FILE] uv.lock",
+    "filtered_output": "[DIR] apps\n[DIR] doc\n[DIR] static\n[DIR] libs\n[DIR] api\n[DIR] migrations\n[FILE] README.rst\n[FILE] docker-compose.yml\n[FILE] Cargo.toml\n[FILE] Procfile"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/repo/marketing-site-216"
+    },
+    "output_data": "[DIR] .ruff_cache\n[DIR] .tox\n[DIR] coverage\n[DIR] docs\n[DIR] pages\n[DIR] wandb\n[FILE] .env\n[FILE] .env.local\n[FILE] .prettierrc\n[FILE] CODEOWNERS\n[FILE] poetry.lock\n[FILE] requirements.txt",
+    "filtered_output": "[DIR] docs\n[DIR] pages\n[FILE] requirements.txt\n[FILE] CODEOWNERS\n[FILE] .prettierrc"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/srv/data-pipeline-217"
+    },
+    "output_data": "[DIR] .eslintcache\n[DIR] .nx\n[DIR] .parcel-cache\n[DIR] .venv\n[DIR] build\n[DIR] htmlcov\n[DIR] node_modules\n[DIR] notebooks\n[DIR] pkg\n[DIR] plugins\n[DIR] public\n[DIR] services\n[FILE] Dockerfile\n[FILE] package-lock.json",
+    "filtered_output": "[DIR] pkg\n[DIR] public\n[DIR] services\n[DIR] plugins\n[DIR] notebooks\n[FILE] Dockerfile"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/home/dev/work/worker-218"
+    },
+    "output_data": "[DIR] .parcel-cache\n[DIR] .terraform\n[DIR] .vite\n[DIR] content\n[DIR] libs\n[DIR] pkg\n[DIR] services\n[DIR] templates\n[FILE] .env.local.bak\n[FILE] CONTRIBUTING.md\n[FILE] LICENSE\n[FILE] README.md\n[FILE] setup.cfg",
+    "filtered_output": "[DIR] pkg\n[DIR] content\n[DIR] libs\n[DIR] services\n[DIR] templates\n[FILE] README.md\n[FILE] setup.cfg\n[FILE] CONTRIBUTING.md\n[FILE] LICENSE"
+  },
+  {
+    "tool_name": "list_directory",
+    "input_data": {
+      "path": "/code/payments-219"
+    },
+    "output_data": "[DIR] internal\n[DIR] lib\n[DIR] logs\n[DIR] public\n[DIR] tests\n[DIR] tmp\n[DIR] wandb\n[FILE] .env\n[FILE] .gitignore\n[FILE] Cargo.toml\n[FILE] README.md\n[FILE] README.rst\n[FILE] terraform.lock.hcl",
+    "filtered_output": "[DIR] tests\n[DIR] public\n[DIR] lib\n[DIR] internal\n[FILE] README.md\n[FILE] README.rst\n[FILE] Cargo.toml"
   }
 ]
