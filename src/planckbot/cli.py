@@ -760,6 +760,33 @@ def cmd_project_rename(args) -> int:
     return 0
 
 
+def cmd_project_route(args) -> int:
+    """Set (or inspect) a project's MCP-preference routing mode."""
+    from planckbot.tools import routing
+
+    s = _load_stores()
+    project = s["projects"].by_name(args.name)
+    if project is None:
+        print(f"no such project: {args.name!r}", file=sys.stderr)
+        return 1
+    project_path = Path(project.path)
+    if args.mode is None:
+        current = routing.get_mode(project_path)
+        print(f"{project.name}: {current}  ({project_path})")
+        return 0
+    try:
+        state = routing.set_mode(project_path, args.mode)
+    except ValueError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
+    print(f"{project.name}: → {state.mode}")
+    if state.deny_entries:
+        print(f"  injected deny: {state.deny_entries}")
+    if state.mode != "off":
+        print("  restart Claude Code in that folder for changes to take effect.")
+    return 0
+
+
 def cmd_cron_daemon(args) -> int:
     s = _load_stores()
     from planckbot.cron.daemon import Daemon
@@ -1582,6 +1609,19 @@ def _build_parser() -> argparse.ArgumentParser:
     pp.add_argument("old")
     pp.add_argument("new")
     pp.set_defaults(func=cmd_project_rename)
+
+    pp = project_sub.add_parser(
+        "route",
+        help="Show or set a project's MCP-routing mode "
+             "(off | soft | hard). Soft nudges Claude via CLAUDE.md; "
+             "hard also denies native Read/Glob/Grep in settings.json.",
+    )
+    pp.add_argument("name")
+    pp.add_argument(
+        "mode", nargs="?", choices=["off", "soft", "hard"],
+        help="Target mode. Omit to show current mode.",
+    )
+    pp.set_defaults(func=cmd_project_route)
 
     # init (first-run setup)
     sp = sub.add_parser(

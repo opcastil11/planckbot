@@ -159,6 +159,7 @@ def _projects_table(state, projects) -> None:
                 ("PATH", "flex: 3; min-width: 240px"),
                 ("TRIPLES", "flex: 0 0 90px"),
                 ("CKPTS", "flex: 0 0 70px"),
+                ("ROUTING", "flex: 0 0 140px"),
                 ("LAST USED", "flex: 0 0 120px"),
                 ("ACTIONS", "flex: 0 0 240px"),
             ]:
@@ -221,6 +222,7 @@ def _project_row(state, project) -> None:
             f"color: {COLORS['text']}; font-size: {TEXT_MD}px; "
             "font-variant-numeric: tabular-nums; flex: 0 0 70px;"
         )
+        _routing_control(project)
         ui.label(last_used).style(
             f"color: {COLORS['text_muted']}; font-size: {TEXT_SM}px; "
             "flex: 0 0 120px;"
@@ -262,6 +264,61 @@ def _project_row(state, project) -> None:
             ).props("flat dense").style(
                 f"color: {COLORS['error']};"
             )
+
+
+def _routing_control(project) -> None:
+    """Per-row mode selector. Writes to the project folder's CLAUDE.md /
+    .claude/settings.json based on the chosen mode and reports back."""
+    from planckbot.tools import routing
+
+    project_path = Path(project.path)
+    try:
+        current = routing.get_mode(project_path)
+    except Exception:
+        # Missing folder, unreadable file, etc. — surface as "—" and skip.
+        ui.label("—").style(
+            f"color: {COLORS['text_muted']}; font-size: {TEXT_SM}px; "
+            "flex: 0 0 140px;"
+        ).tooltip(f"could not read routing state for {project_path}")
+        return
+
+    labels = {
+        "off": "Off",
+        "soft": "Soft (CLAUDE.md)",
+        "hard": "Hard (deny native)",
+    }
+
+    def _apply(e):
+        new_mode = e.value
+        if new_mode == current:
+            return
+        try:
+            state = routing.set_mode(project_path, new_mode)
+        except ValueError as err:
+            ui.notify(f"{err}", type="negative")
+            return
+        hint = (
+            "restart Claude Code in that folder for changes to take effect"
+            if state.mode != "off"
+            else "restored"
+        )
+        ui.notify(
+            f"{project.name} routing → {state.mode} ({hint})",
+            type="positive",
+        )
+        ui.navigate.to("/projects")
+
+    ui.select(
+        options=labels,
+        value=current,
+        on_change=_apply,
+    ).props("dense options-dense borderless").style(
+        "flex: 0 0 140px; font-size: 13px;"
+    ).tooltip(
+        "Off: no managed files. "
+        "Soft: nudges Claude via CLAUDE.md block. "
+        "Hard: also denies native Read/Glob/Grep."
+    )
 
 
 def _confirm_delete_dialog(state, project_id: str, name: str) -> None:
