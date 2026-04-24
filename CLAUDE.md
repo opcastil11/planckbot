@@ -39,13 +39,19 @@ data/          — SQLite DB + LoRA checkpoints (gitignored except data/fixtures
 
 | Command | What it does |
 |---|---|
-| `.venv/bin/python -m pytest` | Full test suite (149 tests, ~6s) |
+| `.venv/bin/python -m pytest` | Full test suite (241 tests, ~9s) |
 | `.venv/bin/planckbot` | Launch workbench UI on port 8080 (bare command, back-compat) |
 | `.venv/bin/planckbot status` | One-shot summary of triples / savings / checkpoints / cron |
 | `.venv/bin/planckbot cron list|add|rm|enable|disable|run|daemon` | Manage scheduled jobs |
 | `.venv/bin/planckbot cron daemon` | Start the blocking scheduler loop (file-locked) |
-| `.venv/bin/planckbot synth list|show|activate|deactivate|create|gaps` | Manage Layer D synthesized tools |
+| `.venv/bin/planckbot synth list|show|activate|deactivate|create|gaps|author` | Manage Layer D synthesized tools (`author` uses Claude API when `ANTHROPIC_API_KEY` set) |
 | `.venv/bin/planckbot-synth` | Run the Layer D MCP server (exposes active synthesized tools to Claude Code) |
+| `.venv/bin/planckbot doctor [--json]` | 12-point health check; exit code 0/1/2 for ok/warn/fail |
+| `.venv/bin/planckbot status [--watch N]` | One-shot or polling summary of DB state + cost estimate |
+| `.venv/bin/planckbot bless <ckpt> [--threshold X] [--activate]` | Mark a trained checkpoint safe to serve |
+| `.venv/bin/planckbot unbless <ckpt>` | Revoke blessed + deactivate — emergency when adapter regresses |
+| `.venv/bin/planckbot demo load|clear` | Synthetic triples for populating an empty dashboard |
+| `.venv/bin/planckbot uninstall [--yes] [--purge-data]` | Reverses `init`: strips MCP entries, removes systemd unit, optionally wipes data/ |
 | `.venv/bin/python scripts/train_smoke.py` | Real LoRA training on file_search fixture (~10 min CPU) |
 | `.venv/bin/python scripts/train_tool.py --tool X --fixture Y.json [--activate]` | Train a LoRA on any tool/fixture combo |
 | `.venv/bin/python scripts/proxy_demo.py` | Exercise intercept path with trained adapter |
@@ -116,6 +122,17 @@ Repo: **https://github.com/opcastil11/planckbot** (private). Auth via the `store
 - `src/planckbot/tools/versions.py :: ToolVersionStore` — CRUD over the `tool_versions` table (insert, get, latest, by_hash, list_for_tool, count).
 - Tests live in `tests/test_meta.py` (15 tests).
 - **Still pending:** invoking `edit_tool` from the meta-tool interface (it's currently a python API, not a registered tool that the proxy can dispatch). Also pending: cold-start window forcing observe mode until N new-version triples accumulate.
+
+## Blessed-checkpoint safety gate (schema v5)
+
+- `model_checkpoints` has `blessed INTEGER NOT NULL DEFAULT 0` and `tuned_threshold REAL NULL` (v5, commit `6fb41ee`).
+- `CheckpointManager.activate()` raises `ValueError("not blessed")` for unblessed rows unless the caller passes `require_blessed=False`. Tests do so explicitly; production paths (CLI, UI, `scripts/train_tool.py --activate`) never pass it — they call `bless()` first.
+- Operator flow: `planckbot train → planckbot proxy-demo` (eval honestly) → `planckbot bless <ckpt> [--threshold X] [--activate]`. The training script's `--activate` bless+activates in one step but prints a loud warning that the operator has asserted compression.
+- `planckbot unbless <ckpt>` is the emergency revert when a previously-trusted adapter is found to regress in production.
+
+## Pricing (token-savings cost estimate)
+
+`src/planckbot/pricing.py` holds a curated table of per-million input-token prices (Claude Opus/Sonnet/Haiku, GPT-5, GPT-4o mini). `estimate_cost(tokens, model_id)` returns a `PriceQuote` with a pretty-formatted `cost_str` that switches between millicents / cents / USD by magnitude. Override the default with `PLANCKBOT_PRICING_MODEL=<id>`. The dashboard's `savings_widget` exposes a model dropdown that re-renders the dollar figure in place.
 
 ## Layer D — tool synthesis from usage (now wired)
 

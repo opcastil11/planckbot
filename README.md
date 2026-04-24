@@ -165,26 +165,28 @@ planckbot cron daemon
 ## CLI reference
 
 ```
-planckbot                     → launches the UI (back-compat default)
-planckbot status              → one-shot summary (connection, triples, savings, cron)
-planckbot doctor              → 12-point health check with suggested fixes
-planckbot ui                  → launch NiceGUI workbench on :8080
+planckbot                            → launches the UI (back-compat default)
+planckbot status [--watch N]         → summary (connection, triples, savings, cost)
+planckbot doctor [--json]            → 12-point health check with suggested fixes
+planckbot ui                         → launch NiceGUI workbench on :8080
 
-planckbot init                → first-run setup (data dir, DB, MCP registration)
-planckbot systemd install     → install cron daemon as systemd user unit
-planckbot systemd uninstall   → stop + remove the systemd unit
+planckbot init                       → first-run setup (data dir, DB, MCP registration)
+planckbot uninstall [--purge-data]   → reverses `init`; optionally wipes data/
+planckbot systemd install|uninstall  → cron daemon as a systemd user unit
 
-planckbot demo load           → populate the dashboard with synthetic data
-planckbot demo clear          → remove everything tagged source=demo
+planckbot demo load|clear            → synthetic data for a populated dashboard
 
 planckbot train --tool X --fixture Y.json [--activate]
 planckbot label --tool X --recent N [--reference file.txt] [--dry-run]
 
-planckbot cron list|add|rm|enable|disable|run|daemon
-planckbot synth list|show|activate|deactivate|create|gaps
+planckbot bless <ckpt> [--threshold X] [--activate]   → mark adapter safe to serve
+planckbot unbless <ckpt>              → revoke + deactivate (emergency revert)
 
-planckbot proxy-demo          → exercise the intercept path with a trained adapter
-planckbot preflight           → sanity-check the MCP wrapper + upstream
+planckbot cron list|add|rm|enable|disable|run|daemon
+planckbot synth list|show|activate|deactivate|create|gaps|author
+
+planckbot proxy-demo                  → exercise the intercept path with a trained adapter
+planckbot preflight                   → sanity-check the MCP wrapper + upstream
 ```
 
 ## Troubleshooting
