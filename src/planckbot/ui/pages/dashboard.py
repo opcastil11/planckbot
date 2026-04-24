@@ -5,6 +5,7 @@ from __future__ import annotations
 from nicegui import ui
 
 from planckbot.ui.components import empty_state, page_header, stat_card, status_badge
+from planckbot.ui.components.connection_card import connection_card
 from planckbot.ui.mascots import mascot_svg
 from planckbot.ui.state import get_state
 from planckbot.ui.theme import (
@@ -414,6 +415,7 @@ def dashboard_page():
 
     _hero(state)
     _onboarding_card(state)   # only shows when install is empty / fixtures-only
+    connection_card()         # where is PlanckBot watching, in what mode
     _stats(state)
 
     with ui.row().classes("w-full gap-4 flex-wrap items-start"):

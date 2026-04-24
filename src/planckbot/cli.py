@@ -118,7 +118,31 @@ def cmd_status(_args) -> int:
     jobs = cron.list_all()
     ckpt_rows = ckpts.list_all()
 
+    # Connection: where PlanckBot is observing from, in what mode
+    from planckbot.ui.mcp_status import read_mcp_status
+    st = read_mcp_status()
+
     print(f"PlanckBot — db={config.db_path}")
+    print("")
+    print("  connection         :")
+    if st.config_error:
+        print(f"    ✗ config error: {st.config_error}")
+    elif not st.configured:
+        print("    ✗ not connected — run `planckbot init`")
+    else:
+        fs_health = "live" if st.fs_running else "idle"
+        synth_state = (
+            "live" if st.synth_healthy
+            else "idle" if st.synth_configured else "not configured"
+        )
+        print(f"    watching        : {st.upstream_path or '(unknown)'}")
+        print(f"    proxy mode      : {st.mode or 'observe'}")
+        if st.threshold is not None:
+            print(f"    threshold       : {st.threshold:.2f}")
+        print(f"    planckbot-fs    : {fs_health}  "
+              f"({len(st.fs_pids)} proc)")
+        print(f"    planckbot-synth : {synth_state}  "
+              f"({len(st.synth_pids)} proc)")
     print("")
     print(f"  triples total      : {total}")
     print(f"  triples by tool    : "

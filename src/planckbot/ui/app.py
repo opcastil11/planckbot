@@ -103,22 +103,50 @@ def _sidebar(current_path: str) -> None:
 
 
 def _sidebar_status() -> None:
-    """Tiny 'system online' chip beneath the brand — reassures on first visit."""
-    with ui.row().classes("items-center gap-2 no-wrap").style(
-        f"padding: 6px 10px; margin: 4px 4px 0 4px; "
-        f"background: {COLORS['surface2']}; "
-        f"border: 1px solid {COLORS['border']}; "
-        f"border-radius: 8px;"
-    ):
-        ui.element("div").style(
-            f"width: 8px; height: 8px; border-radius: 50%; "
-            f"background: {COLORS['success']}; "
-            f"box-shadow: 0 0 8px {COLORS['success']}; "
-            f"animation: planck-pulse 2s ease-in-out infinite;"
-        )
-        ui.label("System online").style(
-            f"color: {COLORS['text']}; font-size: 11px; font-weight: 600;"
-        )
+    """Compact MCP-connection chip beneath the brand: dot + short summary.
+    Color changes with health. Clicking goes to /dashboard where the full
+    Connection card lives."""
+    from planckbot.ui.mcp_status import read_mcp_status
+    st = read_mcp_status()
+
+    if st.config_error or not st.configured:
+        dot = COLORS["error"]
+        line1 = "not connected"
+        line2 = "run `planckbot init`"
+    elif not st.fs_running:
+        dot = COLORS["warning"]
+        line1 = "configured · idle"
+        line2 = "restart Claude Code"
+    else:
+        dot = COLORS["success"]
+        line1 = f"live · {st.mode or 'observe'}"
+        line2 = st._short_path() or "(no path)"
+
+    with ui.link(target="/").classes("no-underline planck-nav-item"):
+        with ui.row().classes("items-center gap-2 no-wrap").style(
+            f"padding: 6px 10px; margin: 4px 4px 0 4px; "
+            f"background: {COLORS['surface2']}; "
+            f"border: 1px solid {COLORS['border']}; "
+            f"border-radius: 8px; cursor: pointer;"
+        ):
+            ui.element("div").style(
+                f"width: 8px; height: 8px; border-radius: 50%; "
+                f"background: {dot}; "
+                f"box-shadow: 0 0 8px {dot}; "
+                f"animation: planck-pulse 2s ease-in-out infinite;"
+                f"flex: 0 0 8px;"
+            )
+            with ui.column().classes("gap-0").style("min-width: 0;"):
+                ui.label(line1).style(
+                    f"color: {COLORS['text']}; font-size: 11px; "
+                    "font-weight: 600; line-height: 1.2;"
+                )
+                ui.label(line2).style(
+                    f"color: {COLORS['text_muted']}; font-size: 10px; "
+                    "font-family: monospace; line-height: 1.2; "
+                    "overflow: hidden; text-overflow: ellipsis; "
+                    "white-space: nowrap; max-width: 180px;"
+                )
 
 
 def _nav_item(label: str, path: str, icon: str, current_path: str) -> None:
