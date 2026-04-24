@@ -472,3 +472,114 @@ def test_rewrite_mcp_noop_if_missing(tmp_path, monkeypatch):
     ok, msg = cli._rewrite_mcp_upstream_path("/x")
     assert not ok
     assert "does not exist" in msg
+
+
+# --- CLI: project-scope MCP mirror -----------------------------------------
+
+
+def test_sync_mcp_entries_creates_project_section():
+    """Helper adds the entries under cfg.projects[upstream].mcpServers,
+    creating the project section if absent."""
+    from planckbot import cli
+    cfg = {"mcpServers": {}}
+    entries = {"planckbot-fs": {"command": "/fake/fs"}}
+    changed = cli._sync_mcp_entries_to_project_scope(cfg, "/some/path", entries)
+    assert changed
+    assert cfg["projects"]["/some/path"]["mcpServers"] == entries
+
+
+def test_sync_mcp_entries_fills_empty_override():
+    """The real-world bug: Claude Code wrote `mcpServers: {}` into the
+    project section, shadowing global entries. The helper must fill the
+    empty dict rather than leave it in place."""
+    from planckbot import cli
+    cfg = {
+        "mcpServers": {"planckbot-fs": {"command": "/global/fs"}},
+        "projects": {"/p": {"mcpServers": {}, "hasTrustDialogAccepted": True}},
+    }
+    entries = {"planckbot-fs": {"command": "/global/fs"}}
+    changed = cli._sync_mcp_entries_to_project_scope(cfg, "/p", entries)
+    assert changed
+    assert cfg["projects"]["/p"]["mcpServers"] == entries
+    # Must not clobber unrelated project fields.
+    assert cfg["projects"]["/p"]["hasTrustDialogAccepted"] is True
+
+
+def test_sync_mcp_entries_idempotent():
+    from planckbot import cli
+    cfg = {"projects": {"/p": {"mcpServers": {"planckbot-fs": {"command": "/x"}}}}}
+    entries = {"planckbot-fs": {"command": "/x"}}
+    assert not cli._sync_mcp_entries_to_project_scope(cfg, "/p", entries)
+
+
+def test_rewrite_mcp_upstream_path_mirrors_into_new_project_scope(
+    tmp_path, monkeypatch,
+):
+    """Switching to a folder that already has an empty project-scoped
+    `mcpServers: {}` must populate it, not just the global."""
+    from planckbot import cli
+    fake_home = tmp_path / "home"
+    fake_home.mkdir()
+    monkeypatch.setenv("HOME", str(fake_home))
+    claude_json = fake_home / ".claude.json"
+    claude_json.write_text(json.dumps({
+        "mcpServers": {
+            "planckbot-fs": {
+                "command": "/fake/planckbot-mcp",
+                "args": [
+                    "--mode", "observe", "--name", "planckbot-fs", "--",
+                    "/usr/bin/npx", "-y",
+                    "@modelcontextprotocol/server-filesystem",
+                    "/old/path",
+                ],
+            },
+            "planckbot-synth": {"command": "/fake/planckbot-synth"},
+        },
+        "projects": {
+            "/new/path": {"mcpServers": {}, "hasTrustDialogAccepted": True},
+        },
+    }))
+
+    ok, msg = cli._rewrite_mcp_upstream_path("/new/path")
+    assert ok, msg
+
+    updated = json.loads(claude_json.read_text())
+    # Global scope: path is rewritten.
+    assert updated["mcpServers"]["planckbot-fs"]["args"][-1] == "/new/path"
+    # Project scope: both servers got mirrored, overriding the empty
+    # dict that was hiding them.
+    proj_mcp = updated["projects"]["/new/path"]["mcpServers"]
+    assert set(proj_mcp.keys()) == {"planckbot-fs", "planckbot-synth"}
+    assert proj_mcp["planckbot-fs"]["args"][-1] == "/new/path"
+
+
+def test_rewrite_mcp_changes_when_only_project_scope_needs_fix(
+    tmp_path, monkeypatch,
+):
+    """If the global scope already points at the new path but the project
+    scope is still empty, the helper must still write the file — the
+    missing project-scope mirror is itself a change worth persisting."""
+    from planckbot import cli
+    fake_home = tmp_path / "home"
+    fake_home.mkdir()
+    monkeypatch.setenv("HOME", str(fake_home))
+    claude_json = fake_home / ".claude.json"
+    claude_json.write_text(json.dumps({
+        "mcpServers": {
+            "planckbot-fs": {
+                "command": "/fake/planckbot-mcp",
+                "args": [
+                    "--mode", "observe", "--name", "planckbot-fs", "--",
+                    "/usr/bin/npx", "-y",
+                    "@modelcontextprotocol/server-filesystem",
+                    "/p",
+                ],
+            },
+        },
+        "projects": {"/p": {"mcpServers": {}}},
+    }))
+
+    ok, msg = cli._rewrite_mcp_upstream_path("/p")
+    assert ok, msg
+    updated = json.loads(claude_json.read_text())
+    assert "planckbot-fs" in updated["projects"]["/p"]["mcpServers"]

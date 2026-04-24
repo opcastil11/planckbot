@@ -57,6 +57,35 @@ def _claude_json_path() -> Path:
     return Path.home() / ".claude.json"
 
 
+def _sync_mcp_entries_to_project_scope(
+    cfg: dict, upstream_path: str, entries: dict
+) -> bool:
+    """Mirror planckbot-* MCP entries into the per-project scope.
+
+    Claude Code writes `mcpServers: {}` into every project section on first
+    open of that folder. That empty dict is treated as an override of the
+    global `mcpServers`, so globally-registered servers are silently hidden
+    in any folder the user has ever opened with Claude Code. Mirror the
+    entries into `cfg.projects[upstream_path].mcpServers` so the MCP is
+    discoverable regardless of which scope Claude Code consults first.
+
+    Creates the project section if absent — Claude Code will merge its own
+    defaults on top of the bare `{"mcpServers": {...}}` block the next
+    time it opens in that folder. Returns True if anything changed.
+    """
+    if not entries:
+        return False
+    projects = cfg.setdefault("projects", {})
+    proj = projects.setdefault(upstream_path, {})
+    proj_mcp = proj.setdefault("mcpServers", {})
+    changed = False
+    for name, spec in entries.items():
+        if proj_mcp.get(name) != spec:
+            proj_mcp[name] = spec
+            changed = True
+    return changed
+
+
 def _rewrite_mcp_upstream_path(new_path: str) -> tuple[bool, str]:
     """Rewrite the planckbot-fs MCP entry in ~/.claude.json so its last
     positional arg (the served folder) becomes `new_path`.
@@ -87,12 +116,24 @@ def _rewrite_mcp_upstream_path(new_path: str) -> tuple[bool, str]:
     #   ["--mode", MODE, "--name", "planckbot-fs", "--",
     #    NPX, "-y", "@modelcontextprotocol/server-filesystem", PATH]
     # So the served path is always the LAST arg. Replace it in place.
-    if args[-1] == new_path:
-        return (False, "claude.json already points at that path")
+    path_changed = args[-1] != new_path
     args[-1] = new_path
     fs["args"] = args
     servers["planckbot-fs"] = fs
     cfg["mcpServers"] = servers
+
+    # Also mirror the (now-correct) servers into the new project's scope,
+    # otherwise the switch is invisible to any Claude Code session opened
+    # in `new_path`.
+    mirror_entries = {"planckbot-fs": fs}
+    if "planckbot-synth" in servers:
+        mirror_entries["planckbot-synth"] = servers["planckbot-synth"]
+    project_changed = _sync_mcp_entries_to_project_scope(
+        cfg, new_path, mirror_entries
+    )
+
+    if not path_changed and not project_changed:
+        return (False, "claude.json already points at that path")
 
     backup = claude_json.with_suffix(
         f".json.bak-{int(datetime.now().timestamp())}"
@@ -854,9 +895,10 @@ def cmd_init(args) -> int:
         if args.claude_config or input(
             f"[init] write {claude_json} with PlanckBot MCP entries? [y/N] "
         ).lower() == "y":
-            claude_json.write_text(
-                json.dumps({"mcpServers": entries}, indent=2)
-            )
+            cfg = {"mcpServers": dict(entries)}
+            if upstream:
+                _sync_mcp_entries_to_project_scope(cfg, upstream, entries)
+            claude_json.write_text(json.dumps(cfg, indent=2))
             print(f"[init] wrote {claude_json}")
         else:
             print("[init] skipped writing claude.json — here's the block:")
@@ -888,6 +930,15 @@ def cmd_init(args) -> int:
 
     for name, spec in entries.items():
         existing[name] = spec
+    # Claude Code writes `mcpServers: {}` into every project section on
+    # first open, and that empty dict shadows the global scope. Mirror
+    # our entries into the target project's scope so they actually show
+    # up in any existing Claude Code session for this folder.
+    project_synced = False
+    if upstream:
+        project_synced = _sync_mcp_entries_to_project_scope(
+            cfg, upstream, entries
+        )
     # Backup before writing
     backup = claude_json.with_suffix(
         f".json.bak-{int(datetime.now().timestamp())}"
@@ -898,6 +949,8 @@ def cmd_init(args) -> int:
     print(f"[init]   added: {added or '(none new)'}")
     if conflicts:
         print(f"[init]   overwrote: {conflicts}")
+    if project_synced:
+        print(f"[init]   mirrored into project scope: {upstream}")
 
     _print_next_steps()
     return 0
@@ -1224,7 +1277,8 @@ def cmd_uninstall(args) -> int:
         print(f"[uninstall] note: could not deactivate projects: {e}",
               file=sys.stderr)
 
-    # 1. Remove MCP entries from claude.json
+    # 1. Remove MCP entries from claude.json — both global scope and any
+    #    project scope where init/switch mirrored them.
     if claude_json.exists():
         try:
             cfg = json.loads(claude_json.read_text())
@@ -1234,14 +1288,28 @@ def cmd_uninstall(args) -> int:
                 if name in servers:
                     del servers[name]
                     removed.append(name)
-            if removed:
+            project_scopes_cleaned = []
+            for path, proj in (cfg.get("projects") or {}).items():
+                proj_mcp = proj.get("mcpServers") or {}
+                dropped = False
+                for name in ("planckbot-fs", "planckbot-synth"):
+                    if name in proj_mcp:
+                        del proj_mcp[name]
+                        dropped = True
+                if dropped:
+                    project_scopes_cleaned.append(path)
+            if removed or project_scopes_cleaned:
                 backup = claude_json.with_suffix(
                     f".json.bak-{int(datetime.now().timestamp())}"
                 )
                 backup.write_text(claude_json.read_text())
                 claude_json.write_text(json.dumps(cfg, indent=2))
-                print(f"[uninstall] removed from claude.json: {removed} "
-                      f"(backup at {backup.name})")
+                if removed:
+                    print(f"[uninstall] removed from claude.json: {removed} "
+                          f"(backup at {backup.name})")
+                if project_scopes_cleaned:
+                    print(f"[uninstall] cleaned project scopes: "
+                          f"{project_scopes_cleaned}")
         except json.JSONDecodeError:
             print("[uninstall] claude.json is malformed — leaving alone")
 
