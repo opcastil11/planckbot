@@ -338,6 +338,54 @@ def cmd_label(args) -> int:
     return 0
 
 
+def cmd_ingest_claude_code(args) -> int:
+    """Backfill triples from a project's Claude Code JSONL transcripts."""
+    from planckbot.config import config
+    from planckbot.db.engine import get_connection
+    from planckbot.ingest.claude_code import ClaudeCodeJsonlSource
+    from planckbot.tools.projects import ProjectStore
+    from planckbot.tools.triples import TriplesStore
+
+    conn = get_connection(config.db_path)
+    pstore = ProjectStore(conn)
+
+    project_id: str | None = None
+    project_path: str | None = args.path
+
+    if args.project:
+        proj = pstore.by_name(args.project)
+        if proj is None:
+            print(f"error: project {args.project!r} not found", file=sys.stderr)
+            return 2
+        project_id = proj.id
+        project_path = project_path or proj.path
+    elif not project_path:
+        active = pstore.get_active()
+        if active is None:
+            print(
+                "error: no active project; pass --project or --path",
+                file=sys.stderr,
+            )
+            return 2
+        project_id = active.id
+        project_path = active.path
+
+    src = ClaudeCodeJsonlSource(
+        project_path=project_path,
+        claude_root=args.claude_root,
+        skip_errors=not args.include_errors,
+    )
+    store = TriplesStore(conn)
+    n = src.ingest(
+        store, limit=args.limit, since=args.since, project_id=project_id,
+    )
+    print(
+        f"ingested {n} triple(s) from {project_path} "
+        f"(project_id={project_id or '(unscoped)'}, limit={args.limit})"
+    )
+    return 0
+
+
 def cmd_proxy_demo(args) -> int:
     mod = _load_script("proxy_demo.py")
     mod.main(args.checkpoint_id)
@@ -1457,6 +1505,45 @@ def _build_parser() -> argparse.ArgumentParser:
     sp = sub.add_parser("preflight", help="Verify planckbot-mcp wraps upstream.")
     sp.set_defaults(func=cmd_preflight)
 
+    # ingest <subsub>
+    ingest_p = sub.add_parser(
+        "ingest",
+        help="Pull triples from external sources (e.g. Claude Code JSONL).",
+    )
+    ingest_sub = ingest_p.add_subparsers(dest="ingest_command")
+
+    ip = ingest_sub.add_parser(
+        "claude-code",
+        help="Backfill triples from a project's Claude Code JSONL transcripts. "
+             "Idempotent — safe to re-run.",
+    )
+    ip.add_argument(
+        "--project",
+        help="Project name. Defaults to the active project.",
+    )
+    ip.add_argument(
+        "--path",
+        help="Override project path (used to derive Claude Code slug). "
+             "If both --project and --path are given, --path wins.",
+    )
+    ip.add_argument(
+        "--limit", type=int, default=5000,
+        help="Max number of new triples per run (default 5000).",
+    )
+    ip.add_argument(
+        "--since",
+        help="ISO timestamp; only ingest tool_use entries newer than this.",
+    )
+    ip.add_argument(
+        "--claude-root",
+        help="Override ~/.claude/projects (for tests / unusual setups).",
+    )
+    ip.add_argument(
+        "--include-errors", action="store_true",
+        help="Keep tool calls whose result is_error=True (default: skip).",
+    )
+    ip.set_defaults(func=cmd_ingest_claude_code)
+
     # cron <subsub>
     cron_p = sub.add_parser("cron", help="Manage scheduled jobs.")
     cron_sub = cron_p.add_subparsers(dest="cron_command")
@@ -1762,6 +1849,10 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.command == "systemd" and getattr(args, "systemd_command", None) is None:
         parser.parse_args(["systemd", "--help"])
+        return 2
+
+    if args.command == "ingest" and getattr(args, "ingest_command", None) is None:
+        parser.parse_args(["ingest", "--help"])
         return 2
 
     return args.func(args)

@@ -23,13 +23,14 @@ class TriplesStore:
         experiment_id: str | None = None,
         filtered_output: Any = None,
         project_id: str | None = None,
+        created_at: str | None = None,
     ) -> Triple:
         input_str = json.dumps(input_data) if not isinstance(input_data, str) else input_data
         output_str = json.dumps(output_data) if not isinstance(output_data, str) else output_data
         context_str = json.dumps(context_data) if context_data and not isinstance(context_data, str) else context_data
         filtered_str = json.dumps(filtered_output) if filtered_output and not isinstance(filtered_output, str) else filtered_output
 
-        triple = Triple(
+        kwargs = dict(
             tool_name=tool_name,
             session_id=session_id,
             input_data=input_str,
@@ -43,6 +44,9 @@ class TriplesStore:
             experiment_id=experiment_id,
             project_id=project_id,
         )
+        if created_at is not None:
+            kwargs["created_at"] = created_at
+        triple = Triple(**kwargs)
         row = triple.to_row()
         cols = ", ".join(row.keys())
         placeholders = ", ".join("?" for _ in row)

@@ -294,6 +294,51 @@ def _detect_tool_gaps_job(ctx: JobContext) -> str:
     )
 
 
+def _claude_code_ingest_job(ctx: JobContext) -> str:
+    """Pull every paired tool_use+tool_result from this project's Claude
+    Code JSONL transcripts into the triples table.
+
+    Idempotent: dedups by upstream `tool_use_id`. Honors `ctx.project_id`
+    to scope writes (and to look up the project's path when resolving the
+    Claude Code slug).
+
+    params:
+        project_path (str)  — override; defaults to the active project's path
+        limit (int)         — cap per run (default 5000)
+        skip_errors (bool)  — drop is_error results (default True)
+        claude_root (str)   — override for tests
+        since (str)         — ISO timestamp; only ingest entries newer
+    """
+    from planckbot.ingest.claude_code import ClaudeCodeJsonlSource
+    from planckbot.tools.projects import ProjectStore
+
+    project_path = ctx.params.get("project_path")
+    if not project_path and ctx.project_id:
+        proj = ProjectStore(ctx.conn).get(ctx.project_id)
+        if proj is None:
+            raise ValueError(
+                f"job project_id={ctx.project_id} not found in projects table"
+            )
+        project_path = proj.path
+    if not project_path:
+        raise ValueError(
+            "claude_code_ingest needs params.project_path or a project-scoped job"
+        )
+
+    src = ClaudeCodeJsonlSource(
+        project_path=project_path,
+        claude_root=ctx.params.get("claude_root"),
+        skip_errors=bool(ctx.params.get("skip_errors", True)),
+    )
+    store = TriplesStore(ctx.conn)
+    limit = int(ctx.params.get("limit", 5000))
+    since = ctx.params.get("since")
+    n = src.ingest(
+        store, limit=limit, since=since, project_id=ctx.project_id,
+    )
+    return f"ingested={n} from={project_path} (limit={limit})"
+
+
 def default_registry() -> JobRegistry:
     from planckbot.cron.scanner import scan_job as _scan_job
     reg = JobRegistry()
@@ -303,4 +348,5 @@ def default_registry() -> JobRegistry:
     reg.register("conversation_scanner", _scan_job)
     reg.register("detect_tool_gaps", _detect_tool_gaps_job)
     reg.register("autolabel_precise", _autolabel_precise_job)
+    reg.register("claude_code_ingest", _claude_code_ingest_job)
     return reg

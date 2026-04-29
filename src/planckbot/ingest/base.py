@@ -68,6 +68,7 @@ class TripleSource(ABC):
                 filtered_output=rec.get("filtered_output"),
                 source=self.name,
                 project_id=project_id,
+                created_at=rec.get("created_at"),
             )
             count += 1
         return count
