@@ -25,6 +25,7 @@ venv/
 data/planckbot.db*
 data/checkpoints/
 data/exports/
+data/ui_mode.txt
 !data/fixtures/
 
 # IDE

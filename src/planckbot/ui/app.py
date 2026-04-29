@@ -5,6 +5,7 @@ from pathlib import Path
 from nicegui import app, ui
 
 from planckbot.ui.state import get_state
+from planckbot.ui import theme
 from planckbot.ui.theme import (
     COLORS,
     WORDMARK_HTML,
@@ -96,6 +97,9 @@ def _sidebar(current_path: str) -> None:
         # when there IS at least one project; otherwise it's a link to
         # the projects page with a "Create one" CTA.
         _sidebar_project_switcher()
+
+        # Light/dark toggle — persists to data/ui_mode.txt and reloads.
+        _sidebar_theme_toggle()
 
         # Unseen-activity badge for /activity. Cheap MAX(id) query.
         activity_unseen = _activity_unseen_count()
@@ -412,6 +416,44 @@ def _sidebar_project_switcher() -> None:
         sel.classes("planck-project-switcher")
 
 
+def _sidebar_theme_toggle() -> None:
+    """Sun/moon button that flips between dark and light. Persists choice
+    and reloads the page so the head CSS regenerates with the new palette.
+
+    Caveat (intentional): pages that imported `theme.CARD_STYLE` etc. by
+    name keep their old string until the UI process restarts. Pages that
+    read `COLORS["bg"]` live (the vast majority) update on reload.
+    """
+    mode = theme.current_mode()
+    is_dark = mode == "dark"
+    icon = "light_mode" if is_dark else "dark_mode"
+    label_txt = "Light" if is_dark else "Dark"
+    next_mode = "light" if is_dark else "dark"
+
+    def _toggle():
+        theme.set_mode(next_mode)
+        ui.notify(
+            f"theme: {next_mode} (some elements need a UI restart to fully refresh)",
+            type="info",
+            timeout=2500,
+        )
+        ui.navigate.reload()
+
+    with ui.row().classes("items-center gap-2 no-wrap").style(
+        f"padding: 6px 8px; margin: 6px 4px 0 4px; "
+        f"background: {COLORS['surface2']}; "
+        f"border: 1px solid {COLORS['border']}; "
+        f"border-radius: 8px; cursor: pointer;"
+    ).on("click", _toggle):
+        ui.icon(icon).style(
+            f"color: {COLORS['text_muted']}; font-size: 16px;"
+        )
+        ui.label(f"Switch to {label_txt}").style(
+            f"color: {COLORS['text_muted']}; font-size: 11px; "
+            "font-weight: 600; flex: 1;"
+        )
+
+
 def _nav_item(
     label: str, path: str, icon: str, current_path: str,
     *, badge: int = 0,
@@ -484,6 +526,13 @@ def _page_wrapper(
     current_path: str = "/",
 ):
     """Wrap a page builder in the standard layout (sidebar + main)."""
+    # Regenerate per-page so light/dark toggle takes effect on reload
+    # without a process restart. shared=False means this <style> block
+    # is injected per-client and re-emitted on each navigation.
+    ui.add_head_html(_head_css(), shared=False)
+    # Keep Quasar's dark flag in sync with the active palette so its
+    # built-in widgets (q-input, q-select) render against the right surface.
+    ui.dark_mode().enable() if theme.current_mode() == "dark" else ui.dark_mode().disable()
     ui.colors(
         primary=COLORS["primary"],
         secondary=COLORS["accent"],
@@ -748,8 +797,6 @@ def start_app():
     if docs_dir.exists():
         app.add_static_files("/docs", str(docs_dir))
 
-    ui.add_head_html(_head_css(), shared=True)
-
     favicon_path = BRANDING_DIR / "favicon.png"
 
     ui.run(
@@ -757,6 +804,6 @@ def start_app():
         favicon=str(favicon_path) if favicon_path.exists() else None,
         host=state.config.host,
         port=state.config.port,
-        dark=True,
+        dark=theme.current_mode() == "dark",
         reload=False,
     )

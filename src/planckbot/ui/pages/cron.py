@@ -6,7 +6,7 @@ import json
 
 from nicegui import ui
 
-from planckbot.cron.daemon import Daemon
+from planckbot.cron.daemon import Daemon, daemon_status
 from planckbot.db.models import CronJob
 from planckbot.ui.components.empty_state import empty_state
 from planckbot.ui.components.page_header import page_header
@@ -176,6 +176,40 @@ def _create_form(state, on_created) -> None:
         ui.button("Create", on_click=submit, icon="add").props("color=primary")
 
 
+def _daemon_pill_render(container, status: dict) -> None:
+    """Re-render the daemon health pill into `container`."""
+    container.clear()
+    running = status.get("running", False)
+    pid = status.get("pid")
+    color = COLORS["success"] if running else COLORS["text_muted"]
+    bg = COLORS["surface2"]
+    label = "DAEMON: running" if running else "DAEMON: stopped"
+    detail = f"pid {pid}" if running and pid else (
+        "start with `planckbot cron daemon`" if not running else ""
+    )
+    with container:
+        with ui.row().classes("items-center gap-2 no-wrap").style(
+            f"background: {bg}; "
+            f"border: 1px solid {color}55; "
+            f"padding: 4px 12px; border-radius: 999px; "
+            "width: fit-content;"
+        ):
+            ui.element("div").style(
+                f"width: 8px; height: 8px; border-radius: 50%; "
+                f"background: {color}; "
+                + ("box-shadow: 0 0 8px " + color + ";" if running else "")
+            )
+            ui.label(label).style(
+                f"color: {color}; font-size: {TEXT_SM}px; font-weight: 600; "
+                "letter-spacing: 0.4px;"
+            )
+            if detail:
+                ui.label(detail).style(
+                    f"color: {COLORS['text_muted']}; font-size: {TEXT_SM}px; "
+                    "font-family: monospace;"
+                )
+
+
 def cron_page():
     state = get_state()
 
@@ -188,6 +222,11 @@ def cron_page():
         ),
     )
 
+    daemon_pill = ui.row().classes("w-full").style(
+        f"margin-top: {SPACE_MD}px;"
+    )
+    _daemon_pill_render(daemon_pill, daemon_status())
+
     jobs_container = ui.column().classes("w-full gap-0").style(
         f"background: {COLORS['surface']}; "
         f"border: 1px solid {COLORS['border']}; "
@@ -195,6 +234,7 @@ def cron_page():
     )
 
     def refresh():
+        _daemon_pill_render(daemon_pill, daemon_status())
         jobs_container.clear()
         jobs = state.cron.list_all(project_id=state.active_project_id())
         with jobs_container:

@@ -162,3 +162,61 @@ class Daemon:
                       "exception": type(e).__name__},
             )
             return ("error", output)
+
+
+def daemon_status(
+    lock_path: str | Path | None = None,
+) -> dict:
+    """Probe whether a daemon is currently running.
+
+    Strategy: try to acquire a *non-exclusive* lock on the same file the
+    daemon takes. If `flock` blocks, someone else owns it → daemon alive.
+    Read the pid from the file for display.
+
+    Returns a dict:
+        running    bool
+        pid        int | None
+        lock_path  str
+        last_mtime str | None  (ISO of the lockfile mtime, useful as heartbeat)
+    """
+    p = Path(lock_path) if lock_path else Path("/tmp/planckbot-cron.lock")
+    info: dict = {
+        "running": False,
+        "pid": None,
+        "lock_path": str(p),
+        "last_mtime": None,
+    }
+    if not p.exists():
+        return info
+
+    try:
+        info["last_mtime"] = datetime.fromtimestamp(
+            p.stat().st_mtime, tz=timezone.utc
+        ).isoformat()
+    except OSError:
+        pass
+
+    try:
+        with open(p, "r") as fh:
+            try:
+                # Non-blocking shared lock: if it fails the daemon holds an
+                # exclusive lock.
+                fcntl.flock(fh, fcntl.LOCK_SH | fcntl.LOCK_NB)
+                fcntl.flock(fh, fcntl.LOCK_UN)
+                info["running"] = False
+            except BlockingIOError:
+                info["running"] = True
+            try:
+                fh.seek(0)
+                pid_line = fh.readline().strip()
+                if pid_line:
+                    info["pid"] = int(pid_line)
+            except (OSError, ValueError):
+                pass
+    except OSError:
+        return info
+
+    # Sanity-check: if we read a pid but the process is gone, lock was stale.
+    if info["pid"] is not None and not info["running"]:
+        info["pid"] = None
+    return info
