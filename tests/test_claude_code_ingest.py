@@ -244,6 +244,53 @@ def test_missing_project_dir_yields_nothing(tmp_path, triples_store):
     assert src.ingest(triples_store) == 0
 
 
+def test_skips_planckbot_fs_namespace_by_default(tmp_path, triples_store):
+    """Calls under the proxy's MCP namespace are duplicates — proxy already
+    captures them under the un-namespaced tool name."""
+    slug = "-home-u-myproj"
+    jsonl = tmp_path / slug / "s.jsonl"
+    _make_jsonl(jsonl, [
+        _wrap_use(use_id="proxy_dup", name="mcp__planckbot-fs__read_text_file",
+                  input_data={"path": "x"}),
+        _wrap_result(use_id="proxy_dup", output="hello"),
+        _wrap_use(use_id="native", name="Read", input_data={"file_path": "x"}),
+        _wrap_result(use_id="native", output="hello"),
+    ])
+    src = ClaudeCodeJsonlSource("/home/u/myproj", claude_root=tmp_path)
+    assert src.ingest(triples_store) == 1
+    [t] = triples_store.list_all()
+    assert t.tool_name == "Read"
+
+
+def test_can_disable_skip_prefixes(tmp_path, triples_store):
+    """Pass `skip_prefixes=()` to keep the namespaced ones."""
+    slug = "-home-u-myproj"
+    jsonl = tmp_path / slug / "s.jsonl"
+    _make_jsonl(jsonl, [
+        _wrap_use(use_id="ns", name="mcp__planckbot-fs__read_text_file",
+                  input_data={"path": "x"}),
+        _wrap_result(use_id="ns", output="hello"),
+    ])
+    src = ClaudeCodeJsonlSource(
+        "/home/u/myproj", claude_root=tmp_path, skip_prefixes=(),
+    )
+    assert src.ingest(triples_store) == 1
+
+
+def test_keeps_other_mcp_namespaces(tmp_path, triples_store):
+    """The default skip is *only* planckbot-fs; other MCP servers should
+    still be captured (they're not duplicated by the proxy)."""
+    slug = "-home-u-myproj"
+    jsonl = tmp_path / slug / "s.jsonl"
+    _make_jsonl(jsonl, [
+        _wrap_use(use_id="synth", name="mcp__planckbot-synth__some_tool",
+                  input_data={"x": 1}),
+        _wrap_result(use_id="synth", output="ok"),
+    ])
+    src = ClaudeCodeJsonlSource("/home/u/myproj", claude_root=tmp_path)
+    assert src.ingest(triples_store) == 1
+
+
 def test_tags_project_id_when_passed(tmp_path, triples_store, conn):
     slug = "-home-u-myproj"
     jsonl = tmp_path / slug / "s.jsonl"

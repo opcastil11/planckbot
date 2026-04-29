@@ -194,7 +194,17 @@ def _autolabel_precise_job(ctx: JobContext) -> str:
     if not tool:
         raise ValueError("autolabel_precise requires params.tool")
 
-    slug = ctx.params.get("project_slug") or _slugify_cwd(Path.cwd())
+    # Resolve slug: explicit param > project's path (when scoped) > cwd.
+    # cwd-only fallback was a footgun when run from a daemon whose cwd
+    # didn't match the watched repo.
+    slug = ctx.params.get("project_slug")
+    if not slug and ctx.project_id:
+        from planckbot.tools.projects import ProjectStore
+        proj = ProjectStore(ctx.conn).get(ctx.project_id)
+        if proj is not None:
+            slug = _slugify_cwd(proj.path)
+    if not slug:
+        slug = _slugify_cwd(Path.cwd())
     recent = int(ctx.params.get("recent", 20))
     min_line_len = int(ctx.params.get("min_line_len", 3))
     max_drift = float(ctx.params.get("max_drift_seconds", 180))

@@ -33,12 +33,19 @@ from planckbot.tools.triples import TriplesStore
 class ClaudeCodeJsonlSource(TripleSource):
     name = "claude_code:jsonl"
 
+    # Tool-name prefixes whose calls are already captured by another
+    # source (the proxy MCP) — re-ingesting them from JSONL would create
+    # a duplicate row with a different tool_name (`edit_file` from the
+    # proxy vs. `mcp__planckbot-fs__edit_file` here). Skip by default.
+    DEFAULT_SKIP_PREFIXES: tuple[str, ...] = ("mcp__planckbot-fs__",)
+
     def __init__(
         self,
         project_path: Path | str,
         *,
         claude_root: Path | str | None = None,
         skip_errors: bool = True,
+        skip_prefixes: tuple[str, ...] | None = None,
     ):
         """
         Args:
@@ -47,6 +54,10 @@ class ClaudeCodeJsonlSource(TripleSource):
             claude_root: override for `~/.claude/projects` (tests).
             skip_errors: drop tool calls whose result has `is_error=True`.
                 Same convention as OrquestaSource. Set False to keep them.
+            skip_prefixes: tool-name prefixes to drop. Defaults to skipping
+                the planckbot-fs MCP namespace because the proxy already
+                stores those calls (under the un-namespaced tool name).
+                Pass `()` to keep everything.
         """
         self.project_path = Path(project_path)
         self.claude_root = (
@@ -54,6 +65,10 @@ class ClaudeCodeJsonlSource(TripleSource):
             else Path.home() / ".claude" / "projects"
         )
         self.skip_errors = skip_errors
+        self.skip_prefixes = (
+            self.DEFAULT_SKIP_PREFIXES if skip_prefixes is None
+            else tuple(skip_prefixes)
+        )
         self._existing: set[str] = set()
 
     # --- TripleSource API --------------------------------------------------
@@ -134,13 +149,17 @@ class ClaudeCodeJsonlSource(TripleSource):
             u_obj, u_blk, u_file = uses[use_id]
             r_obj, r_blk, _ = results[use_id]
 
+            tool_name = u_blk.get("name") or "?"
+            if any(tool_name.startswith(p) for p in self.skip_prefixes):
+                continue
+
             if self.skip_errors and r_blk.get("is_error"):
                 continue
 
             output_text = _extract_result_text(r_blk)
 
             yield TripleRecord(
-                tool_name=u_blk.get("name") or "?",
+                tool_name=tool_name,
                 input_data=u_blk.get("input") or {},
                 output_data=output_text,
                 context_data={
