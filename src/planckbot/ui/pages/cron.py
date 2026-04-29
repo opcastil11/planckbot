@@ -6,7 +6,9 @@ import json
 
 from nicegui import ui
 
-from planckbot.cron.daemon import Daemon, daemon_status
+from planckbot.cron.daemon import (
+    Daemon, daemon_status, systemd_action, systemd_status,
+)
 from planckbot.db.models import CronJob
 from planckbot.ui.components.empty_state import empty_state
 from planckbot.ui.components.page_header import page_header
@@ -176,38 +178,83 @@ def _create_form(state, on_created) -> None:
         ui.button("Create", on_click=submit, icon="add").props("color=primary")
 
 
-def _daemon_pill_render(container, status: dict) -> None:
-    """Re-render the daemon health pill into `container`."""
+def _daemon_pill_render(container, status: dict, sysd: dict) -> None:
+    """Re-render the daemon health pill + control buttons into `container`.
+
+    Buttons are only shown when the systemd user-unit is installed
+    (otherwise we'd be lying about being able to do anything). Users
+    without systemd see the pill plus the manual command hint.
+    """
     container.clear()
     running = status.get("running", False)
     pid = status.get("pid")
     color = COLORS["success"] if running else COLORS["text_muted"]
     bg = COLORS["surface2"]
     label = "DAEMON: running" if running else "DAEMON: stopped"
-    detail = f"pid {pid}" if running and pid else (
-        "start with `planckbot cron daemon`" if not running else ""
-    )
+    if running and pid:
+        detail = f"pid {pid}"
+    elif sysd.get("available"):
+        detail = "use the buttons →" if not running else ""
+    else:
+        detail = "start with `planckbot cron daemon` or `planckbot systemd install`"
+
+    def _do(action: str):
+        ok, msg = systemd_action(action)
+        ui.notify(
+            f"{action}: {msg}",
+            type="positive" if ok else "negative",
+            timeout=2500,
+        )
+
     with container:
-        with ui.row().classes("items-center gap-2 no-wrap").style(
-            f"background: {bg}; "
-            f"border: 1px solid {color}55; "
-            f"padding: 4px 12px; border-radius: 999px; "
+        with ui.row().classes("items-center gap-3 no-wrap").style(
             "width: fit-content;"
         ):
-            ui.element("div").style(
-                f"width: 8px; height: 8px; border-radius: 50%; "
-                f"background: {color}; "
-                + ("box-shadow: 0 0 8px " + color + ";" if running else "")
-            )
-            ui.label(label).style(
-                f"color: {color}; font-size: {TEXT_SM}px; font-weight: 600; "
-                "letter-spacing: 0.4px;"
-            )
-            if detail:
-                ui.label(detail).style(
-                    f"color: {COLORS['text_muted']}; font-size: {TEXT_SM}px; "
-                    "font-family: monospace;"
+            with ui.row().classes("items-center gap-2 no-wrap").style(
+                f"background: {bg}; "
+                f"border: 1px solid {color}55; "
+                f"padding: 4px 12px; border-radius: 999px;"
+            ):
+                ui.element("div").style(
+                    f"width: 8px; height: 8px; border-radius: 50%; "
+                    f"background: {color}; "
+                    + ("box-shadow: 0 0 8px " + color + ";" if running else "")
                 )
+                ui.label(label).style(
+                    f"color: {color}; font-size: {TEXT_SM}px; font-weight: 600; "
+                    "letter-spacing: 0.4px;"
+                )
+                if detail:
+                    ui.label(detail).style(
+                        f"color: {COLORS['text_muted']}; font-size: {TEXT_SM}px; "
+                        "font-family: monospace;"
+                    )
+
+            # systemd controls
+            if sysd.get("available"):
+                if running:
+                    ui.button(
+                        icon="stop", on_click=lambda: _do("stop"),
+                    ).props("flat dense round size=sm color=negative").tooltip(
+                        "systemctl --user stop planckbot-cron.service"
+                    )
+                    ui.button(
+                        icon="restart_alt", on_click=lambda: _do("restart"),
+                    ).props("flat dense round size=sm").tooltip(
+                        "systemctl --user restart planckbot-cron.service"
+                    )
+                else:
+                    ui.button(
+                        icon="play_arrow", on_click=lambda: _do("start"),
+                    ).props("flat dense round size=sm color=positive").tooltip(
+                        "systemctl --user start planckbot-cron.service"
+                    )
+                # Boot-up indicator
+                if sysd.get("enabled"):
+                    ui.label("auto-start ✓").style(
+                        f"color: {COLORS['text_muted']}; "
+                        f"font-size: {TEXT_SM}px;"
+                    )
 
 
 def cron_page():
@@ -225,7 +272,7 @@ def cron_page():
     daemon_pill = ui.row().classes("w-full").style(
         f"margin-top: {SPACE_MD}px;"
     )
-    _daemon_pill_render(daemon_pill, daemon_status())
+    _daemon_pill_render(daemon_pill, daemon_status(), systemd_status())
 
     jobs_container = ui.column().classes("w-full gap-0").style(
         f"background: {COLORS['surface']}; "
@@ -234,7 +281,7 @@ def cron_page():
     )
 
     def refresh():
-        _daemon_pill_render(daemon_pill, daemon_status())
+        _daemon_pill_render(daemon_pill, daemon_status(), systemd_status())
         jobs_container.clear()
         jobs = state.cron.list_all(project_id=state.active_project_id())
         with jobs_container:

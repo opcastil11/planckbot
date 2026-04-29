@@ -164,6 +164,69 @@ class Daemon:
             return ("error", output)
 
 
+SYSTEMD_UNIT_NAME = "planckbot-cron.service"
+
+
+def systemd_available() -> bool:
+    """True if `systemctl` is on PATH and the unit file exists."""
+    import shutil
+    if shutil.which("systemctl") is None:
+        return False
+    unit = Path.home() / ".config" / "systemd" / "user" / SYSTEMD_UNIT_NAME
+    return unit.exists()
+
+
+def systemd_status() -> dict:
+    """Probe `systemctl --user` for the cron unit. Returns:
+        available  bool — systemctl + unit file present
+        active     bool — `is-active` says "active"
+        enabled    bool — `is-enabled` says "enabled"
+        sub        str  — sub-state ("running", "dead", "failed", …) or ""
+    """
+    info = {"available": False, "active": False, "enabled": False, "sub": ""}
+    if not systemd_available():
+        return info
+    info["available"] = True
+    import subprocess
+    try:
+        r1 = subprocess.run(
+            ["systemctl", "--user", "is-active", SYSTEMD_UNIT_NAME],
+            capture_output=True, text=True, timeout=3,
+        )
+        info["sub"] = (r1.stdout or "").strip()
+        info["active"] = info["sub"] == "active"
+        r2 = subprocess.run(
+            ["systemctl", "--user", "is-enabled", SYSTEMD_UNIT_NAME],
+            capture_output=True, text=True, timeout=3,
+        )
+        info["enabled"] = (r2.stdout or "").strip() == "enabled"
+    except (subprocess.TimeoutExpired, OSError):
+        pass
+    return info
+
+
+def systemd_action(action: str) -> tuple[bool, str]:
+    """Run `systemctl --user <action> planckbot-cron.service`. Returns
+    (ok, message). Whitelisted to start/stop/restart for safety; never
+    accept arbitrary action strings from a UI handler."""
+    if action not in ("start", "stop", "restart"):
+        return False, f"unsupported action: {action!r}"
+    if not systemd_available():
+        return False, "systemctl unavailable or unit not installed"
+    import subprocess
+    try:
+        r = subprocess.run(
+            ["systemctl", "--user", action, SYSTEMD_UNIT_NAME],
+            capture_output=True, text=True, timeout=10,
+        )
+    except (subprocess.TimeoutExpired, OSError) as e:
+        return False, f"systemctl error: {e}"
+    if r.returncode != 0:
+        msg = (r.stderr or r.stdout or "").strip() or f"exit {r.returncode}"
+        return False, msg
+    return True, f"{action} ok"
+
+
 def daemon_status(
     lock_path: str | Path | None = None,
 ) -> dict:
