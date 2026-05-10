@@ -124,15 +124,71 @@ def _job_row(state, job: CronJob) -> None:
         ).tooltip(out)
 
 
+# Per-job-type hint shown under the form. Lives in module scope so tests
+# and future job types can see the canonical reference in one place.
+_JOB_TYPE_HINTS: dict[str, str] = {
+    "noop": (
+        "params: { \"message\": \"…\" } — writes the message to last_output. "
+        "Useful as a heartbeat or to verify the daemon is firing."
+    ),
+    "autolabel": (
+        "params: { \"tool\": \"...\", \"reference_path\": \"/path/to/ref.txt\", "
+        "\"recent\": 50 }. Back-fills filtered_output on the N most recent "
+        "unlabeled triples for `tool` using a single reference text "
+        "(batch-style — may produce false positives, see autolabel_precise)."
+    ),
+    "autolabel_precise": (
+        "params: { \"tool\": \"...\", \"recent\": 50 }. Per-triple labeling — "
+        "for each unlabeled triple, finds the exact follow-up Claude message "
+        "in the JSONL transcript and labels using only that text. Recommended."
+    ),
+    "retrain": (
+        "params: { \"tool\": \"...\", \"fixture_path\": \"data/fixtures/X.json\", "
+        "\"min_new_labeled\": 16 }. Signals readiness to retrain — prints the "
+        "command. Does not actually train (would block the daemon ~10 min)."
+    ),
+    "conversation_scanner": (
+        "params: { \"output_path\": \"/tmp/ref.txt\", "
+        "\"project_slug\": \"-home-kai-...\" (optional), "
+        "\"max_messages\": 30, \"lookback_hours\": 24 }. "
+        "Reads ~/.claude/projects/<slug>/*.jsonl, dumps recent assistant "
+        "text blocks to `output_path`. Pair with an autolabel job pointed "
+        "at the same path to close the auto-label loop."
+    ),
+    "detect_tool_gaps": (
+        "params: { \"window_seconds\": 30, \"min_occurrences\": 2, "
+        "\"ngram_min\": 2, \"ngram_max\": 3 }. Scans proxy triples for "
+        "repeating tool sequences within the time window and writes them "
+        "to gap_reports for Layer-D synthesis."
+    ),
+    "claude_code_ingest": (
+        "params: { \"project_path\": \"/abs/path\" (optional — defaults to "
+        "the job's project), \"limit\": 5000, \"skip_errors\": true, "
+        "\"since\": \"2026-05-09T00:00:00\" (optional) }. Pulls every "
+        "tool_use+tool_result pair from ~/.claude/projects/<slug>/*.jsonl "
+        "into the triples table. Idempotent — safe to re-run frequently."
+    ),
+}
+
+
+def _hint_for(job_type: str) -> str:
+    return _JOB_TYPE_HINTS.get(
+        job_type,
+        f"(no inline reference for `{job_type}` — see "
+        f"src/planckbot/cron/jobs.py for params)",
+    )
+
+
 def _create_form(state, on_created) -> None:
     with ui.card().style(CARD_STYLE + " width: 100%; margin-top: 16px;"):
         ui.label("Create job").style(heading_style(size=TEXT_MD))
         name = ui.input("Name").style("width: 280px;")
+        types = state.cron_registry.types()
         job_type = ui.select(
-            state.cron_registry.types(),
-            value=state.cron_registry.types()[0],
+            types,
+            value=types[0],
             label="Type",
-        ).style("width: 200px;")
+        ).style("width: 240px;")
         interval = ui.number(
             "Interval (seconds)", value=300, min=10, step=10,
         ).style("width: 200px;")
@@ -141,12 +197,13 @@ def _create_form(state, on_created) -> None:
         ).style(
             "width: 100%; font-family: monospace; min-height: 90px;"
         )
-        ui.label(
-            "autolabel needs: tool, reference_path, recent. "
-            "retrain needs: tool, fixture_path, min_new_labeled. "
-            "noop takes: message."
-        ).style(
-            f"color: {COLORS['text_muted']}; font-size: {TEXT_SM}px;"
+        # Dynamic hint: updates whenever the user picks a different job type.
+        hint = ui.label(_hint_for(job_type.value)).style(
+            f"color: {COLORS['text_muted']}; font-size: {TEXT_SM}px; "
+            "white-space: normal; line-height: 1.45;"
+        )
+        job_type.on_value_change(
+            lambda e: setattr(hint, "text", _hint_for(e.value))
         )
 
         def submit():

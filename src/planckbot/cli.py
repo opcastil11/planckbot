@@ -28,6 +28,18 @@ def _fmt_ts(ts: str | None) -> str:
         return ts
 
 
+def _ui_running(port: int, *, timeout: float = 0.5) -> bool:
+    """True iff something is listening on 127.0.0.1:port. We probe loopback
+    instead of the configured bind host because the UI may bind 0.0.0.0 but
+    is always reachable via loopback when running on this machine."""
+    import socket
+    try:
+        with socket.create_connection(("127.0.0.1", port), timeout=timeout):
+            return True
+    except OSError:
+        return False
+
+
 def _load_stores():
     """Open DB + hand back the stores the CLI needs.
 
@@ -192,7 +204,22 @@ def _load_script(filename: str):
 
 
 def cmd_ui(_args) -> int:
+    from planckbot.config import config
     from planckbot.ui.app import start_app
+
+    # Friendly guard: if something is already on the UI port, NiceGUI's own
+    # error is cryptic ("address already in use") and users assume the launch
+    # failed for a different reason. Probe up-front and tell them directly.
+    if _ui_running(config.port):
+        print(
+            f"PlanckBot UI is already running on http://localhost:{config.port}\n"
+            f"  open it in a browser, or stop the running instance with:\n"
+            f"    pkill -f 'planckbot$'   # bare-command launches\n"
+            f"    pkill -f 'planckbot ui'  # subcommand launches",
+            file=sys.stderr,
+        )
+        return 1
+    print(f"PlanckBot UI starting on http://localhost:{config.port} …")
     start_app()
     return 0
 
@@ -274,6 +301,13 @@ def _render_status() -> int:
               f"({len(st.fs_pids)} proc)")
         print(f"    planckbot-synth : {synth_state}  "
               f"({len(st.synth_pids)} proc)")
+    print("")
+    print("  workbench UI       :")
+    if _ui_running(config.port):
+        print(f"    ✓ live on http://localhost:{config.port}")
+    else:
+        print(f"    ✗ not running — start with `planckbot ui` "
+              f"(or bare `planckbot`)")
     print("")
     print(f"  triples total      : {total}")
     print(f"  triples by tool    : "
