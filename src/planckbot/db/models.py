@@ -321,3 +321,36 @@ class AgentEvent:
     @classmethod
     def from_row(cls, row) -> "AgentEvent":
         return cls(**dict(row))
+
+
+@dataclass
+class ToolCacheEntry:
+    """A cached tool output for the PreToolUse cache-deny path.
+
+    Keyed by (session_id, tool_name, cache_key). For Read, cache_key is the
+    absolute file_path and `file_mtime_ns` records the last-known mtime so
+    the hook can reject the cache when the file has changed on disk.
+    `dirty=1` is set by an Edit/Write on the same path within the session,
+    making the cache permanently invalid for that session even if the
+    mtime check would have passed.
+    """
+    id: str = field(default_factory=_new_id)
+    session_id: str = ""
+    project_id: str | None = None
+    tool_name: str = ""
+    cache_key: str = ""
+    file_path: str | None = None
+    file_mtime_ns: int | None = None
+    content: str = ""
+    content_tokens: int | None = None
+    dirty: int = 0
+    hits: int = 0
+    created_at: str = field(default_factory=_now)
+    last_hit_at: str | None = None
+
+    def to_row(self) -> dict:
+        return asdict(self)
+
+    @classmethod
+    def from_row(cls, row) -> "ToolCacheEntry":
+        return cls(**dict(row))

@@ -8,22 +8,24 @@ Standalone product — not a dependency of Orquesta. Orquesta is only *one* inge
 
 ```
 src/planckbot/
-  db/          — SQLite schema + dataclasses (schema v2)
-  ingest/      — TripleSource ABC + manual.py + orquesta.py
-  tools/       — registry, triples store, builtin tools
+  db/          — SQLite schema + dataclasses (schema v8, latest)
+  ingest/      — TripleSource ABC + manual.py + orquesta.py + claude_code.py + redact.py
+  tools/       — registry, triples store, builtin tools, ToolCacheStore (v8)
   experiments/ — experiment manager + metrics
   training/    — LoRA trainer (HF Trainer + PEFT)
   models/      — loader, inference (`predict()` with confidence), checkpoints
   proxy/       — intercept layer + MCP stdio server (`planckbot-mcp`)
   cron/        — background scheduler (CronStore, JobRegistry, Daemon, scanner)
   synth/       — Layer D: pattern detector, synthesize_tool, `planckbot-synth` MCP server
+  bench/       — Tier-1 bench: harness, metrics, datasets, references, 12 techniques (see "Tier-1 bench" below)
+  hooks/       — Claude Code PreToolUse/PostToolUse handlers (`planckbot-hook` entry)
   cli.py       — `planckbot` entry point with subcommands (ui, status, train, label, cron, synth …)
   ui/          — NiceGUI workbench (dashboard, how-it-works, tools, activity, experiments, training, models, cron, synth, mascots, projects)
   paper/       — internal research-log module (paper_log table + export helper; not user-facing)
-scripts/       — train_smoke.py, train_tool.py, proxy_demo.py, mcp_preflight.py, auto_label.py
+scripts/       — train_smoke.py, train_tool.py, proxy_demo.py, mcp_preflight.py, auto_label.py, bulk_ingest_jsonl.py, run_bench_tier1.py, planckbot-hook.py
 static/branding/ — PlanckBots logo + favicon (used by UI + empty states)
-tests/         — 94 tests; full suite runs in ~5s (no torch needed for most)
-data/          — SQLite DB + LoRA checkpoints (gitignored except data/fixtures/)
+tests/         — 432 tests; full suite runs in ~30-40s (no torch needed for most)
+data/          — SQLite DB + LoRA checkpoints + bench/ outputs (gitignored except data/fixtures/)
 ```
 
 ## Tech stack
@@ -39,7 +41,7 @@ data/          — SQLite DB + LoRA checkpoints (gitignored except data/fixtures
 
 | Command | What it does |
 |---|---|
-| `.venv/bin/python -m pytest` | Full test suite (241 tests, ~9s) |
+| `.venv/bin/python -m pytest` | Full test suite (432 tests, ~30-40s) |
 | `.venv/bin/planckbot` | Launch workbench UI on port 8080 (bare command, back-compat) |
 | `.venv/bin/planckbot status` | One-shot summary of triples / savings / checkpoints / cron |
 | `.venv/bin/planckbot cron list|add|rm|enable|disable|run|daemon` | Manage scheduled jobs |
@@ -47,6 +49,9 @@ data/          — SQLite DB + LoRA checkpoints (gitignored except data/fixtures
 | `.venv/bin/planckbot synth list|show|activate|deactivate|create|gaps|author` | Manage Layer D synthesized tools (`author` uses Claude API when `ANTHROPIC_API_KEY` set) |
 | `.venv/bin/planckbot project list|show|create|switch|delete|rename` | Manage target-folder projects (see "Per-project scoping" below) |
 | `.venv/bin/planckbot-synth` | Run the Layer D MCP server (exposes active synthesized tools to Claude Code) |
+| `.venv/bin/planckbot-hook` | PreToolUse/PostToolUse cache-deny hook for Claude Code (see "Cache-deny hook" below) |
+| `.venv/bin/python scripts/run_bench_tier1.py [--full]` | Run all 12 Tier-1 bench techniques + emit CSVs in `data/bench/` |
+| `.venv/bin/python scripts/bulk_ingest_jsonl.py [--dry-run]` | Mass-ingest every project's JSONL transcripts from `~/.claude/projects/` (skips slugs with <100 tool_uses) |
 | `.venv/bin/planckbot doctor [--json]` | 12-point health check; exit code 0/1/2 for ok/warn/fail |
 | `.venv/bin/planckbot status [--watch N]` | One-shot or polling summary of DB state + cost estimate |
 | `.venv/bin/planckbot bless <ckpt> [--threshold X] [--activate]` | Mark a trained checkpoint safe to serve |
@@ -185,13 +190,55 @@ End-to-end: triples → pattern detector → gap report → human (or LLM) appro
 - `scripts/auto_label.py` is the manual CLI: pipe in a reference text (the host LLM's message that quoted the tool output) and it labels the most recent N triples for a given tool.
 - **Still pending:** an automated watcher that reads Claude Code's conversation JSONL files (`~/.claude/projects/<slug>/*.jsonl`) and back-labels triples on a schedule — this is what flips "more usage → better adapter" from manual to automatic.
 
+## Tier-1 bench (2026-05-21) — strategy validation
+
+`src/planckbot/bench/` evaluates candidate optimization techniques against the real ingested triples to surface honest ceilings before investing in implementation.
+
+- `bench/harness.py` — `load_triples` (skips secret-flagged by default), `group_into_sessions`, `Technique` ABC, `replay()` driver.
+- `bench/metrics.py` — token counting, `BenchResult` agg shape, CSV exporters, `tool_volume_summary`.
+- `bench/datasets.py` — `split_sessions(seed, holdout_frac)` stratified per-project; persistable to JSON.
+- `bench/references.py` — bulk extractor `tool_use_id → next_assistant_text` from JSONL transcripts (powers the JSONL-based techniques honestly, à la Orquesta-report §4.5).
+- `bench/techniques.py` — 12 techniques implemented (A, B, D, G, J, K, L-local, L-jsonl, M, N, T, V from `docs/session-2026-05-21-strategy-rethink.md` §4).
+- Runner: `scripts/run_bench_tier1.py [--full] [--no-jsonl]`. Outputs `data/bench/{tier1_events,tier1_aggregate,tier1_ranking}.csv` + `split.json`.
+
+**Headline findings:** elimination beats compression. Honest ceilings (risk 0% or low):
+- G.retry_detection: 45% — predict tool-call failure in PreToolUse, avoid round-trip.
+- K.ngram_synthesis: 41% — Layer D compound tools collapse repeated sequences.
+- A.cache_deny_read: 13% — session-scoped Read cache with mtime + dirty tracking.
+- L.split_tools_jsonl: 6% — the *honest* Layer-B compression number (vs the 98% triples-only artifact).
+
+The high ceilings of J (98.5%) and L-local (57.8%) are matcher artifacts (assistant text not in triples). Do not chase them. See `docs/session-2026-05-21-strategy-rethink.md` for full ranking + interpretation + caveats.
+
+## Cache-deny hook (technique A) — wired
+
+End-to-end: PreToolUse on Read queries `tool_cache` (schema v8); on fresh hit (mtime unchanged + not dirty) emits `permissionDecision: deny` + `additionalContext` with the cached content. PostToolUse on Read populates the cache for future hits.
+
+- `src/planckbot/tools/cache.py :: ToolCacheStore` — put / lookup (mtime-verified) / mark_dirty / record_hit / purge_session / stats_summary.
+- `src/planckbot/hooks/cache_hook.py :: handle(input_json, store)` — pure handler, dispatches PreToolUse + PostToolUse + Edit/Write dirty marking. Testable without subprocess.
+- `src/planckbot/hooks/entrypoint.py :: main()` — exposed as `.venv/bin/planckbot-hook` (registered in pyproject). Reads stdin / writes stdout, always exits 0 — internal errors never block Claude Code.
+- `scripts/planckbot-hook.py` — portable shim for pre-install use.
+- Schema v8 added `tool_cache` table (FK to projects). Migration is additive.
+- Env vars: `PLANCKBOT_DB` (override DB path), `PLANCKBOT_HOOK_DEBUG` (append every stdin payload to file), `PLANCKBOT_HOOK_DISABLED` (pass-through).
+- Tests in `tests/test_cache_hook.py` (20 tests) + `tests/test_tool_cache.py` (17 tests).
+- **Not yet wired into `~/.claude/settings.json`** — deliberately. Adding it affects the running Claude Code session. The user activates manually when ready; settings.json snippet is in `scripts/planckbot-hook.py` docstring.
+
+## Data quality + secret redaction at ingest
+
+- `src/planckbot/ingest/redact.py :: redact(text)` and `redact_obj(obj)` scrub common secret patterns (Anthropic/OpenAI/GitHub/AWS keys, JWTs, private keys, password/api_key JSON fields) before triples land in `data/planckbot.db`. Hits are recorded in `context_data.had_secrets=true` + `secret_patterns=[...]` for auditing.
+- Applied automatically by `ClaudeCodeJsonlSource.fetch()` — both `input_data` (dict walk) and `output_data` (text) are scanned.
+- Verified on the 16-project mass ingest: 58 triples flagged across opcastil (23), orquesta (15), agentdir (7), etc. 9 distinct pattern types detected. Zero raw keys remain in DB outputs after redaction.
+
 ## Not yet built (next plausible work)
 
 - **Cold-start window** after a tool edit — force observe mode until N new-version triples accumulate (Layer C hand-off gap).
-- **Semantic matcher** for auto-label — replace the word-level matcher in `reference_tracker` with a sentence-embedding cosine similarity.
+- **Semantic matcher default** — `reference_tracker.extract_referenced_lines(..., match_mode='semantic')` is implemented (sentence-transformers with graceful fallback to token), but the autolabel cron job still defaults to `token`. Switching the default + validating is pending.
 - **LLM-authored Layer D** — `synthesize_tool --from-gap <report_id>` that calls Claude API with the example triple IDs as context and gets a Python body back.
 - **Confidence calibration** per tool — tune the intervene threshold against a held-out eval set instead of using the global default of 0.9. Schema v5 already has `tuned_threshold` per-checkpoint; the tuning command is not built.
 - **Multi-adapter LRU** — shared base model with swappable LoRA adapters, needed above ~20 tools.
 - **Sandboxed execution of synthesized tools** — Firecracker microVM or seccomp-filtered subprocess.
 - **Multi-adapter memory management** — at >20 tools, we can't load every adapter simultaneously. LRU eviction + shared base model with swappable LoRA adapters.
 - **Workbench features**: scheduled retrain cadence, A/B comparison of adapter versions, adapter promotion flow (eval beats active → activate).
+- **G.retry_detection classifier** (Tier-1 winner, 45% ceiling) — train a small classifier on the retry-detected triples to predict "this tool_call will fail" in PreToolUse, before invoking the tool. Dataset already labelable from the bench's retry detector output.
+- **K skill autogeneration** (Tier-1 winner, 41% ceiling) — generate Claude Code skill / CLAUDE.md entries that orient the model toward synthesized compound tools. Closes the adoption gap that Layer D's `synth/` infra leaves open.
+- **Cache-deny hook live activation + empirical validation** — register `planckbot-hook` in `~/.claude/settings.json` and measure (via `PLANCKBOT_HOOK_DEBUG` log) how Claude renders `additionalContext` when combined with `permissionDecision: deny`. Fall back to `updatedInput` redirect-to-temp-file if the documented path doesn't pass content through.
+- **README / framing update** — current README leads with "97% reduction on list_directory"; the Tier-1 bench showed the honest Layer-B number is ~6%. Reposition headline around the broader philosophy + the actually-validated elimination wins (G/K/A).

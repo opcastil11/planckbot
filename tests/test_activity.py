@@ -20,8 +20,11 @@ def test_schema_v7_includes_activity_events(conn):
                          "project_id"}
 
 
-def test_schema_version_advanced_to_7():
-    assert SCHEMA_VERSION == 7
+def test_schema_version_at_least_7():
+    # v7 added activity_events; later migrations are additive and don't
+    # touch this table. Keep this test elastic so schema bumps don't
+    # break it.
+    assert SCHEMA_VERSION >= 7
 
 
 # --- log_event ------------------------------------------------------------

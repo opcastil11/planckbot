@@ -34,11 +34,17 @@ v7 — adds `activity_events` table for the cross-process live-activity
      when they do something notable; the UI's /activity page polls
      this table as a SQLite-backed event bus. Rotation is app-side
      (src/planckbot/activity.py :: trim_events).
+v8 — adds `tool_cache` table for the PreToolUse cache-deny path (Layer A
+     technique from the 2026-05-21 Tier-1 bench). Stores recent tool
+     outputs keyed by (session_id, tool_name, cache_key) so a PreToolUse
+     hook can short-circuit repeat Reads / idempotent Bash with the
+     cached content as the denial reason. mtime + dirty flag prevent
+     stale-cache returns when the underlying file was edited.
 """
 
 import sqlite3
 
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 8
 
 TABLES = """
 CREATE TABLE IF NOT EXISTS schema_version (
@@ -270,6 +276,37 @@ CREATE TABLE IF NOT EXISTS activity_events (
 
 CREATE INDEX IF NOT EXISTS idx_activity_ts ON activity_events(ts DESC);
 CREATE INDEX IF NOT EXISTS idx_activity_id ON activity_events(id);
+
+-- v8: tool_cache = per-session memoization for the PreToolUse cache-deny
+-- path. The hook looks up by (session_id, tool_name, cache_key). For Read,
+-- cache_key is the absolute file_path and `file_mtime_ns` lets us spot
+-- staleness (the hook compares against disk on lookup). `dirty` is set
+-- when a later Edit/Write hits the same path in the same session, so we
+-- never serve a stale cache to the LLM. `hits` counts how often this
+-- entry served a request — useful for telemetry + ablation.
+CREATE TABLE IF NOT EXISTS tool_cache (
+    id              TEXT PRIMARY KEY,
+    session_id      TEXT NOT NULL,
+    project_id      TEXT,
+    tool_name       TEXT NOT NULL,
+    cache_key       TEXT NOT NULL,
+    file_path       TEXT,
+    file_mtime_ns   INTEGER,
+    content         TEXT NOT NULL,
+    content_tokens  INTEGER,
+    dirty           INTEGER NOT NULL DEFAULT 0,
+    hits            INTEGER NOT NULL DEFAULT 0,
+    created_at      TEXT NOT NULL,
+    last_hit_at     TEXT,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_tool_cache_lookup
+    ON tool_cache(session_id, tool_name, cache_key);
+CREATE INDEX IF NOT EXISTS idx_tool_cache_path
+    ON tool_cache(session_id, file_path);
+CREATE INDEX IF NOT EXISTS idx_tool_cache_created
+    ON tool_cache(created_at DESC);
 """
 
 
@@ -468,6 +505,31 @@ def _upgrade_to_v6(conn: sqlite3.Connection) -> None:
         conn.execute(stmt)
 
 
+V8_UPGRADE_STATEMENTS = [
+    """
+    CREATE TABLE IF NOT EXISTS tool_cache (
+        id              TEXT PRIMARY KEY,
+        session_id      TEXT NOT NULL,
+        project_id      TEXT,
+        tool_name       TEXT NOT NULL,
+        cache_key       TEXT NOT NULL,
+        file_path       TEXT,
+        file_mtime_ns   INTEGER,
+        content         TEXT NOT NULL,
+        content_tokens  INTEGER,
+        dirty           INTEGER NOT NULL DEFAULT 0,
+        hits            INTEGER NOT NULL DEFAULT 0,
+        created_at      TEXT NOT NULL,
+        last_hit_at     TEXT,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL
+    )
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_tool_cache_lookup ON tool_cache(session_id, tool_name, cache_key)",
+    "CREATE INDEX IF NOT EXISTS idx_tool_cache_path ON tool_cache(session_id, file_path)",
+    "CREATE INDEX IF NOT EXISTS idx_tool_cache_created ON tool_cache(created_at DESC)",
+]
+
+
 V7_UPGRADE_STATEMENTS = [
     """
     CREATE TABLE IF NOT EXISTS activity_events (
@@ -489,6 +551,11 @@ V7_UPGRADE_STATEMENTS = [
 
 def _upgrade_to_v7(conn: sqlite3.Connection) -> None:
     for stmt in V7_UPGRADE_STATEMENTS:
+        conn.execute(stmt)
+
+
+def _upgrade_to_v8(conn: sqlite3.Connection) -> None:
+    for stmt in V8_UPGRADE_STATEMENTS:
         conn.execute(stmt)
 
 
@@ -521,6 +588,8 @@ def migrate(conn: sqlite3.Connection):
         _upgrade_to_v6(conn)
     if current < 7:
         _upgrade_to_v7(conn)
+    if current < 8:
+        _upgrade_to_v8(conn)
 
     # Hygiene: store the version as a SINGLE row that we UPDATE in place.
     # Pre-v5 DBs have one row per migration (accumulating cruft); we

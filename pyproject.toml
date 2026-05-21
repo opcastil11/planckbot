@@ -56,6 +56,7 @@ Issues = "https://github.com/opcastil11/planckbot/issues"
 planckbot = "planckbot.__main__:main"
 planckbot-mcp = "planckbot.proxy.mcp_server:main"
 planckbot-synth = "planckbot.synth.mcp_server:main"
+planckbot-hook = "planckbot.hooks.entrypoint:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/planckbot"]

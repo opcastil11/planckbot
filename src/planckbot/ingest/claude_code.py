@@ -27,6 +27,7 @@ from typing import Any, Iterator, Optional
 
 from planckbot.cron.scanner import _slugify_cwd
 from planckbot.ingest.base import TripleRecord, TripleSource
+from planckbot.ingest.redact import redact, redact_obj
 from planckbot.tools.triples import TriplesStore
 
 
@@ -46,6 +47,7 @@ class ClaudeCodeJsonlSource(TripleSource):
         claude_root: Path | str | None = None,
         skip_errors: bool = True,
         skip_prefixes: tuple[str, ...] | None = None,
+        slug: str | None = None,
     ):
         """
         Args:
@@ -58,6 +60,10 @@ class ClaudeCodeJsonlSource(TripleSource):
                 the planckbot-fs MCP namespace because the proxy already
                 stores those calls (under the un-namespaced tool name).
                 Pass `()` to keep everything.
+            slug: override the auto-derived slug. Needed when Claude Code's
+                actual transformation rule diverges from our naive `/ → -`
+                (e.g. dirs containing `.` or mixed case). Pass the actual
+                folder name under `~/.claude/projects/`.
         """
         self.project_path = Path(project_path)
         self.claude_root = (
@@ -69,6 +75,7 @@ class ClaudeCodeJsonlSource(TripleSource):
             self.DEFAULT_SKIP_PREFIXES if skip_prefixes is None
             else tuple(skip_prefixes)
         )
+        self.slug_override = slug
         self._existing: set[str] = set()
 
     # --- TripleSource API --------------------------------------------------
@@ -102,7 +109,7 @@ class ClaudeCodeJsonlSource(TripleSource):
     def fetch(
         self, limit: int = 1000, since: Optional[str] = None
     ) -> Iterator[TripleRecord]:
-        slug = _slugify_cwd(self.project_path)
+        slug = self.slug_override or _slugify_cwd(self.project_path)
         proj_dir = self.claude_root / slug
         if not proj_dir.exists():
             return
@@ -156,21 +163,27 @@ class ClaudeCodeJsonlSource(TripleSource):
             if self.skip_errors and r_blk.get("is_error"):
                 continue
 
-            output_text = _extract_result_text(r_blk)
+            output_text, out_hits = redact(_extract_result_text(r_blk))
+            input_data, in_hits = redact_obj(u_blk.get("input") or {})
+
+            ctx: dict = {
+                "tool_use_id": use_id,
+                "msg_uuid": u_obj.get("uuid"),
+                "cwd": u_obj.get("cwd"),
+                "use_ts": u_obj.get("timestamp"),
+                "result_ts": r_obj.get("timestamp"),
+                "is_error": bool(r_blk.get("is_error")),
+                "jsonl_file": u_file,
+            }
+            if in_hits or out_hits:
+                ctx["had_secrets"] = True
+                ctx["secret_patterns"] = sorted(set(in_hits + out_hits))
 
             yield TripleRecord(
                 tool_name=tool_name,
-                input_data=u_blk.get("input") or {},
+                input_data=input_data,
                 output_data=output_text,
-                context_data={
-                    "tool_use_id": use_id,
-                    "msg_uuid": u_obj.get("uuid"),
-                    "cwd": u_obj.get("cwd"),
-                    "use_ts": u_obj.get("timestamp"),
-                    "result_ts": r_obj.get("timestamp"),
-                    "is_error": bool(r_blk.get("is_error")),
-                    "jsonl_file": u_file,
-                },
+                context_data=ctx,
                 session_id=u_obj.get("sessionId"),
                 created_at=u_obj.get("timestamp"),
             )
