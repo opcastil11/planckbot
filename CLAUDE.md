@@ -222,6 +222,18 @@ End-to-end: PreToolUse on Read queries `tool_cache` (schema v8); on fresh hit (m
 - Tests in `tests/test_cache_hook.py` (20 tests) + `tests/test_tool_cache.py` (17 tests).
 - **Not yet wired into `~/.claude/settings.json`** — deliberately. Adding it affects the running Claude Code session. The user activates manually when ready; settings.json snippet is in `scripts/planckbot-hook.py` docstring.
 
+## Paper — `docs/PLANCKBOT_PAPER.md` (draft v3, 2026-08-29)
+
+The project's own writeup. **v3 retracts the headline claim of v2** and is now the canonical framing document — prefer it over the README, which still leads with the obsolete 97 % figure.
+
+- **What changed v2 → v3**: v2's "96.5 % reduction on `list_directory`" is retracted. Measured over 17,604 triples with an independently-sourced supervision signal, Layer-B compression is **6.02 %** (`L.split_tools_jsonl` in `data/bench/tier1_ranking.csv`). The ~9.6× gap is the *citation-matcher artifact*: drawing the reference from the same session's subsequent tool inputs makes almost any output line match. §5.5 characterizes it.
+- **The structural finding** (§5.1, Table 2): filesystem tools reachable through `planckbot-mcp` are **1.20 %** of real output-token volume (346 calls / 58 k tokens); native host tools that bypass the proxy are **95.45 %** (Read + Bash alone = 91.16 %). The entire v2 evaluation ran on that 1.20 %. This is why the roadmap moved to hooks (`hooks/`) over the MCP proxy.
+- **Structure**: 1 Intro · 2 Background · 3 Four-Layer Framework · 4 Architecture (schema v8) · **5 Evaluation at Scale** (corpus, Tier-1 bench, the artifact, the retraction) · **6 External Evaluation** (the Orquesta feasibility report) · **7 Platform Drift Apr→Aug 2026** · 8 Discussion/Limitations · 9 Future Work (tracks G / K / A) · 10 Reproducibility · 11 Conclusion · 24 refs.
+- **Platform-drift claims are binary-verified, not blog-sourced.** §7 and ref [21] cite schema strings grepped out of the installed Claude Code binary (`~/.local/share/claude/versions/2.1.251`) — a third-party post and a WebFetch of the docs both gave wrong answers about `PostToolUse.updatedToolOutput`. Re-verify against the binary before amending §7.
+- **v2 was recovered from the system's own telemetry.** Commit `09d8a1e` deleted the paper and scrubbed it from history with `git filter-repo`; no copy survived on disk. It was reconstructed by replaying the original `Write` + 6 `Edit` tool calls stored as triples in `data/planckbot.db`. If v3 ever goes missing, the same recovery path applies.
+- **Corpus is not distributable** (§8.3, §10) — verbatim developer conversation content plus 58 secret-flagged triples. Publish the bench CSVs and `split.json`, never the triples.
+- Rendered reading copy (private artifact): https://claude.ai/code/artifact/6f085d6d-848d-438b-b473-e6f7e951dbc5 — built by a throwaway script from the markdown; the markdown is the source of truth.
+
 ## Data quality + secret redaction at ingest
 
 - `src/planckbot/ingest/redact.py :: redact(text)` and `redact_obj(obj)` scrub common secret patterns (Anthropic/OpenAI/GitHub/AWS keys, JWTs, private keys, password/api_key JSON fields) before triples land in `data/planckbot.db`. Hits are recorded in `context_data.had_secrets=true` + `secret_patterns=[...]` for auditing.
