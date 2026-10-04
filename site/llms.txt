@@ -1,0 +1,47 @@
+# PlanckBot
+
+> Open-source (Apache 2.0) Python tool that sits between an LLM agent and its tools as an MCP proxy. It logs every tool call, trains small per-tool LoRA adapters (SmolLM2-135M base) on what the model actually quotes from the output, and can compress verbose tool output at runtime. Runs locally; there is no hosted API.
+
+PlanckBot is a local developer tool, not a web service: planckbot.com is only the project page. Everything below runs on your machine.
+
+## Install
+
+- Source: https://github.com/opcastil11/planckbot (not published on PyPI)
+- Requires Python >= 3.10.
+- `git clone https://github.com/opcastil11/planckbot && cd planckbot`
+- `uv venv .venv && source .venv/bin/activate && uv pip install -e ".[dev]"`
+- `planckbot init --upstream-path /path/to/your/project --claude-config` — creates the data dir, migrates the SQLite DB and registers the MCP server with Claude Code.
+
+## Entry points (console scripts)
+
+- `planckbot` — main CLI
+- `planckbot-mcp` — the MCP proxy that wraps your filesystem tools and records triples
+- `planckbot-synth` — second MCP server that serves synthesized tools
+- `planckbot-hook` — Claude Code hook entry point
+
+## CLI commands
+
+- `planckbot init` — first-run setup
+- `planckbot ui` — local workbench at http://localhost:8080
+- `planckbot status` — triples, adapters and proxy state
+- `planckbot train --tool X --fixture Y.json` — train a per-tool adapter (after ~200 calls of that tool)
+- `planckbot label` — label triples
+- `planckbot ingest claude-code` — backfill triples from a project's Claude Code JSONL transcripts
+- `planckbot proxy-demo` — run the proxy demo against a trained adapter
+- `planckbot preflight` — environment checks
+- `planckbot cron list|add|rm|enable|disable|run|daemon` — built-in scheduler (autolabel, retrain signal, conversation scanner, gap detection)
+- `planckbot synth list|show|activate|deactivate|create|author|gaps` — synthesized tools
+- `planckbot project list|show|create|switch|delete|rename|route` — per-project scoping and tool-routing mode (off / soft / hard)
+
+## Layers
+
+- A Observe: every MCP tool call is logged as a triple (input, raw output, what the host LLM quoted next).
+- B Compress: a per-tool LoRA swaps raw output for filtered output when confidence clears a threshold; adapters serve only after a human "blesses" them.
+- C Edit: the host LLM can propose AST-whitelisted edits to tool code; each edit versions the tool and invalidates its adapter.
+- D Synthesize: repeated tool sequences become proposed merged tools, hot-reloaded through `planckbot-synth`.
+- `.mcpignore`: proxy-level filter that blocks .env, SSH keys and cloud credentials from reaching the LLM.
+
+## Links
+
+- Repository and issues: https://github.com/opcastil11/planckbot
+- Project page: https://planckbot.com/
